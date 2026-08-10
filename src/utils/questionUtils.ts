@@ -1,24 +1,33 @@
-import { Question, Difficulty } from '../types/question';
+import { Question } from '../types/question';
 
-export const fetchQuestions = async (examId: string, count: number, difficulty: Difficulty): Promise<Question[]> => {
+export interface QuestionSet {
+  id: string;
+  name: string;
+}
+
+export const fetchQuestionSets = async (examId: string): Promise<QuestionSet[]> => {
   try {
-    // In a real scenario, this might fetch a specific file based on examId
-    // For now, we fetch our sample set-001.json
-    const response = await fetch(`/questions/${examId}/set-001.json`);
+    const response = await fetch(`/questions/${examId}/index.json`);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch question sets: ${response.statusText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching question sets:", error);
+    return [];
+  }
+};
+
+export const fetchQuestions = async (examId: string, setId: string): Promise<Question[]> => {
+  try {
+    const response = await fetch(`/questions/${examId}/${setId}.json`);
     if (!response.ok) {
       throw new Error(`Failed to fetch questions: ${response.statusText}`);
     }
     const data: Question[] = await response.json();
 
-    // Filter by difficulty if not 'mixed'
-    let filteredData = data;
-    if (difficulty !== 'mixed') {
-      filteredData = data.filter(q => q.difficulty === difficulty);
-    }
-
-    // Shuffle and pick
-    const shuffled = [...filteredData].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, count);
+    const shuffled = [...data].sort(() => 0.5 - Math.random());
+    return shuffled;
   } catch (error) {
     console.error("Error fetching questions:", error);
     return [];

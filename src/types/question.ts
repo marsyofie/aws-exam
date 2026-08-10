@@ -1,5 +1,3 @@
-export type Difficulty = "easy" | "medium" | "hard" | "mixed";
-
 export interface Question {
   id: string;
   question: string;
@@ -18,7 +16,6 @@ export interface Question {
     D?: string;
   };
   topic: string;
-  difficulty: Difficulty;
   tags: string[];
 }
 

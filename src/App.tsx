@@ -3,7 +3,7 @@ import ExamSetup from './components/ExamSetup';
 import QuestionCard from './components/QuestionCard';
 import ExamResult from './components/ExamResult';
 import ReviewAnswers from './components/ReviewAnswers';
-import { Difficulty, ExamState } from './types/question';
+import { ExamState } from './types/question';
 import { fetchQuestions } from './utils/questionUtils';
 
 const initialState: ExamState = {
@@ -20,11 +20,11 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const startExam = async (examId: string, count: number, difficulty: Difficulty) => {
+  const startExam = async (examId: string, setId: string) => {
     setLoading(true);
     setError(null);
     try {
-      const questions = await fetchQuestions(examId, count, difficulty);
+      const questions = await fetchQuestions(examId, setId);
       if (questions.length === 0) {
         setError("No questions found for the selected criteria.");
         setLoading(false);
