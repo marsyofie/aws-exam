@@ -1,16 +1,15 @@
 import React from 'react';
 
-type OptionLetter = "A" | "B" | "C" | "D";
-
 interface AnswerOptionProps {
-  letter: OptionLetter;
+  letter: string;
   text: string;
   selected: boolean;
-  onSelect: (letter: OptionLetter) => void;
+  onSelect: (letter: string) => void;
   disabled?: boolean;
+  type?: "radio" | "checkbox";
 }
 
-const AnswerOption: React.FC<AnswerOptionProps> = ({ letter, text, selected, onSelect, disabled }) => {
+const AnswerOption: React.FC<AnswerOptionProps> = ({ letter, text, selected, onSelect, disabled, type = "radio" }) => {
   return (
     <label 
       className={`
@@ -21,9 +20,9 @@ const AnswerOption: React.FC<AnswerOptionProps> = ({ letter, text, selected, onS
     >
       <div className="flex items-center h-5">
         <input 
-          type="radio"
+          type={type}
           name="answer"
-          className="focus:ring-aws-orange h-4 w-4 text-aws-orange border-gray-300"
+          className={`focus:ring-aws-orange h-4 w-4 text-aws-orange border-gray-300 ${type === 'radio' ? 'rounded-full' : 'rounded'}`}
           checked={selected}
           onChange={() => !disabled && onSelect(letter)}
           disabled={disabled}

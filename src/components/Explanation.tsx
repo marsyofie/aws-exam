@@ -3,11 +3,13 @@ import { Question } from '../types/question';
 
 interface ExplanationProps {
   question: Question;
-  userAnswer: "A" | "B" | "C" | "D";
+  userAnswer: string[];
 }
 
 const Explanation: React.FC<ExplanationProps> = ({ question, userAnswer }) => {
-  const isCorrect = userAnswer === question.correctAnswer;
+  const isCorrect = 
+    userAnswer.length === question.correctAnswers.length &&
+    userAnswer.every(a => question.correctAnswers.includes(a));
 
   return (
     <div className={`mt-6 p-6 rounded-lg border ${isCorrect ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
@@ -23,14 +25,22 @@ const Explanation: React.FC<ExplanationProps> = ({ question, userAnswer }) => {
       </div>
 
       <div className="mb-4">
-        <p className="text-sm font-semibold text-gray-700">Your answer:</p>
-        <p className="text-sm text-gray-900 mt-1">{userAnswer}. {question.options[userAnswer]}</p>
+        <p className="text-sm font-semibold text-gray-700">Your answer{userAnswer.length > 1 ? 's' : ''}:</p>
+        <ul className="mt-1 space-y-1">
+          {userAnswer.map(ans => (
+            <li key={ans} className="text-sm text-gray-900">{ans}. {question.options[ans]}</li>
+          ))}
+        </ul>
       </div>
 
       {!isCorrect && (
         <div className="mb-4">
-          <p className="text-sm font-semibold text-gray-700">Correct answer:</p>
-          <p className="text-sm text-gray-900 mt-1">{question.correctAnswer}. {question.options[question.correctAnswer]}</p>
+          <p className="text-sm font-semibold text-gray-700">Correct answer{question.correctAnswers.length > 1 ? 's' : ''}:</p>
+          <ul className="mt-1 space-y-1">
+            {question.correctAnswers.map(ans => (
+              <li key={ans} className="text-sm text-gray-900">{ans}. {question.options[ans]}</li>
+            ))}
+          </ul>
         </div>
       )}
 
@@ -43,8 +53,8 @@ const Explanation: React.FC<ExplanationProps> = ({ question, userAnswer }) => {
         <div>
           <p className="text-sm font-semibold text-gray-700 mb-2">Why the other answers are wrong:</p>
           <ul className="space-y-2">
-            {(["A", "B", "C", "D"] as const).map(letter => {
-              if (letter !== question.correctAnswer && question.whyOthersAreWrong?.[letter]) {
+            {Object.keys(question.options).map(letter => {
+              if (!question.correctAnswers.includes(letter) && question.whyOthersAreWrong?.[letter]) {
                 return (
                   <li key={letter} className="text-sm text-gray-800">
                     <span className="font-semibold">{letter}:</span> {question.whyOthersAreWrong[letter]}

@@ -8,7 +8,7 @@ interface ReviewAnswersProps {
 }
 
 const ReviewAnswers: React.FC<ReviewAnswersProps> = ({ examState, onBackToResult }) => {
-  const { questions, answers } = examState;
+  const { questions, answers, submittedQuestions } = examState;
 
   return (
     <div className="max-w-3xl mx-auto mt-10 p-4">
@@ -21,8 +21,8 @@ const ReviewAnswers: React.FC<ReviewAnswersProps> = ({ examState, onBackToResult
 
       <div className="space-y-8">
         {questions.map((question, index) => {
-          const userAnswer = answers[question.id];
-          const isCorrect = userAnswer === question.correctAnswer;
+          const userAnswer = answers[question.id] || [];
+          const isCorrect = submittedQuestions[question.id];
           
           return (
             <div key={question.id} className="card p-6">
@@ -38,9 +38,9 @@ const ReviewAnswers: React.FC<ReviewAnswersProps> = ({ examState, onBackToResult
               </h3>
 
               <div className="space-y-2 mb-4">
-                {(["A", "B", "C", "D"] as const).map(letter => {
-                  const isSelected = userAnswer === letter;
-                  const isActualCorrect = question.correctAnswer === letter;
+                {Object.keys(question.options).map(letter => {
+                  const isSelected = userAnswer.includes(letter);
+                  const isActualCorrect = question.correctAnswers.includes(letter);
                   
                   let bgClass = "bg-gray-50 border-gray-200";
                   if (isSelected && isActualCorrect) bgClass = "bg-green-50 border-green-300";
@@ -58,7 +58,7 @@ const ReviewAnswers: React.FC<ReviewAnswersProps> = ({ examState, onBackToResult
                 })}
               </div>
 
-              {userAnswer && (
+              {userAnswer.length > 0 && (
                 <Explanation question={question} userAnswer={userAnswer} />
               )}
             </div>

@@ -8,9 +8,9 @@ interface QuestionCardProps {
   question: Question;
   currentIndex: number;
   total: number;
-  savedAnswer: "A" | "B" | "C" | "D" | undefined;
+  savedAnswer: string[] | undefined;
   isSubmitted: boolean;
-  onAnswerSubmit: (answer: "A" | "B" | "C" | "D") => void;
+  onAnswerSubmit: (answer: string[]) => void;
   onNext: () => void;
   onPrevious: () => void;
 }
@@ -25,18 +25,36 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   onNext,
   onPrevious
 }) => {
-  const [selectedAnswer, setSelectedAnswer] = useState<"A" | "B" | "C" | "D" | undefined>(savedAnswer);
+  const [selectedAnswers, setSelectedAnswers] = useState<string[]>(savedAnswer || []);
 
   // Sync state if question changes or savedAnswer updates
   useEffect(() => {
-    setSelectedAnswer(savedAnswer);
+    setSelectedAnswers(savedAnswer || []);
   }, [question, savedAnswer]);
 
-  const handleSubmit = () => {
-    if (selectedAnswer) {
-      onAnswerSubmit(selectedAnswer);
+  const handleSelect = (letter: string) => {
+    if (question.answerType === 'single') {
+      setSelectedAnswers([letter]);
+    } else {
+      setSelectedAnswers(prev => {
+        if (prev.includes(letter)) {
+          return prev.filter(a => a !== letter);
+        } else {
+          return [...prev, letter].sort();
+        }
+      });
     }
   };
+
+  const handleSubmit = () => {
+    if (selectedAnswers.length > 0) {
+      onAnswerSubmit(selectedAnswers);
+    }
+  };
+
+  const isSubmitDisabled = question.answerType === 'multiple' 
+    ? selectedAnswers.length !== question.correctAnswers.length 
+    : selectedAnswers.length === 0;
 
   return (
     <div className="max-w-3xl mx-auto mt-10 p-4">
@@ -47,29 +65,38 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
       <div className="card p-6 md:p-8">
         <div className="mb-6">
-          <span className="inline-block px-3 py-1 bg-aws-blue text-white text-xs font-semibold rounded-full mb-4">
+          <span className="inline-block px-3 py-1 bg-aws-blue text-white text-xs font-semibold rounded-full mb-4 mr-2">
             Topic: {question.topic}
           </span>
+          {question.answerType === 'multiple' && (
+             <span className="inline-block px-3 py-1 bg-aws-orange text-white text-xs font-semibold rounded-full mb-4">
+               Choose {question.correctAnswers.length}
+             </span>
+          )}
           <h3 className="text-lg md:text-xl font-medium text-gray-900 leading-relaxed">
             {question.question}
           </h3>
+          {question.answerInstruction && (
+            <p className="mt-2 text-sm text-gray-600 font-medium">{question.answerInstruction}</p>
+          )}
         </div>
 
         <div className="space-y-3 mb-8">
-          {(["A", "B", "C", "D"] as const).map(letter => (
+          {Object.keys(question.options).map(letter => (
             <AnswerOption
               key={letter}
               letter={letter}
               text={question.options[letter]}
-              selected={selectedAnswer === letter}
-              onSelect={setSelectedAnswer}
+              selected={selectedAnswers.includes(letter)}
+              onSelect={handleSelect}
               disabled={isSubmitted}
+              type={question.answerType === 'multiple' ? 'checkbox' : 'radio'}
             />
           ))}
         </div>
 
-        {isSubmitted && selectedAnswer && (
-          <Explanation question={question} userAnswer={selectedAnswer} />
+        {isSubmitted && selectedAnswers.length > 0 && (
+          <Explanation question={question} userAnswer={selectedAnswers} />
         )}
       </div>
 
@@ -85,7 +112,7 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
         {!isSubmitted ? (
           <button 
             onClick={handleSubmit} 
-            disabled={!selectedAnswer}
+            disabled={isSubmitDisabled}
             className="btn-primary"
           >
             Submit Answer

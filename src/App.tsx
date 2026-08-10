@@ -42,9 +42,13 @@ function App() {
     }
   };
 
-  const handleAnswerSubmit = (answer: "A" | "B" | "C" | "D") => {
+  const handleAnswerSubmit = (answer: string[]) => {
     const currentQ = examState.questions[examState.currentQuestionIndex];
-    const isCorrect = currentQ.correctAnswer === answer;
+    
+    // Check if the lengths match and every selected answer is in the correctAnswers array
+    const isCorrect = 
+      answer.length === currentQ.correctAnswers.length &&
+      answer.every(a => currentQ.correctAnswers.includes(a));
     
     setExamState(prev => ({
       ...prev,

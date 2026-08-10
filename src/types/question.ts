@@ -1,28 +1,22 @@
 export interface Question {
   id: string;
+  exam: string;
   question: string;
-  options: {
-    A: string;
-    B: string;
-    C: string;
-    D: string;
-  };
-  correctAnswer: "A" | "B" | "C" | "D";
+  answerType: "single" | "multiple";
+  answerInstruction: string;
+  options: Record<string, string>;
+  correctAnswers: string[];
   explanation: string;
-  whyOthersAreWrong?: {
-    A?: string;
-    B?: string;
-    C?: string;
-    D?: string;
-  };
+  whyOthersAreWrong?: Record<string, string>;
   topic: string;
   tags: string[];
+  learningObjective?: string;
 }
 
 export interface ExamState {
   questions: Question[];
   currentQuestionIndex: number;
-  answers: Record<string, "A" | "B" | "C" | "D">;
+  answers: Record<string, string[]>;
   submittedQuestions: Record<string, boolean>; // true if correct, false if wrong
   score: number;
   phase: "setup" | "exam" | "result" | "review";
