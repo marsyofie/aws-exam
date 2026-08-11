@@ -1,0 +1,632 @@
+[
+    {
+        "id": "saa-021",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs a legacy TCP-based application that its partners connect to directly. Partner firewalls require the application's endpoint to use a small set of static IP addresses for allow-listing, and the application needs extremely low latency with the original client source IP preserved without additional configuration. The application handles a very high volume of connections per second. The company is migrating away from a self-managed load balancer and wants an AWS-native replacement. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Application Load Balancer with sticky sessions enabled",
+            "B": "Network Load Balancer with Elastic IP addresses assigned to each subnet",
+            "C": "Classic Load Balancer configured in TCP mode",
+            "D": "Deploy Amazon CloudFront in front of the application"
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Network Load Balancer operates at the transport layer, supports assigning a static Elastic IP address per Availability Zone/subnet, preserves the original client source IP by default, and is built to handle very high connection volumes with extremely low latency, directly satisfying the static-IP, source-IP-preservation, and performance requirements.",
+        "whyOthersAreWrong": {
+            "A": "ALB operates at Layer 7 and does not support static Elastic IP addresses per subnet; sticky sessions address session affinity, not the static-IP allow-listing requirement.",
+            "C": "Classic Load Balancer is a legacy load balancer type that does not support assigning static Elastic IP addresses, so it cannot meet the firewall allow-listing requirement.",
+            "D": "CloudFront is a content delivery network designed for HTTP/HTTPS content distribution and is not intended for arbitrary TCP protocol traffic requiring static IPs for firewall allow-listing."
+        },
+        "learningObjective": "Select the load balancer type that provides static IP addresses and preserves TCP semantics for a non-HTTP workload.",
+        "topic": "Elastic Load Balancing",
+        "tags": [
+            "NLB",
+            "ELB",
+            "networking",
+            "static-IP"
+        ]
+    },
+    {
+        "id": "saa-022",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An e-commerce application backed by an Amazon RDS for MySQL DB instance has a product catalog page that receives the same read queries repeatedly from thousands of concurrent users. The underlying data changes infrequently. The repeated queries are driving high CPU utilization on the primary DB instance. The company wants to reduce database load and serve these repeated reads with sub-millisecond latency, without modifying the database engine or rewriting the application's data access layer. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable Amazon DynamoDB Accelerator (DAX) in front of the DB instance",
+            "B": "Add RDS read replicas and route catalog reads to them",
+            "C": "Deploy Amazon ElastiCache for Redis as a cache layer in front of the read queries, with the application checking the cache before querying RDS",
+            "D": "Increase the RDS instance to a larger instance class to handle more read throughput"
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "ElastiCache for Redis lets the application store the results of frequently repeated, rarely changing queries in an in-memory cache, serving subsequent identical requests with sub-millisecond latency and removing that load from the database entirely, which best fits a repeated-read, infrequently-changing data pattern.",
+        "whyOthersAreWrong": {
+            "A": "DAX is an in-memory cache specifically for Amazon DynamoDB tables and is not compatible with Amazon RDS for MySQL.",
+            "B": "Read replicas increase read capacity, but every replica still executes the same repeated query against the database engine each time, so it does not eliminate the redundant computation the way a cache does, and it adds ongoing replica cost and replication lag.",
+            "D": "A larger instance class increases cost and only delays hitting the same CPU bottleneck as traffic grows, without specifically targeting the repeated-read pattern."
+        },
+        "learningObjective": "Select a caching solution that reduces database load for frequently repeated, infrequently changing read queries.",
+        "topic": "Amazon ElastiCache",
+        "tags": [
+            "ElastiCache",
+            "caching",
+            "RDS",
+            "performance"
+        ]
+    },
+    {
+        "id": "saa-023",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An online multiplayer gaming company runs UDP-based game servers on EC2 instances behind Network Load Balancers in multiple AWS Regions. Players report inconsistent latency, and the company wants traffic automatically routed to a healthy Region. Game clients hardcode server IP addresses, so the company needs a small set of static IP addresses that never change, and the solution must support both TCP and UDP traffic. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Deploy Amazon CloudFront in front of the NLBs in each Region",
+            "B": "Configure AWS Global Accelerator with endpoint groups pointing to the NLB in each Region",
+            "C": "Use Route 53 latency-based routing to the NLB in each Region",
+            "D": "Deploy an Application Load Balancer in each Region and use Route 53 geolocation routing"
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "AWS Global Accelerator provides two static anycast IP addresses that never change, supports both TCP and UDP traffic, routes traffic over the AWS global network for improved and more consistent latency, and automatically shifts traffic to healthy endpoint groups without depending on DNS TTL expiry, directly meeting all stated requirements.",
+        "whyOthersAreWrong": {
+            "A": "CloudFront is designed for HTTP/HTTPS content delivery and does not support arbitrary UDP game traffic.",
+            "C": "Route 53 latency-based routing operates at the DNS level and depends on DNS resolution and caching by clients, so it does not provide static anycast IP addresses and reacts to endpoint health more slowly than Global Accelerator.",
+            "D": "Application Load Balancer operates at Layer 7 and does not support UDP traffic, which the game servers require."
+        },
+        "learningObjective": "Select a networking solution that provides static IP addresses and low-latency, multi-Region routing for non-HTTP TCP/UDP workloads.",
+        "topic": "AWS Global Accelerator",
+        "tags": [
+            "Global-Accelerator",
+            "networking",
+            "multi-region",
+            "UDP",
+            "latency"
+        ]
+    },
+    {
+        "id": "saa-024",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A serverless application uses AWS Lambda functions that connect directly to an Amazon RDS for MySQL DB instance. During traffic spikes, Lambda concurrency scales rapidly, and the database begins rejecting connections with 'too many connections' errors. The company wants to reduce these connection failures without switching to a different database engine and without building or operating a custom connection-pooling fleet. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Increase the RDS max_connections parameter to the highest possible value",
+            "B": "Configure a target tracking scaling policy on the RDS DB instance",
+            "C": "Deploy Amazon RDS Proxy in front of the DB instance and update the Lambda functions to connect through the proxy endpoint",
+            "D": "Convert the Lambda functions to run inside an Auto Scaling group of EC2 instances behind an Application Load Balancer"
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "RDS Proxy is a fully managed connection pooler that sits between application clients and the database, multiplexing many short-lived Lambda connections into a smaller, efficient pool of actual database connections, which directly resolves connection exhaustion during Lambda concurrency spikes without requiring custom pooling infrastructure.",
+        "whyOthersAreWrong": {
+            "A": "max_connections is bounded by the instance class's available memory and cannot scale indefinitely with Lambda concurrency; raising it too high can also destabilize database performance.",
+            "B": "RDS DB instances do not support a target tracking scaling policy for managing connection counts in this manner; this concept applies to Auto Scaling groups and does not solve a connection-pooling problem.",
+            "D": "Moving from Lambda to EC2 behind an ALB is a major architectural redesign of the compute layer and does not, by itself, solve database connection pooling."
+        },
+        "learningObjective": "Use RDS Proxy to resolve database connection exhaustion caused by highly concurrent, short-lived Lambda invocations.",
+        "topic": "Amazon RDS Proxy",
+        "tags": [
+            "RDS-Proxy",
+            "Lambda",
+            "RDS",
+            "connection-pooling",
+            "serverless"
+        ]
+    },
+    {
+        "id": "saa-025",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An ECS-based application connects to an Amazon RDS for MySQL DB instance. The security team requires that the database credentials rotate automatically every 30 days with no custom rotation code to build or maintain, and the application must retrieve the current credential at runtime without requiring a redeployment when it rotates. The team already uses SSM Parameter Store for non-sensitive configuration values. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Store the database credentials in SSM Parameter Store as a SecureString parameter and manually update it every 30 days",
+            "B": "Store the database credentials in AWS Secrets Manager and enable the built-in RDS rotation",
+            "C": "Store the database credentials in an S3 bucket encrypted with SSE-KMS and reference the object from the ECS task definition",
+            "D": "Hardcode the database credentials into the container image and rebuild the image every 30 days"
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "AWS Secrets Manager provides native, built-in rotation support for Amazon RDS credentials using an AWS-managed rotation Lambda function template, requiring no custom rotation code, while the application retrieves the current secret value at runtime via the Secrets Manager API without needing redeployment when the credential changes.",
+        "whyOthersAreWrong": {
+            "A": "SSM Parameter Store SecureString supports encryption but has no built-in automatic rotation for RDS credentials; the manual update process contradicts the automatic-rotation requirement.",
+            "C": "Storing credentials as an S3 object is not a supported or recommended secrets-management pattern and provides no automated rotation capability.",
+            "D": "Hardcoding credentials into the container image is an insecure anti-pattern and requires rebuilding and redeploying the image every rotation cycle, violating the no-redeployment requirement."
+        },
+        "learningObjective": "Use AWS Secrets Manager's native rotation capability to automatically rotate database credentials without custom code or redeployment.",
+        "topic": "AWS Secrets Manager",
+        "tags": [
+            "Secrets-Manager",
+            "RDS",
+            "rotation",
+            "security"
+        ]
+    },
+    {
+        "id": "saa-026",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media company must retain a copy of every newly uploaded object in an Amazon S3 bucket in a second AWS Region within minutes, to support regulatory disaster recovery requirements. Objects already in the bucket do not need to be copied retroactively. The company wants this to require minimal ongoing operational effort. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable S3 Cross-Region Replication (CRR) on the bucket, configured to replicate new objects to a bucket in the second Region",
+            "B": "Configure a scheduled AWS Lambda function that copies new objects nightly using the S3 API",
+            "C": "Enable S3 Versioning only, without replication, since versioning provides Regional durability",
+            "D": "Use AWS Backup to take daily backups of the S3 bucket and restore them in the second Region if needed"
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "S3 Cross-Region Replication is a managed feature that automatically and asynchronously replicates newly uploaded objects to a bucket in a different Region, typically within minutes, requiring no custom scheduling logic and satisfying both the near-real-time and low-operational-effort requirements.",
+        "whyOthersAreWrong": {
+            "B": "A nightly custom Lambda copy job requires ongoing development and maintenance and introduces a delay far beyond a few minutes, failing both the timeliness and low-effort requirements.",
+            "C": "S3 Versioning protects against accidental overwrites and deletions within a Region but does not replicate objects to another Region.",
+            "D": "Daily AWS Backup jobs introduce up to a 24-hour gap between recovery points, and restoring requires a manual action during a disaster, failing the minutes-level replication requirement."
+        },
+        "learningObjective": "Select the S3 feature that automatically and near-instantly replicates new objects to a second Region for disaster recovery.",
+        "topic": "Amazon S3 Replication",
+        "tags": [
+            "S3",
+            "cross-region-replication",
+            "disaster-recovery"
+        ]
+    },
+    {
+        "id": "saa-027",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An engineering team maintains a large set of production-tested Kubernetes manifests and Helm charts for a microservices application currently running on-premises. The company wants to migrate this application to AWS with the least amount of rework to its existing deployment tooling and manifests, while offloading management of the Kubernetes control plane to AWS. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Re-platform the application to run on Amazon ECS with Fargate, rewriting the workload definitions as ECS task definitions",
+            "B": "Deploy Amazon EKS and continue using the existing Kubernetes manifests and Helm charts with minimal modification",
+            "C": "Deploy the application on self-managed Kubernetes running on EC2 instances configured with kubeadm",
+            "D": "Rewrite the application as individual AWS Lambda functions triggered by API Gateway"
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Amazon EKS provides a managed Kubernetes control plane while remaining compatible with standard Kubernetes manifests, custom resource definitions, and Helm charts, allowing the team to reuse its existing deployment tooling largely unchanged while AWS handles control plane operations, patching, and availability.",
+        "whyOthersAreWrong": {
+            "A": "ECS uses its own task definition format, incompatible with Kubernetes manifests and Helm charts, requiring the team to rewrite all deployment artifacts, contradicting the minimal-rework requirement.",
+            "C": "Self-managed Kubernetes on EC2 keeps the manifests compatible, but the team would still be responsible for operating, patching, and scaling the control plane itself, contradicting the requirement to offload control plane management.",
+            "D": "Rewriting a microservices application as individual Lambda functions is a substantial refactor requiring significant redevelopment effort, contradicting the minimal-rework requirement."
+        },
+        "learningObjective": "Select a managed container orchestration platform that preserves compatibility with existing Kubernetes tooling while offloading control plane operations.",
+        "topic": "Amazon EKS",
+        "tags": [
+            "EKS",
+            "Kubernetes",
+            "containers",
+            "migration"
+        ]
+    },
+    {
+        "id": "saa-028",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An order fulfillment process involves five sequential steps, each implemented as a separate AWS Lambda function, including external API calls that occasionally fail transiently and conditional branching based on intermediate results. The team wants a built-in visual view of each execution's progress, automatic retries with exponential backoff for transient failures, and the ability to define this workflow without writing custom state-tracking logic inside each Lambda function. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Chain the Lambda functions together with direct synchronous invocations, where each function invokes the next upon success",
+            "B": "Use Amazon EventBridge rules to trigger each Lambda function in sequence based on custom events emitted by the previous function",
+            "C": "Use AWS Step Functions to define a state machine that orchestrates the Lambda function invocations, including retry and error-handling logic",
+            "D": "Use an SQS queue between each pair of Lambda functions to pass output from one function to the next"
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "AWS Step Functions lets the team define the workflow as a declarative state machine with built-in retry policies, catch/error-handling states, and conditional branching, along with a visual execution history in the console, eliminating the need for custom state-tracking code inside each Lambda function.",
+        "whyOthersAreWrong": {
+            "A": "Direct synchronous invocation chains tightly couple the functions and require custom retry and error-handling logic to be written inside the code, with no built-in visual execution tracking.",
+            "B": "EventBridge decouples triggers via events but provides no built-in state machine, visual per-execution history, or native step-to-step retry and error-handling orchestration; additional custom logic would still be needed.",
+            "D": "Chaining via SQS queues decouples the functions, but each function still needs custom logic to track workflow state, handle branching, and implement retries, and there is no built-in visual state tracking."
+        },
+        "learningObjective": "Select AWS Step Functions to orchestrate multi-step, conditional workflows with built-in retry logic and execution visibility.",
+        "topic": "AWS Step Functions",
+        "tags": [
+            "Step-Functions",
+            "Lambda",
+            "orchestration",
+            "serverless"
+        ]
+    },
+    {
+        "id": "saa-029",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial trading platform requires a Recovery Time Objective (RTO) of 15 minutes and a Recovery Point Objective (RPO) of 5 minutes if its primary Region becomes unavailable. The company has determined that running full duplicate production capacity continuously in a second Region (active-active) is considered too costly for an event expected to occur rarely. Which disaster recovery strategy is MOST appropriate?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Backup and restore - back up data periodically and provision infrastructure from scratch in the DR Region only when a disaster occurs",
+            "B": "Pilot light - keep only core data services, such as a replicated database, running in the DR Region, with application servers stopped until needed",
+            "C": "Warm standby - run a scaled-down but fully functional version of the full application stack continuously in the DR Region, ready to scale up on failover",
+            "D": "Active-active - run full production capacity simultaneously in both Regions at all times"
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "Warm standby keeps a scaled-down but complete application stack already running in the DR Region, so failover only requires scaling up existing capacity rather than provisioning new servers from scratch, which reliably fits inside a 15-minute RTO and a 5-minute RPO, while costing significantly less than running full duplicate capacity continuously.",
+        "whyOthersAreWrong": {
+            "A": "Backup and restore has the longest recovery time of the DR strategies, since infrastructure must be provisioned from scratch during the disaster, and it would likely exceed both the 15-minute RTO and 5-minute RPO.",
+            "B": "Pilot light keeps only core data services running while application servers still need to be launched and configured during failover, introducing provisioning delay that risks exceeding the tight 15-minute RTO.",
+            "D": "Active-active would comfortably meet the RTO and RPO but requires running full duplicate production capacity continuously, which the scenario states is considered too costly for this use case."
+        },
+        "learningObjective": "Design a database architecture that satisfies the required RPO and RTO.",
+        "topic": "Disaster Recovery Strategies",
+        "tags": [
+            "disaster-recovery",
+            "RTO",
+            "RPO",
+            "warm-standby",
+            "multi-region"
+        ]
+    },
+    {
+        "id": "saa-030",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A SaaS company's primary Amazon Aurora MySQL cluster runs in us-east-1. The company wants a secondary Region with a Recovery Point Objective under 1 second for disaster recovery, and it also wants users in Europe to have low-latency read access to a local replica, without adding significant application logic for cross-Region replication. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure standard Aurora cross-Region read replicas manually in the European Region",
+            "B": "Create an Aurora Global Database with the primary cluster in us-east-1 and a secondary cluster in the European Region",
+            "C": "Use AWS DMS to continuously replicate data from Aurora in us-east-1 to a separate Aurora cluster in the European Region",
+            "D": "Enable Aurora Multi-AZ within us-east-1 only and rely on Route 53 latency routing to serve European users"
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Aurora Global Database uses dedicated, purpose-built storage-level replication infrastructure that typically replicates data to secondary Regions in under 1 second, and it provides a secondary cluster in Europe that can serve low-latency local reads, meeting both the DR and read-latency requirements with minimal application changes.",
+        "whyOthersAreWrong": {
+            "A": "Standard Aurora cross-Region read replicas (outside of Global Database) typically exhibit noticeably higher replication lag than Aurora Global Database's dedicated replication path, making a sub-1-second RPO unreliable.",
+            "C": "DMS-based replication adds an additional service to build, monitor, and maintain, and generally introduces higher replication lag than Aurora Global Database's purpose-built cross-Region replication.",
+            "D": "Multi-AZ only protects against an Availability Zone failure within a single Region and does nothing to provide low-latency reads for European users or protect against a Regional outage."
+        },
+        "learningObjective": "Select the Aurora architecture that provides sub-second cross-Region replication for both disaster recovery and low-latency reads.",
+        "topic": "Amazon Aurora",
+        "tags": [
+            "Aurora",
+            "Aurora-Global-Database",
+            "disaster-recovery",
+            "multi-region",
+            "replication"
+        ]
+    },
+    {
+        "id": "saa-031",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company uses AWS Organizations with several member accounts. The security team must ensure that no IAM principal in any member account, including that account's own administrators, can disable or delete the organization's centralized CloudTrail trail, even if that principal holds full administrator permissions within their own account. Which solution meets this requirement?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Attach an IAM permissions boundary to every IAM role in each member account that denies CloudTrail actions",
+            "B": "Create a Service Control Policy (SCP) at the organization level that denies CloudTrail:StopLogging and CloudTrail:DeleteTrail actions, and attach it to the relevant organizational unit",
+            "C": "Enable AWS Config rules in each member account to flag CloudTrail changes after they occur",
+            "D": "Grant CloudTrail administration permissions only to a single IAM user in the management account and rely on that user to monitor account activity"
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "A Service Control Policy applies an organization-wide permissions guardrail that even an account administrator cannot override from within their own account; an explicit SCP Deny on CloudTrail:StopLogging and CloudTrail:DeleteTrail blocks those actions in every affected account regardless of the IAM permissions granted locally.",
+        "whyOthersAreWrong": {
+            "A": "Permissions boundaries must be attached to every individual IAM principal and can themselves be modified or removed by an account administrator with sufficient IAM permissions in that account, so they do not provide a centrally enforced, unbypassable restriction.",
+            "C": "AWS Config rules can only detect and report that CloudTrail was already disabled or deleted; this is a detective control applied after the fact, not a preventive one, and does not meet the requirement to prevent the action.",
+            "D": "Restricting permissions to a single user still relies on IAM policy within each account and can be altered by an account administrator with sufficient permissions; it does not create an organization-wide guardrail that overrides account-level access."
+        },
+        "learningObjective": "Use a Service Control Policy to enforce an organization-wide guardrail that account administrators cannot override.",
+        "topic": "AWS Organizations",
+        "tags": [
+            "Organizations",
+            "SCP",
+            "CloudTrail",
+            "security",
+            "governance"
+        ]
+    },
+    {
+        "id": "saa-032",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An application writes error logs to Amazon CloudWatch Logs. The operations team wants to be notified by email within a few minutes whenever the application logs more than 10 occurrences of the string 'ERROR' within a 5-minute period, without building a custom log-processing pipeline. Which solution meets this requirement?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create a CloudWatch Logs metric filter that matches the 'ERROR' pattern, then create a CloudWatch alarm on the resulting metric that publishes to an SNS topic when the threshold is exceeded",
+            "B": "Export the CloudWatch Logs to S3 every hour and run an Amazon Athena query to count error occurrences, then email results manually",
+            "C": "Create an EventBridge rule that triggers on every PutLogEvents API call and forwards each event to an SNS topic",
+            "D": "Configure AWS Config to monitor the CloudWatch Logs log group and send a notification when non-compliant resources are detected"
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "A CloudWatch Logs metric filter converts matching log patterns into a numeric CloudWatch metric, and a CloudWatch alarm on that metric can evaluate the 10-occurrences-in-5-minutes threshold and publish directly to an SNS topic for email notification, all using native, managed capabilities with no custom pipeline.",
+        "whyOthersAreWrong": {
+            "B": "Hourly exports and manual Athena queries introduce far more than a few minutes of delay and require manual effort each time, failing both the timeliness and automation requirements.",
+            "C": "EventBridge does not natively receive or pattern-match the text content of individual log lines from PutLogEvents API calls, so it cannot count occurrences of a specific string like 'ERROR'.",
+            "D": "AWS Config evaluates resource configuration compliance against rules, not log message content, so it cannot detect a text pattern occurring within application logs."
+        },
+        "learningObjective": "Configure CloudWatch Logs metric filters and alarms to generate near-real-time notifications from log content.",
+        "topic": "Amazon CloudWatch",
+        "tags": [
+            "CloudWatch",
+            "CloudWatch-Logs",
+            "monitoring",
+            "alerting",
+            "SNS"
+        ]
+    },
+    {
+        "id": "saa-033",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A public-facing e-commerce application behind CloudFront and an Application Load Balancer has recently experienced both application-layer attacks, such as SQL injection attempts, and a large volumetric DDoS attack that caused a brief outage. The company wants managed protection against both attack types, along with visibility into cost protection during future large-scale DDoS events. Which two actions should the company take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable AWS WAF on the CloudFront distribution with managed rule groups to block common web application exploits",
+            "B": "Enable AWS Shield Advanced on the CloudFront distribution and ALB for enhanced DDoS protection and cost protection during attacks",
+            "C": "Configure Amazon GuardDuty to automatically block malicious IP addresses at the CloudFront edge",
+            "D": "Create a custom network ACL rule that blocks all inbound traffic from outside the company's known IP ranges",
+            "E": "Enable AWS Shield Standard only, since it already provides equivalent protection to Shield Advanced at no additional cost"
+        },
+        "correctAnswers": [
+            "A",
+            "B"
+        ],
+        "explanation": "AWS WAF with managed rule groups inspects and blocks common application-layer exploits such as SQL injection at the edge, directly addressing the web application attacks. AWS Shield Advanced adds enhanced, more sophisticated DDoS mitigation on top of the automatic protection already provided by Shield Standard, and it includes cost protection against scaling charges incurred during a DDoS event, which the company specifically wants visibility into.",
+        "whyOthersAreWrong": {
+            "C": "GuardDuty is a threat detection service that generates findings based on suspicious activity; it does not automatically block traffic at the CloudFront edge on its own without additional integration and is not itself a mitigation control.",
+            "D": "Blocking all traffic outside the company's known IP ranges would also block legitimate customers accessing a public e-commerce site from arbitrary IP addresses, breaking normal application access.",
+            "E": "Shield Standard is included automatically at no cost but provides only baseline network and transport layer DDoS protection; it lacks the advanced mitigation capabilities and cost protection against attack-related scaling charges that Shield Advanced provides."
+        },
+        "learningObjective": "Select the AWS services that provide layered protection against both application-layer exploits and volumetric DDoS attacks.",
+        "topic": "AWS WAF and Shield",
+        "tags": [
+            "WAF",
+            "Shield-Advanced",
+            "DDoS",
+            "security",
+            "CloudFront"
+        ]
+    },
+    {
+        "id": "saa-034",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs a production service on Amazon ECS with Fargate behind an Application Load Balancer. The team wants new deployments to shift traffic gradually to the new task set and automatically roll back to the previous version if application error rates increase during the deployment, without manual intervention. Which two actions should the solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Configure an AWS CodeDeploy blue/green deployment for the ECS service, using a second target group for the new task set",
+            "B": "Create a CloudWatch alarm on the application's error rate metric and associate it with the CodeDeploy deployment group to trigger automatic rollback",
+            "C": "Configure the ECS service to use the rolling update deployment type with minimum healthy percent set to 100",
+            "D": "Manually monitor the ECS console during each deployment and stop the deployment if errors are observed",
+            "E": "Configure Amazon CloudWatch Synthetics canaries to run once every 24 hours to detect deployment issues"
+        },
+        "correctAnswers": [
+            "A",
+            "B"
+        ],
+        "explanation": "CodeDeploy blue/green deployment for ECS provisions a second target group for the new task set and shifts traffic to it, while a CloudWatch alarm associated with the deployment group can automatically trigger a rollback to the previous task set if the error-rate metric breaches its threshold during the deployment, satisfying both the gradual traffic shift and automatic rollback requirements.",
+        "whyOthersAreWrong": {
+            "C": "The ECS rolling update deployment type replaces tasks in place using a single target group and does not provide traffic-shifting between old and new versions or metric-driven automatic rollback the way CodeDeploy blue/green does.",
+            "D": "Manual monitoring requires constant human attention during every deployment and does not meet the requirement for automatic rollback without manual intervention.",
+            "E": "Canaries running once every 24 hours are far too infrequent to detect an error-rate spike during a deployment that typically completes within minutes, so they would not trigger a timely rollback."
+        },
+        "learningObjective": "Configure automated, metric-driven rollback for an ECS blue/green deployment to reduce release risk.",
+        "topic": "Amazon ECS Deployment Strategies",
+        "tags": [
+            "ECS",
+            "CodeDeploy",
+            "blue-green",
+            "deployment",
+            "rollback"
+        ]
+    },
+    {
+        "id": "saa-035",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "EC2 instances run in a private subnet with no NAT gateway. An application on these instances retrieves a database password from AWS Secrets Manager, and the secret is encrypted with a customer managed KMS key. All calls made to retrieve and decrypt the secret must stay on the AWS network and must not traverse the internet. Which two actions should the solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Create an interface VPC endpoint for AWS Secrets Manager in the VPC",
+            "B": "Create an interface VPC endpoint for AWS KMS in the VPC",
+            "C": "Create a gateway VPC endpoint for AWS Secrets Manager and add a route to it in the subnet route table",
+            "D": "Deploy a NAT gateway so the instances can reach both the Secrets Manager and KMS public endpoints",
+            "E": "Store the KMS key material directly on the EC2 instance to avoid needing to call the KMS API"
+        },
+        "correctAnswers": [
+            "A",
+            "B"
+        ],
+        "explanation": "Both AWS Secrets Manager and AWS KMS are accessed through interface VPC endpoints backed by AWS PrivateLink. Creating interface endpoints for both services keeps the GetSecretValue call and the associated Decrypt call entirely on the AWS network, satisfying the requirement that neither call traverse the internet.",
+        "whyOthersAreWrong": {
+            "C": "Secrets Manager is only supported through an interface VPC endpoint; there is no gateway endpoint type for Secrets Manager, since only Amazon S3 and DynamoDB support gateway endpoints.",
+            "D": "A NAT gateway would allow reaching both services, but that traffic would traverse the internet via the internet gateway, directly violating the requirement that calls stay on the AWS network.",
+            "E": "KMS key material for customer managed keys cannot be extracted or exported from the KMS service by design; this option describes something AWS does not support and would also be a serious security anti-pattern."
+        },
+        "learningObjective": "Identify which AWS services require interface VPC endpoints to enable fully private API access from an isolated subnet.",
+        "topic": "VPC Endpoints",
+        "tags": [
+            "VPC-Endpoints",
+            "Secrets-Manager",
+            "KMS",
+            "PrivateLink",
+            "networking"
+        ]
+    },
+    {
+        "id": "saa-036",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company has an AWS Direct Connect connection between its data center and its VPC to support latency-sensitive, high-throughput data replication. The company wants to ensure that connectivity to AWS is not lost if the Direct Connect connection fails, while keeping the additional monthly cost of the backup path low. Which two actions should the solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Configure a Site-to-Site VPN connection over the internet as a backup path, with routing configured so it is used only if Direct Connect becomes unavailable",
+            "B": "Provision a second, fully redundant Direct Connect connection through a different Direct Connect location as the only backup mechanism",
+            "C": "Configure Border Gateway Protocol (BGP) with appropriate route priorities so traffic automatically fails over to the VPN path if the Direct Connect connection goes down",
+            "D": "Rely on Route 53 health checks to redirect traffic to an S3 bucket if Direct Connect fails",
+            "E": "Disable BGP and use only static routes, manually updating them if the Direct Connect connection fails"
+        },
+        "correctAnswers": [
+            "A",
+            "C"
+        ],
+        "explanation": "A Site-to-Site VPN over the internet provides a much lower-cost backup path than a second Direct Connect connection. Configuring BGP with appropriate route priorities allows routes to automatically prefer Direct Connect when it is available and fail over to the VPN path when it is not, achieving automatic failover without manual intervention.",
+        "whyOthersAreWrong": {
+            "B": "A second Direct Connect connection provides strong redundancy but at significantly higher recurring cost than a VPN backup, conflicting with the requirement to keep the backup path's cost low.",
+            "D": "Route 53 health checks and S3 are unrelated to restoring private network connectivity between a data center and a VPC and do not address the Direct Connect failover requirement.",
+            "E": "Disabling BGP and relying on manual static route updates removes the ability to fail over automatically, requiring manual intervention during an outage, which conflicts with the goal of not losing connectivity."
+        },
+        "learningObjective": "Design a cost-effective, automatically failing-over backup path for a Direct Connect connection.",
+        "topic": "AWS Direct Connect",
+        "tags": [
+            "Direct-Connect",
+            "VPN",
+            "hybrid-connectivity",
+            "BGP",
+            "disaster-recovery"
+        ]
+    },
+    {
+        "id": "saa-037",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A VPC spans two Availability Zones, each with a private subnet containing application servers. Currently, a single NAT gateway deployed in one Availability Zone provides outbound internet access for both private subnets. The company has identified this as a single point of failure and wants outbound connectivity in each Availability Zone to continue functioning if the other Availability Zone becomes unavailable. Which two actions should the solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Deploy an additional NAT gateway in the second Availability Zone's public subnet",
+            "B": "Update the private subnet route table in the second Availability Zone to send internet-bound traffic to the NAT gateway deployed in that same Availability Zone",
+            "C": "Configure the existing NAT gateway with a second Elastic IP address to serve both Availability Zones",
+            "D": "Replace both private subnets' route tables with a single shared route table pointing to the original NAT gateway",
+            "E": "Enable cross-zone load balancing on the NAT gateway to distribute traffic between Availability Zones"
+        },
+        "correctAnswers": [
+            "A",
+            "B"
+        ],
+        "explanation": "Deploying a NAT gateway in each Availability Zone's public subnet, and routing each Availability Zone's private subnet traffic to its own local NAT gateway, ensures that each Availability Zone has an independent outbound path that continues to function even if the other Availability Zone becomes unavailable, eliminating the single point of failure.",
+        "whyOthersAreWrong": {
+            "C": "A NAT gateway is a resource scoped to a single Availability Zone; adding a second Elastic IP address does not extend it across Availability Zones and does not remove the single point of failure.",
+            "D": "A single shared route table pointing to one NAT gateway keeps both Availability Zones dependent on that one NAT gateway, which does not resolve the single point of failure.",
+            "E": "NAT Gateway does not have a cross-zone load balancing feature; this capability belongs to Elastic Load Balancing and does not apply to NAT Gateway."
+        },
+        "learningObjective": "Eliminate a single point of failure in outbound internet connectivity by deploying a NAT gateway per Availability Zone.",
+        "topic": "NAT Gateway High Availability",
+        "tags": [
+            "NAT-Gateway",
+            "VPC",
+            "high-availability",
+            "networking"
+        ]
+    },
+    {
+        "id": "saa-038",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company plans to migrate 40 on-premises virtual machines running a legacy order-management application to EC2 with minimal downtime during cutover, and it wants to validate that the migrated instances work correctly before performing the final cutover. The migration must not require rewriting the application. Which two actions should the solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Install the AWS Application Migration Service (AWS MGN) replication agent on each on-premises VM to continuously replicate data to AWS",
+            "B": "Perform non-disruptive test launches of the replicated instances in AWS MGN to validate the migrated application before cutover",
+            "C": "Manually create new EC2 instances from scratch and reinstall the application and restore data from a recent backup during a scheduled maintenance window",
+            "D": "Refactor the application into containers before migrating, to take advantage of ECS scalability",
+            "E": "Use AWS Database Migration Service (DMS) to migrate the entire virtual machine, including the operating system and application binaries"
+        },
+        "correctAnswers": [
+            "A",
+            "B"
+        ],
+        "explanation": "AWS MGN continuously replicates on-premises server data at the block level to AWS, keeping replicated instances up to date and enabling a short cutover window. Its non-disruptive test launch capability lets the team validate the migrated application in an isolated environment without affecting ongoing replication or the source servers, satisfying both the minimal-downtime and pre-cutover-validation requirements without rewriting the application.",
+        "whyOthersAreWrong": {
+            "C": "Manually rebuilding instances and restoring from a backup during a scheduled maintenance window creates extended downtime during cutover and significant manual effort, failing the minimal-downtime goal.",
+            "D": "Refactoring the application into containers is a significant redesign effort that contradicts the requirement not to rewrite the application.",
+            "E": "AWS DMS is designed for database migration, not for migrating entire virtual machines including the operating system and application binaries; AWS MGN is the appropriate service for this type of server rehosting."
+        },
+        "learningObjective": "Use AWS Application Migration Service to rehost on-premises servers with minimal downtime and pre-cutover validation.",
+        "topic": "AWS Application Migration Service",
+        "tags": [
+            "MGN",
+            "migration",
+            "rehost",
+            "disaster-recovery",
+            "EC2"
+        ]
+    },
+    {
+        "id": "saa-039",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company using AWS Organizations with a dedicated security account wants to establish a baseline so that every member account is continuously monitored for malicious activity, every API call across the organization is centrally logged, and even account administrators cannot disable these controls within their own accounts. Which three actions should the security team take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Enable AWS CloudTrail as an organization trail created from the management account, so it applies automatically to every member account",
+            "B": "Delegate GuardDuty administration to the security account and enable GuardDuty across all member accounts as member accounts of the organization",
+            "C": "Create a Service Control Policy that denies actions to disable, delete, or modify the organization trail and the delegated GuardDuty configuration, and attach it to the root or relevant organizational units",
+            "D": "Ask each account owner to individually enable CloudTrail and GuardDuty in their own account and to avoid disabling them",
+            "E": "Grant every developer in every member account full administrator (AdministratorAccess) permissions so that they can respond quickly to any security finding themselves"
+        },
+        "correctAnswers": [
+            "A",
+            "B",
+            "C"
+        ],
+        "explanation": "An organization trail created from the management account automatically applies to and centrally logs API activity across every current and future member account. Delegating GuardDuty administration and enabling it organization-wide ensures continuous threat detection in every account. A Service Control Policy denying the specific actions that disable or delete these controls provides an enforced, organization-wide guardrail that even an account's own administrators cannot override, meeting the tamper-resistance requirement.",
+        "whyOthersAreWrong": {
+            "D": "Relying on each account owner to individually enable and voluntarily avoid disabling these services provides no enforced, centralized guarantee, since any account administrator could still disable it at any time.",
+            "E": "Granting every developer full administrator access increases the organization's risk surface and does not help ensure logging and threat detection remain enabled; it also works against least privilege."
+        },
+        "learningObjective": "Establish an organization-wide, tamper-resistant security baseline using centralized logging, delegated threat detection, and preventive guardrails.",
+        "topic": "AWS Organizations Security Baseline",
+        "tags": [
+            "Organizations",
+            "CloudTrail",
+            "GuardDuty",
+            "SCP",
+            "multi-account",
+            "security"
+        ]
+    },
+    {
+        "id": "saa-040",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A web application runs on EC2 instances in an Auto Scaling group across two Availability Zones behind an Application Load Balancer. User sessions are currently stored in each instance's local memory. When an instance is terminated during a scale-in event or fails a health check, affected users are logged out and lose in-progress work. The company wants users to remain logged in regardless of which instance serves their requests or when an instance is replaced. Which three actions should the solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Store session state in Amazon ElastiCache (Redis) instead of in each instance's local memory",
+            "B": "Set the Auto Scaling group's health check type to ELB so that instances failing the load balancer's health checks are correctly identified as unhealthy and replaced",
+            "C": "Configure the ALB target group's health check to call an application endpoint that accurately reflects the instance's ability to serve traffic",
+            "D": "Enable ALB sticky sessions and keep session data in instance memory as the primary solution, since sticky sessions ensure a user always reaches the same instance",
+            "E": "Reduce the Auto Scaling group to a single Availability Zone so that all instances share the same local network and session behavior"
+        },
+        "correctAnswers": [
+            "A",
+            "B",
+            "C"
+        ],
+        "explanation": "Moving session state into ElastiCache decouples session data from any single instance, so a session survives instance termination or replacement regardless of which instance later handles the request. Setting the Auto Scaling group's health check type to ELB ensures instances that the load balancer considers unhealthy are correctly detected and replaced, rather than relying only on EC2 status checks. Configuring the target group health check to call an endpoint that reflects real application health ensures unhealthy instances are removed from rotation before they serve failing requests.",
+        "whyOthersAreWrong": {
+            "D": "Sticky sessions route a user to the same instance for the duration of a session but do not protect session data if that specific instance is terminated or fails, so the user is still logged out when the instance is replaced; this does not solve the underlying statelessness problem.",
+            "E": "Reducing to a single Availability Zone removes fault tolerance against an entire Availability Zone failure and does not address the requirement to preserve sessions when individual instances are replaced."
+        },
+        "learningObjective": "Design a stateless, horizontally scalable web tier that preserves user sessions across instance replacement.",
+        "topic": "High Availability Architecture",
+        "tags": [
+            "ElastiCache",
+            "Auto-Scaling",
+            "ALB",
+            "health-checks",
+            "statelessness",
+            "high-availability"
+        ]
+    }
+]
