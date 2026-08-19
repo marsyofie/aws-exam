@@ -1,0 +1,462 @@
+[
+  {
+    "id": "saa-011-01",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A data analytics pipeline runs on Amazon EC2 instances in a private subnet. The pipeline downloads 50 TB of data daily from an Amazon S3 bucket located in the same AWS Region. The Solutions Architect needs to provide the EC2 instances with access to the S3 bucket without using the public internet. The solution must minimize data transfer costs. Which approach should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy a NAT Gateway in a public subnet and route traffic through it.",
+      "B": "Create an Interface VPC Endpoint for Amazon S3 in the private subnet.",
+      "C": "Create a Gateway VPC Endpoint for Amazon S3 and associate it with the private subnet's route table.",
+      "D": "Set up an AWS Site-to-Site VPN to securely access the S3 public endpoints."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because a Gateway VPC Endpoint for Amazon S3 provides secure, private routing to S3 without traversing the public internet. Crucially, Gateway Endpoints are provided at no additional hourly charge, and data transferred through them from EC2 to S3 in the same Region is free. This is the absolute lowest-cost solution for massive data transfers.",
+    "whyOthersAreWrong": {
+      "A": "A NAT Gateway charges per GB of data processed. Transferring 50 TB daily through a NAT Gateway would incur massive, unnecessary data processing costs.",
+      "B": "An Interface VPC Endpoint (AWS PrivateLink) for S3 also works, but it incurs an hourly charge per endpoint and a per-GB data processing fee. Gateway Endpoints are free.",
+      "D": "A VPN requires internet connectivity, violating the requirement, and introduces unnecessary architectural complexity and bandwidth bottlenecks."
+    },
+    "learningObjective": "Select Gateway VPC Endpoints for Amazon S3 to minimize data transfer costs.",
+    "topic": "AWS Networking",
+    "tags": ["VPC", "VPC-Endpoint", "S3", "cost-optimization"]
+  },
+  {
+    "id": "saa-011-02",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A hospital must retain all patient medical imaging records (X-rays, MRIs) for 10 years to comply with healthcare regulations. After the first 30 days, these records are almost never accessed, except in rare legal cases where the hospital is granted up to 48 hours to produce the records. The hospital currently stores 2 Petabytes of these records in Amazon S3 Standard and wants to minimize storage costs to the absolute lowest tier possible. Which S3 storage class should be used for records older than 30 days?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon S3 Standard-Infrequent Access (S3 Standard-IA)",
+      "B": "Amazon S3 Glacier Flexible Retrieval",
+      "C": "Amazon S3 Glacier Deep Archive",
+      "D": "Amazon S3 One Zone-Infrequent Access (S3 One Zone-IA)"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because Amazon S3 Glacier Deep Archive is the absolute lowest-cost storage class in AWS. It is designed for long-term data archiving where data is rarely accessed. The standard retrieval time is within 12 hours, which easily meets the hospital's SLA of 48 hours to produce the records.",
+    "whyOthersAreWrong": {
+      "A": "S3 Standard-IA provides millisecond retrieval but is significantly more expensive than the Glacier storage classes.",
+      "B": "Glacier Flexible Retrieval provides retrieval times from minutes to 12 hours and is very cheap, but Glacier Deep Archive is even cheaper and still meets the 48-hour retrieval requirement.",
+      "D": "S3 One Zone-IA stores data in a single Availability Zone, meaning data could be lost in an AZ disaster. Medical records require high durability (multi-AZ), and Deep Archive is still cheaper."
+    },
+    "learningObjective": "Identify S3 Glacier Deep Archive as the lowest-cost storage class for long-term retention with flexible retrieval times.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "Glacier-Deep-Archive", "cost-optimization", "storage"]
+  },
+  {
+    "id": "saa-011-03",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is upgrading its database architecture from Amazon Aurora Serverless v1 to Aurora Serverless v2. The database administrators need to understand the fundamental architectural differences between the two versions to properly plan capacity and features. Which of the following accurately describes a capability unique to Aurora Serverless v2?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Aurora Serverless v2 supports scaling down to absolutely zero capacity to save costs when idle.",
+      "B": "Aurora Serverless v2 scales capacity by seamlessly adding fractional Aurora Capacity Units (ACUs) in real-time.",
+      "C": "Aurora Serverless v2 relies on a Data API for connection pooling, replacing the need for native database drivers.",
+      "D": "Aurora Serverless v2 requires the database to find a 'scaling point' (a moment with no active transactions) before it can add capacity."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct. A major differentiator of Aurora Serverless v2 is that it scales instantly in fine-grained, fractional increments (0.5 ACU intervals). It adds compute and memory capacity in place, in fractions of a second, without interrupting active transactions. This provides much smoother, faster, and more cost-efficient scaling compared to v1.",
+    "whyOthersAreWrong": {
+      "A": "Aurora Serverless v1 can scale to zero capacity when idle. Aurora Serverless v2 currently scales down to a minimum of 0.5 ACUs, but not to zero.",
+      "C": "Aurora Serverless v1 heavily featured the Data API (HTTP endpoint). While v2 now supports the Data API (as of late 2023), it is not a unique or differentiating requirement; v2 natively supports standard database drivers and RDS Proxy much better than v1.",
+      "D": "Finding a 'scaling point' (waiting for active transactions to pause) is a severe limitation of Aurora Serverless v1. V2 eliminates this limitation and scales instantly without dropping connections or waiting."
+    },
+    "learningObjective": "Differentiate the scaling mechanisms between Aurora Serverless v1 and v2.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "Serverless", "database", "architecture"]
+  },
+  {
+    "id": "saa-011-04",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company enabled S3 Versioning on an Amazon S3 bucket to protect against accidental overwrites. Users frequently update documents, resulting in hundreds of noncurrent (previous) versions of the same file. Over time, the storage costs have skyrocketed because the bucket is storing terabytes of old, superseded document versions. The company wants to retain only the 3 most recent versions of any document and automatically delete all older versions. How can this be accomplished with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Write a Lambda function triggered on every S3 `PutObject` event to count the versions and delete the oldest ones if the count exceeds 3.",
+      "B": "Configure an S3 Lifecycle rule to transition noncurrent versions to S3 Glacier Deep Archive after 1 day.",
+      "C": "Configure an S3 Lifecycle rule targeting noncurrent object versions, specifying to retain 3 newer versions, and set the expiration action.",
+      "D": "Enable S3 Object Lock in Governance mode with a retention limit of 3 versions."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because Amazon S3 Lifecycle rules natively support managing noncurrent versions. A specific feature of S3 Lifecycle allows you to specify the number of newer versions to retain (e.g., 3). You can configure the rule to permanently delete noncurrent versions, but instruct S3 to always keep the 3 newest noncurrent versions, regardless of how old they are. This requires zero custom code.",
+    "whyOthersAreWrong": {
+      "A": "Writing custom Lambda code to list, sort, and delete versions introduces massive operational overhead and S3 API costs when a native, free lifecycle rule exists.",
+      "B": "Transitioning to Glacier reduces costs but does not delete the old versions, and it doesn't limit the retention to a specific number of versions (like the 3 requested).",
+      "D": "S3 Object Lock prevents deletion based on time, not based on the number of versions."
+    },
+    "learningObjective": "Use S3 Lifecycle rules to manage and limit the number of noncurrent object versions.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "Lifecycle-Management", "versioning", "cost-optimization"]
+  },
+  {
+    "id": "saa-011-05",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A research institute is running a tightly coupled fluid dynamics simulation across a cluster of 50 Amazon EC2 instances. The simulation uses the Message Passing Interface (MPI) to communicate between nodes. The performance is currently bottlenecked by network latency and operating system network stack overhead between the instances. Which AWS feature should the Solutions Architect implement to bypass the OS network stack and achieve the lowest possible latency?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Elastic Network Adapter (ENA)",
+      "B": "Elastic Fabric Adapter (EFA)",
+      "C": "Placement Groups (Cluster)",
+      "D": "AWS Global Accelerator"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because the Elastic Fabric Adapter (EFA) is a specialized network interface for Amazon EC2 instances designed explicitly for High Performance Computing (HPC) and machine learning applications using MPI. It uses OS-bypass capabilities, meaning network traffic skips the Linux kernel network stack entirely, resulting in significantly lower latency and higher throughput for inter-instance communication.",
+    "whyOthersAreWrong": {
+      "A": "While ENA provides enhanced networking (up to 100 Gbps), it still routes traffic through the standard OS kernel network stack, which introduces latency compared to EFA.",
+      "C": "A Cluster Placement Group physically locates instances close together, which is necessary, but without EFA, the OS network stack remains a bottleneck. You use EFA *inside* a Cluster Placement Group.",
+      "D": "Global Accelerator optimizes traffic over the internet to AWS edge locations. It does not improve inter-instance communication within a VPC."
+    },
+    "learningObjective": "Select Elastic Fabric Adapter (EFA) for OS-bypass networking in HPC/MPI workloads.",
+    "topic": "Amazon EC2",
+    "tags": ["EC2", "EFA", "networking", "HPC", "performance"]
+  },
+  {
+    "id": "saa-011-06",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A hybrid cloud architecture connects an on-premises data center to an AWS VPC via AWS Direct Connect. Applications in the VPC need to resolve DNS queries for the on-premises domain `internal.company.local`. Simultaneously, on-premises servers need to resolve DNS queries for AWS resources in a private Route 53 hosted zone `aws.company.cloud`. How should the Solutions Architect configure DNS resolution to satisfy both requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a Route 53 Resolver Inbound Endpoint and an Outbound Endpoint in the VPC.",
+      "B": "Configure the on-premises DNS server to forward all queries to the VPC's default DNS server IP (VPC CIDR + 2).",
+      "C": "Create a Route 53 Public Hosted Zone for both domains.",
+      "D": "Deploy an EC2 instance running BIND DNS and configure it as the primary DNS server for both environments."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Amazon Route 53 Resolver provides native endpoints for hybrid DNS resolution. An Outbound Endpoint allows resources in the VPC to forward queries for `internal.company.local` to the on-premises DNS server. An Inbound Endpoint provides an IP address within the VPC that the on-premises DNS server can forward queries to, allowing on-premises servers to resolve `aws.company.cloud` records stored in the Route 53 private hosted zone.",
+    "whyOthersAreWrong": {
+      "B": "The VPC default DNS server (the '.2' address) is not routable from outside the VPC. The on-premises network cannot reach it directly over Direct Connect without an Inbound Endpoint acting as a proxy.",
+      "C": "Public Hosted Zones expose DNS records to the public internet, which violates the security posture of an internal, private hybrid network.",
+      "D": "Running custom BIND DNS servers on EC2 introduces significant operational overhead (patching, scaling, HA) when a fully managed service (Route 53 Resolver Endpoints) exists natively."
+    },
+    "learningObjective": "Design hybrid DNS resolution architectures using Amazon Route 53 Resolver Inbound and Outbound Endpoints.",
+    "topic": "Amazon Route 53",
+    "tags": ["Route-53", "networking", "hybrid", "DNS"]
+  },
+  {
+    "id": "saa-011-07",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company is deploying an AWS Storage Gateway File Gateway in their on-premises data center to provide local servers with SMB access to Amazon S3. The company uses an on-premises Microsoft Active Directory (AD) for user authentication. The security team requires that access to specific SMB file shares on the gateway is restricted to specific AD user groups (e.g., only the 'VideoEditors' group can write to the 'raw-footage' share). How can this be accomplished?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Join the File Gateway to the on-premises Active Directory domain and configure SMB share access settings using AD groups.",
+      "B": "Create IAM users for the VideoEditors group and map them to the File Gateway.",
+      "C": "Use Amazon Cognito to federate the on-premises AD and attach IAM roles to the S3 bucket.",
+      "D": "File Gateway only supports NFS; SMB shares with AD integration require Amazon FSx for Windows File Server."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because AWS Storage Gateway File Gateway natively supports the SMB protocol and can be directly joined to a Microsoft Active Directory domain (either on-premises or AWS Managed Microsoft AD). Once joined, you can use standard AD users and groups to configure authentication and authorization (read/write permissions) for specific SMB file shares directly on the gateway.",
+    "whyOthersAreWrong": {
+      "B": "IAM users are used for AWS API access, not for authenticating local SMB file share connections on a gateway.",
+      "C": "Amazon Cognito is for web/mobile application identity federation. It cannot authenticate legacy SMB protocol file share mounts.",
+      "D": "File Gateway explicitly supports both NFS (for Linux) and SMB (for Windows) protocols."
+    },
+    "learningObjective": "Integrate AWS Storage Gateway File Gateway (SMB) with Microsoft Active Directory for access control.",
+    "topic": "AWS Storage Gateway",
+    "tags": ["Storage-Gateway", "hybrid", "Active-Directory", "security", "SMB"]
+  },
+  {
+    "id": "saa-011-08",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A lead developer needs the ability to create new IAM roles and policies for their team's applications. However, the security team is concerned that the developer might create an IAM role with `AdministratorAccess` and assume it, effectively granting themselves full control over the AWS account (privilege escalation). How can the security team grant the developer the ability to create IAM roles while guaranteeing they cannot grant those roles more permissions than the developer themselves possesses?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach a Service Control Policy (SCP) to the developer's IAM user denying the `iam:AttachRolePolicy` action.",
+      "B": "Require the use of an IAM Permissions Boundary when the developer creates a new role.",
+      "C": "Use AWS Config to automatically delete any role created with `AdministratorAccess`.",
+      "D": "Grant the developer `iam:CreateRole` but deny `sts:AssumeRole`."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because an IAM Permissions Boundary is an advanced IAM feature designed specifically for this delegation scenario. The security team creates a policy (the boundary) defining the maximum permissions allowed (e.g., access only to S3 and DynamoDB). They then grant the developer permission to create new IAM roles, but *only if* the developer attaches that specific Permissions Boundary to the new role. This completely prevents privilege escalation.",
+    "whyOthersAreWrong": {
+      "A": "Denying `iam:AttachRolePolicy` prevents the developer from adding any policies to the roles they create, rendering the ability to create roles useless for their applications.",
+      "C": "AWS Config is reactive. The developer could create the Administrator role, assume it, and cause damage before AWS Config detects and deletes it.",
+      "D": "Denying `sts:AssumeRole` prevents the developer from testing the role, but the role could still be passed to an EC2 instance (using `iam:PassRole`) which the developer could then log into, achieving the same privilege escalation."
+    },
+    "learningObjective": "Use IAM Permissions Boundaries to securely delegate IAM role creation without risking privilege escalation.",
+    "topic": "AWS IAM",
+    "tags": ["IAM", "security", "Permissions-Boundary", "governance"]
+  },
+  {
+    "id": "saa-011-09",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company hosts a content management system (CMS) that stores all user-uploaded media on an Amazon Elastic File System (Amazon EFS). The company requires daily backups of the EFS file system. The backups must be retained for 30 days and must be protected against accidental deletion, even by AWS administrators. Which backup strategy provides the MOST robust protection with the least operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an EventBridge rule to trigger an AWS DataSync task daily to copy EFS data to an S3 bucket with Object Lock enabled.",
+      "B": "Use AWS Backup to schedule daily EFS backups and store them in an AWS Backup Vault with Vault Lock enabled.",
+      "C": "Write a cron job on an EC2 instance that runs a `tar` command on the EFS mount and uploads the archive to S3.",
+      "D": "Enable EFS Automatic Backups. Backups are natively immutable and cannot be deleted by administrators."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because AWS Backup natively integrates with Amazon EFS to provide fully managed, automated backups (recovery points). To meet the strict requirement of protecting backups against accidental or malicious deletion (even by administrators), AWS Backup Vault Lock enforces a WORM (Write-Once-Read-Many) model on the backup vault, preventing anyone from deleting the backups before their 30-day retention period expires.",
+    "whyOthersAreWrong": {
+      "A": "While DataSync to an Object Lock S3 bucket works, it requires managing DataSync tasks, monitoring logs, and dealing with file-to-object translations. AWS Backup is a centralized, native backup manager with lower overhead.",
+      "C": "Running cron jobs on EC2 is the definition of high operational overhead, prone to failure, and difficult to monitor.",
+      "D": "EFS Automatic Backups (which actually just configure a default plan in AWS Backup) do not inherently prevent administrators with sufficient IAM permissions from deleting the recovery points. Vault Lock is required for that strict immutability."
+    },
+    "learningObjective": "Secure automated backups using AWS Backup and AWS Backup Vault Lock.",
+    "topic": "AWS Backup",
+    "tags": ["AWS-Backup", "EFS", "security", "resilience"]
+  },
+  {
+    "id": "saa-011-10",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An application publishes order confirmation messages to an Amazon S3 bucket. A secondary system reads these messages from an Amazon SQS Standard queue to generate invoices. The company notices that if the invoice system processes the message immediately after it enters the queue, the invoice system sometimes fails because the corresponding data hasn't fully propagated in the company's legacy backend database. The database propagation takes about 30 seconds. How can the Solutions Architect delay the processing of ALL messages entering the queue by 30 seconds?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Set the queue's Visibility Timeout to 30 seconds.",
+      "B": "Set the queue's DelaySeconds attribute to 30 seconds (Delay Queue).",
+      "C": "Configure the invoice application to read the message, `sleep()` for 30 seconds, and then process it.",
+      "D": "Use an SQS FIFO queue with a message timer of 30 seconds."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because a Delay Queue lets you postpone the delivery of new messages to consumers for a specified number of seconds (up to 15 minutes). Setting the `DelaySeconds` attribute on the queue to 30 ensures that *every* message sent to the queue remains invisible to consumers for exactly 30 seconds, giving the legacy database time to synchronize.",
+    "whyOthersAreWrong": {
+      "A": "Visibility Timeout hides a message *after* a consumer has received it once, to prevent other consumers from grabbing it while it's being processed. It does not delay the *initial* delivery of the message.",
+      "C": "Having the application `sleep()` consumes compute resources (e.g., tying up EC2 threads or keeping a Lambda function running and billing for 30 seconds) unnecessarily. SQS Delay Queues handle this natively for free.",
+      "D": "Message timers apply a delay to *individual* messages when they are published. A Delay Queue applies the delay to *all* messages entering the queue, which is a simpler administrative configuration. Furthermore, FIFO is not strictly required here."
+    },
+    "learningObjective": "Use Amazon SQS Delay Queues to postpone message delivery across an entire queue.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "messaging", "architecture", "Delay-Queue"]
+  },
+  {
+    "id": "saa-011-11",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A startup is launching a new mobile game with a backend built on Amazon DynamoDB. The marketing team expects a massive influx of users on launch day, but they have no historical data to predict the exact database throughput required. They anticipate the traffic will be highly unpredictable for the first month before stabilizing. The startup wants to ensure the database does not throttle during the launch but also wants to avoid paying for massive over-provisioned capacity. Which DynamoDB capacity mode should they use?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Provisioned capacity with Auto Scaling configured for 10% to 100% utilization.",
+      "B": "On-Demand capacity mode.",
+      "C": "Provisioned capacity with DynamoDB Accelerator (DAX) enabled.",
+      "D": "Provisioned capacity with a very high baseline, then manually scale down after the first week."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because DynamoDB On-Demand capacity mode is specifically designed for unpredictable, new workloads with unknown traffic patterns. It instantly accommodates varying traffic levels without requiring the user to specify or manage read/write capacity units. You only pay for the exact reads and writes the application consumes.",
+    "whyOthersAreWrong": {
+      "A": "Provisioned capacity with Auto Scaling takes time (minutes) to react to sudden, massive spikes. If the game goes viral in minutes, Auto Scaling will fall behind, resulting in throttling and a poor user experience.",
+      "C": "DAX is an in-memory cache for reads. It does not solve the problem of unpredictable *write* capacity during a massive game launch (e.g., users creating accounts, saving game states).",
+      "D": "Provisioning a very high baseline guarantees no throttling, but it violates the requirement to 'avoid paying for massive over-provisioned capacity'."
+    },
+    "learningObjective": "Select DynamoDB On-Demand capacity for unpredictable workloads with unknown traffic patterns.",
+    "topic": "Amazon DynamoDB",
+    "tags": ["DynamoDB", "scaling", "cost-optimization", "performance"]
+  },
+  {
+    "id": "saa-011-12",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is hosting a web application on Amazon EC2 instances behind an Application Load Balancer (ALB). The company wants to implement two new security measures: first, authenticate all users against a corporate directory before they can access the application, and second, block requests originating from a list of known malicious IP addresses. How can the Solutions Architect implement these features natively at the edge?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure the ALB to authenticate users using an OIDC identity provider. Associate an AWS WAF Web ACL with the ALB to block the malicious IPs.",
+      "B": "Use AWS WAF on the ALB for both IP blocking and user OIDC authentication.",
+      "C": "Configure API Gateway in front of the ALB. Use API Gateway Lambda Authorizers for authentication and API Gateway resource policies for IP blocking.",
+      "D": "Implement OIDC authentication and IP blocking logic inside the EC2 application code."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Application Load Balancers natively support both requirements through distinct integrations. The ALB can be configured with a listener rule action to `Authenticate` users via OIDC (or Amazon Cognito) before forwarding traffic to the backend. Simultaneously, you can associate an AWS WAF Web ACL directly to the ALB, using an IP set match rule to block the malicious IP addresses before they even reach the authentication flow.",
+    "whyOthersAreWrong": {
+      "B": "AWS WAF cannot handle interactive user authentication flows (like OIDC OAuth redirects). It is strictly a firewall.",
+      "C": "While API Gateway can do this, placing it in front of an ALB for a standard web application introduces unnecessary architectural complexity and latency when the ALB handles both requirements natively.",
+      "D": "Implementing these features in the application code is not 'natively at the edge' and requires significant custom development overhead."
+    },
+    "learningObjective": "Combine ALB native OIDC authentication with AWS WAF for comprehensive edge security.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ALB", "WAF", "authentication", "security"]
+  },
+  {
+    "id": "saa-011-13",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A database administrator is provisioning storage for a new self-managed SQL database on an Amazon EC2 instance. The database requires 500 GB of storage and must consistently deliver 10,000 IOPS regardless of the volume size. The administrator wants to use the most cost-effective General Purpose SSD volume type. Which Amazon EBS volume configuration should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Provision a 500 GB gp2 volume. The IOPS will automatically scale to 10,000.",
+      "B": "Provision a 500 GB gp3 volume and configure the provisioned IOPS to 10,000.",
+      "C": "Provision a 500 GB io2 volume and configure the provisioned IOPS to 10,000.",
+      "D": "Provision a 3,334 GB gp2 volume to achieve 10,000 baseline IOPS, and only use 500 GB."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because the Amazon EBS gp3 volume type allows you to provision IOPS and throughput independently of the storage capacity. You can provision a 500 GB gp3 volume and explicitly set the IOPS to 10,000. It is significantly more cost-effective than io2 for general-purpose database workloads.",
+    "whyOthersAreWrong": {
+      "A": "A gp2 volume's baseline IOPS are tied directly to its size (3 IOPS per GB). A 500 GB gp2 volume only provides a baseline of 1,500 IOPS, failing the requirement.",
+      "C": "An io2 (Provisioned IOPS SSD) volume would meet the performance requirement, but the prompt asks for the most cost-effective *General Purpose SSD* volume type. io2 is significantly more expensive than gp3.",
+      "D": "Over-provisioning a gp2 volume to 3,334 GB just to get 10,000 IOPS (3,334 * 3 = ~10,000) is a wasteful, expensive legacy workaround that gp3 was specifically invented to solve."
+    },
+    "learningObjective": "Differentiate between gp2 and gp3 EBS volumes regarding independent IOPS provisioning.",
+    "topic": "Amazon EBS",
+    "tags": ["EBS", "gp3", "performance", "cost-optimization"]
+  },
+  {
+    "id": "saa-011-14",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A security engineer is investigating a potential data exfiltration event. The engineer needs to analyze VPC Flow Logs stored in Amazon S3 to find the top 10 external IP addresses that received the most bytes from a specific compromised EC2 instance over the last week. The engineer needs to write a SQL query to aggregate this data quickly. Which AWS service is BEST suited for this task?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon Redshift",
+      "B": "Amazon EMR",
+      "C": "Amazon Athena",
+      "D": "AWS CloudTrail"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because Amazon Athena is a serverless interactive query service that allows you to analyze data directly in Amazon S3 using standard SQL. It is the perfect tool for performing ad-hoc SQL queries on VPC Flow Logs stored in S3 without needing to provision or manage any database infrastructure.",
+    "whyOthersAreWrong": {
+      "A": "Amazon Redshift requires provisioning a data warehouse cluster and loading the data into it, which is too slow and heavy-handed for an immediate ad-hoc security investigation.",
+      "B": "Amazon EMR requires deploying a Hadoop/Spark cluster, which introduces significant operational overhead for a simple SQL aggregation task.",
+      "D": "CloudTrail records AWS API calls (control plane activity). It does not contain VPC Flow Logs (data plane IP traffic)."
+    },
+    "learningObjective": "Select Amazon Athena for serverless SQL analysis of VPC Flow Logs in S3.",
+    "topic": "Amazon Athena",
+    "tags": ["Athena", "VPC-Flow-Logs", "security", "analytics"]
+  },
+  {
+    "id": "saa-011-15",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is designing a microservices architecture using Amazon ECS. The workload is highly erratic, with traffic sometimes spiking from zero to thousands of requests in seconds. The primary architectural goal is to ensure the compute layer scales out as fast as absolutely possible to handle these sudden spikes. Which ECS compute strategy provides the FASTEST scale-out performance?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "ECS on AWS Fargate",
+      "B": "ECS on EC2 launch type with an Auto Scaling group of on-demand instances",
+      "C": "ECS on EC2 launch type using an Auto Scaling Warm Pool",
+      "D": "ECS on EC2 launch type with a large, over-provisioned cluster"
+    },
+    "correctAnswers": ["D"],
+    "explanation": "D is correct. This is a nuanced architectural tradeoff. When an ECS service needs to scale out, it schedules new tasks. If using Fargate, AWS provisions a micro-VM for each task, which takes several seconds (often 30-60 seconds) to pull the image and boot. If using EC2 with an ASG, and the cluster is full, the ASG must boot a whole new EC2 instance (taking 2-5 minutes) before the task can be placed. However, if using ECS on EC2 with a large, *over-provisioned* cluster (meaning there are already healthy, idle EC2 instances running), ECS can place and start the Docker container almost instantaneously (milliseconds to a few seconds). While expensive, it provides the absolute fastest scale-out time for the tasks.",
+    "whyOthersAreWrong": {
+      "A": "Fargate provisions compute on-the-fly. This takes significantly longer (tens of seconds) than placing a container on an already-running, idle EC2 instance.",
+      "B": "Waiting for an EC2 ASG to boot a new instance takes minutes, which is far too slow for sudden spikes.",
+      "C": "A Warm Pool speeds up EC2 instance booting, but it still takes time (seconds to minutes) to bring the instance out of hibernation/stopped state compared to an instance that is already fully running and joined to the ECS cluster."
+    },
+    "learningObjective": "Understand the tradeoff between cost (over-provisioning) and scale-out speed in ECS container placement.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS", "performance", "scaling", "architecture"]
+  },
+  {
+    "id": "saa-011-16",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company recently deployed a web application behind an Application Load Balancer (ALB). The application was quickly compromised by a well-known SQL injection attack. The security team realizes they have no internal expertise in writing complex firewall rules. They want to implement AWS WAF to protect the application immediately against common web exploits (like SQLi and XSS) without having to write or maintain the regex patterns themselves. What should the Solutions Architect do?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure AWS Shield Advanced to automatically write WAF rules.",
+      "B": "Deploy AWS WAF and select the AWS Managed Rules for core rule sets and SQL database protection.",
+      "C": "Deploy Amazon GuardDuty and configure it to automatically block SQL injection attempts at the ALB.",
+      "D": "Enable Amazon Inspector to scan the incoming HTTP requests for SQL injection payloads."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because AWS WAF provides AWS Managed Rules. These are pre-configured, expertly maintained rule groups provided by AWS (and AWS Marketplace sellers) that automatically protect against common threats like the OWASP Top 10 (SQLi, XSS, etc.). This allows the company to gain immediate protection without needing internal expertise to write complex regex rules.",
+    "whyOthersAreWrong": {
+      "A": "AWS Shield Advanced provides the AWS SRT (Shield Response Team) to help write rules during a DDoS attack, but for baseline, immediate protection against common exploits, simply enabling Managed Rules in WAF is the direct solution.",
+      "C": "GuardDuty detects threats by analyzing logs; it does not sit inline to block HTTP requests at the ALB.",
+      "D": "Amazon Inspector scans EC2 instances and containers for software vulnerabilities; it is not a web application firewall that inspects incoming HTTP payloads."
+    },
+    "learningObjective": "Utilize AWS WAF Managed Rules for immediate protection against common web exploits without manual rule authoring.",
+    "topic": "AWS WAF",
+    "tags": ["WAF", "security", "Managed-Rules", "SQLi"]
+  },
+  {
+    "id": "saa-011-17",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "Account A owns an AWS KMS Customer Managed Key (CMK). Account A wants to allow an IAM role in Account B to use this key to encrypt data. The administrator in Account B has attached an identity-based IAM policy to the role granting `kms:Encrypt` on the CMK's ARN. However, the role in Account B still receives an 'Access Denied' error. What is missing?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Account A must update the KMS Key Policy to explicitly allow the IAM role (or the root user) of Account B to use the key.",
+      "B": "Account A must establish a VPC Peering connection with Account B.",
+      "C": "Account B must create an alias for the key in its own account.",
+      "D": "Cross-account KMS access requires AWS Organizations; it cannot be done between standalone accounts."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct. In cross-account access scenarios, IAM evaluation requires BOTH the identity-based policy in the trusting account (Account B) to allow the action, AND the resource-based policy (the Key Policy) in the resource-owning account (Account A) to explicitly allow the external principal. Because Account A has not updated its Key Policy to allow Account B, the request is denied.",
+    "whyOthersAreWrong": {
+      "B": "VPC Peering connects networks. KMS is a public AWS API endpoint; network peering does not affect IAM authorization.",
+      "C": "Aliases are just display names. They do not grant cross-account permissions.",
+      "D": "Cross-account KMS access works perfectly between completely independent, standalone AWS accounts as long as the resource policy and identity policy align."
+    },
+    "learningObjective": "Configure cross-account KMS access by aligning Key Policies and identity-based IAM policies.",
+    "topic": "AWS KMS",
+    "tags": ["KMS", "cross-account", "IAM", "Key-Policy", "security"]
+  },
+  {
+    "id": "saa-011-18",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A web application runs on Amazon EC2 instances in an Auto Scaling group. The application writes detailed diagnostic logs to the local disk. When an instance becomes unhealthy, the Auto Scaling group terminates it and launches a replacement. The development team is frustrated because the local logs are destroyed with the instance before they can investigate why it became unhealthy. How can the Solutions Architect ensure the logs are reliably retrieved before the unhealthy instance is terminated?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure the CloudWatch agent to stream logs to CloudWatch Logs continuously.",
+      "B": "Configure an Auto Scaling Lifecycle Hook for instance termination, triggering an SSM Run Command script to upload the logs to S3.",
+      "C": "Enable EC2 Termination Protection on the instances in the Auto Scaling group.",
+      "D": "Mount an Amazon EFS file system to the instances and write the logs directly to it."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because the most robust, reliable, and AWS-native best practice for handling logs on ephemeral EC2 instances is to not keep them local at all. By configuring the CloudWatch agent (or Kinesis Agent) to stream logs continuously in near real-time, the logs are safely stored in CloudWatch Logs regardless of when or why the instance is abruptly terminated.",
+    "whyOthersAreWrong": {
+      "B": "While a Lifecycle Hook *can* pause termination to run a script, if the instance is unhealthy (e.g., kernel panic, out of memory, network failure), the SSM agent might be unresponsive, meaning the script fails and the logs are lost anyway. Continuous streaming is far more reliable.",
+      "C": "Termination protection prevents scale-in and health replacements, breaking the core functionality of the Auto Scaling group.",
+      "D": "Writing highly concurrent, granular application logs directly to an NFS mount (EFS) can introduce significant application latency and bottlenecking compared to writing locally and streaming asynchronously."
+    },
+    "learningObjective": "Identify continuous log streaming (CloudWatch Agent) as the most reliable way to preserve logs for ephemeral instances.",
+    "topic": "Amazon CloudWatch",
+    "tags": ["CloudWatch", "logging", "EC2", "Auto-Scaling", "reliability"]
+  },
+  {
+    "id": "saa-011-19",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company stores internal documents in Amazon S3. The company uses Amazon Macie to scan these documents for sensitive data. Macie natively identifies standard PII (like credit card numbers and Social Security numbers). However, the company has a proprietary, internal employee ID format consisting of three letters followed by six digits (e.g., `EMP-123456`). The security team wants Macie to generate alerts if these specific employee IDs are found in the S3 buckets. How can this be achieved?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "It cannot be achieved. Macie only scans for AWS-managed data identifiers.",
+      "B": "Configure a Custom Data Identifier in Macie using a regular expression to match the proprietary format.",
+      "C": "Write an AWS Lambda function to intercept Macie scan results and run regex on the matched files.",
+      "D": "Enable Amazon Inspector on the S3 buckets and provide the custom regex pattern."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon Macie allows you to create Custom Data Identifiers. You can define your own regular expressions (regex) to detect proprietary or company-specific sensitive data formats (like the `EMP-123456` pattern). Macie will then use these custom identifiers alongside its managed identifiers during S3 scans.",
+    "whyOthersAreWrong": {
+      "A": "Macie explicitly supports custom data identifiers.",
+      "C": "Writing custom Lambda functions is unnecessary and complex when Macie natively supports custom regex patterns.",
+      "D": "Amazon Inspector does not scan S3 buckets for sensitive data content; it scans EC2 and ECR for software vulnerabilities."
+    },
+    "learningObjective": "Use Amazon Macie Custom Data Identifiers to detect proprietary sensitive data formats.",
+    "topic": "Amazon Macie",
+    "tags": ["Macie", "security", "S3", "compliance", "regex"]
+  },
+  {
+    "id": "saa-011-20",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An IoT platform uses Amazon Kinesis Data Firehose to stream telemetry data directly to an Amazon S3 bucket. The data is generated constantly at a low rate (about 100 KB per minute). Data analysts complain that their Amazon Athena queries are running very slowly because Firehose is creating thousands of tiny, 100 KB files in the S3 bucket every day (the 'small file problem'). How can the Solutions Architect configure Firehose to write fewer, larger files to S3 to improve Athena query performance?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the Kinesis Data Firehose Buffer Size and Buffer Interval.",
+      "B": "Enable Kinesis Data Firehose inline format conversion to Apache Parquet.",
+      "C": "Switch from Kinesis Data Firehose to Kinesis Data Streams.",
+      "D": "Configure an S3 Lifecycle rule to merge the small files together daily."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct. Kinesis Data Firehose buffers incoming data before delivering it to S3 based on two parameters: Buffer Size (in MB) and Buffer Interval (in seconds). By default, if data volume is low, the Buffer Interval (e.g., 60 seconds) will trigger first, resulting in small files. By increasing both the Buffer Size (e.g., to 128 MB) and the Buffer Interval (e.g., to 900 seconds / 15 minutes), Firehose will wait longer and accumulate more data before writing, resulting in fewer, much larger files. This drastically improves Athena's scanning efficiency.",
+    "whyOthersAreWrong": {
+      "B": "Converting to Parquet improves query performance, but it does not solve the root cause of having thousands of tiny files. You would just have thousands of tiny Parquet files, which is still inefficient.",
+      "C": "Kinesis Data Streams requires you to write a custom consumer application (like KCL on EC2 or Lambda) to read the stream and write to S3, massively increasing operational overhead.",
+      "D": "S3 Lifecycle rules do not have a feature to 'merge' or concatenate files. They transition files between storage classes."
+    },
+    "learningObjective": "Optimize Amazon Athena query performance by adjusting Kinesis Data Firehose buffering parameters to prevent small files.",
+    "topic": "Amazon Kinesis",
+    "tags": ["Firehose", "Athena", "performance", "S3", "analytics"]
+  }
+]

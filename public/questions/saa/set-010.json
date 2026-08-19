@@ -1,0 +1,462 @@
+[
+  {
+    "id": "saa-010-01",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company stores highly sensitive financial records in an Amazon S3 bucket. A recent compliance audit mandated that a secondary layer of authentication must be required before any user, including the root user, can permanently delete an object version from the bucket. Which AWS feature must the Solutions Architect implement to meet this specific requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable S3 Object Lock in Governance mode.",
+      "B": "Enable S3 Versioning and configure MFA Delete.",
+      "C": "Attach an IAM policy requiring the `aws:MultiFactorAuthPresent` condition for the `s3:DeleteObject` action.",
+      "D": "Implement a bucket policy denying all `s3:DeleteObject` actions unless the request originates from a trusted IP address."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because MFA Delete is a feature of S3 Versioning that explicitly requires the user to provide a valid Multi-Factor Authentication (MFA) token code in the API request before they can permanently delete an object version or suspend versioning on the bucket. This strictly enforces the secondary authentication requirement for deletion.",
+    "whyOthersAreWrong": {
+      "A": "S3 Object Lock in Governance mode prevents deletion entirely for a set retention period, unless the user has a specific bypass permission. It does not actively prompt or require an MFA token at the exact time of the deletion API call.",
+      "C": "While you can use the `aws:MultiFactorAuthPresent` condition in IAM, S3 MFA Delete is the native, specific feature designed for this S3 bucket-level protection, and it specifically protects against even the root user (who cannot be restricted by standard IAM policies in the same way).",
+      "D": "Restricting by IP address does not fulfill the requirement for a secondary layer of authentication (MFA)."
+    },
+    "learningObjective": "Enforce secondary authentication for object deletion using S3 MFA Delete.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "security", "MFA-Delete", "compliance"]
+  },
+  {
+    "id": "saa-010-02",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A SaaS application uses an Amazon Aurora Serverless v2 database. The application experiences sudden, massive spikes in traffic every morning at 9:00 AM when users log in. The development team notices that during the first few seconds of the spike, some database queries time out before the Aurora Serverless v2 capacity scales up sufficiently. How can the Solutions Architect ensure the database can handle the 9:00 AM spike without query timeouts, while still minimizing costs during the night?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Migrate from Aurora Serverless v2 to a Provisioned Aurora cluster with Auto Scaling.",
+      "B": "Configure an AWS Lambda function triggered by EventBridge at 8:55 AM to temporarily increase the minimum Aurora Capacity Units (ACUs).",
+      "C": "Aurora Serverless v2 scales instantly; the timeouts are caused by application-level connection pooling. Implement RDS Proxy.",
+      "D": "Enable Predictive Scaling for the Aurora Serverless v2 cluster."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because while Aurora Serverless v2 scales extremely fast (fractions of a second), a massive, instantaneous spike from zero (or minimum capacity) to maximum capacity can still cause brief contention or timeouts. By using a scheduled EventBridge rule and Lambda to proactively raise the minimum ACUs just 5 minutes before the known daily spike, the database is pre-warmed and ready. The minimum can be lowered again after the spike to save costs.",
+    "whyOthersAreWrong": {
+      "A": "Provisioned Aurora with Auto Scaling scales much slower (adding read replicas takes minutes) and does not scale write capacity dynamically in the same way, making it worse for sudden spikes.",
+      "C": "While RDS Proxy helps with connection exhaustion, the scenario specifically states the issue is waiting for compute capacity to scale up. Furthermore, pre-warming the compute capacity is a direct solution to compute bottlenecks.",
+      "D": "Predictive Scaling is a feature for Amazon EC2 Auto Scaling, not for Aurora Serverless v2."
+    },
+    "learningObjective": "Proactively manage capacity for predictable spikes in Aurora Serverless v2 to prevent latency.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "Serverless", "scaling", "performance"]
+  },
+  {
+    "id": "saa-010-03",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is exposing a suite of RESTful microservices via Amazon API Gateway. The APIs must only be accessible to authorized users. The company has a custom-built, legacy Identity Provider (IdP) that issues proprietary, non-standard OAuth tokens. The company cannot migrate to Amazon Cognito or standard OIDC/SAML at this time. How should the Solutions Architect implement authentication for the API Gateway?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure API Gateway to use IAM Authentication and map the proprietary tokens to IAM users.",
+      "B": "Create an Amazon Cognito User Pool, create a custom federated identity provider, and link it to API Gateway.",
+      "C": "Implement an AWS Lambda Authorizer in API Gateway to validate the proprietary tokens against the legacy IdP.",
+      "D": "Use AWS WAF with a custom rule to inspect the HTTP Authorization header and validate the token."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because an AWS Lambda Authorizer (formerly known as a custom authorizer) is specifically designed to handle custom authentication schemes. When a client calls the API, API Gateway passes the token to the Lambda function. The Lambda function can contain custom code to communicate with the proprietary legacy IdP, validate the non-standard token, and return an IAM policy allowing or denying the request.",
+    "whyOthersAreWrong": {
+      "A": "IAM Authentication relies on standard AWS Signature Version 4 signing using IAM credentials (Access Key/Secret Key). You cannot natively map proprietary non-standard tokens directly to IAM Authentication.",
+      "B": "The scenario explicitly states the company cannot migrate to Cognito or standard OIDC/SAML. Cognito Identity Pools support custom developer-authenticated identities, but for API Gateway direct integration with a non-standard token, a Lambda Authorizer is the native and most direct architectural choice.",
+      "D": "AWS WAF is a firewall. It cannot execute custom application logic to validate proprietary tokens against an external legacy database."
+    },
+    "learningObjective": "Use AWS Lambda Authorizers in API Gateway to integrate with custom or legacy identity providers.",
+    "topic": "Amazon API Gateway",
+    "tags": ["API-Gateway", "security", "Lambda-Authorizer", "authentication"]
+  },
+  {
+    "id": "saa-010-04",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An e-commerce platform generates thousands of events per minute (e.g., 'OrderPlaced', 'PaymentFailed', 'ItemShipped'). These events need to be routed to dozens of different microservices. However, each microservice only cares about specific events (e.g., the Shipping service only cares about 'OrderPlaced', while the Billing service only cares about 'PaymentFailed'). The routing logic must be decoupled from the event publishers, and the solution must be fully serverless. Which AWS service is BEST suited for this complex routing?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon SNS",
+      "B": "Amazon EventBridge",
+      "C": "Amazon SQS",
+      "D": "Amazon Kinesis Data Streams"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon EventBridge is a serverless event bus perfectly suited for complex event routing. It allows you to define granular rules that match the content (payload) of an event and route it only to the specific targets (microservices) that care about that event. This provides powerful content-based filtering without requiring the publisher to know about the subscribers.",
+    "whyOthersAreWrong": {
+      "A": "While Amazon SNS supports message filtering, EventBridge is the preferred and more feature-rich service for building complex, event-driven architectures with advanced payload-based routing, schema registries, and third-party SaaS integrations.",
+      "C": "Amazon SQS is a point-to-point queue. It does not perform pub/sub routing or event filtering. You would need a router (like SNS or EventBridge) in front of multiple SQS queues.",
+      "D": "Amazon Kinesis is for high-throughput, ordered data streaming, not for discrete event routing based on payload content."
+    },
+    "learningObjective": "Select Amazon EventBridge for complex, content-based event routing in serverless architectures.",
+    "topic": "Event-Driven Architecture",
+    "tags": ["EventBridge", "architecture", "serverless", "routing"]
+  },
+  {
+    "id": "saa-010-05",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A defense contractor is migrating workloads to AWS. Their strict compliance framework mandates that their virtual machines must run on single-tenant physical hardware. Furthermore, the compliance auditor requires reports showing the exact physical server ID (host ID) that a specific virtual machine was running on at any given time. Which Amazon EC2 deployment option MUST be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "EC2 Dedicated Instances",
+      "B": "EC2 Dedicated Hosts",
+      "C": "EC2 Bare Metal instances",
+      "D": "EC2 instances placed in a Cluster Placement Group"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon EC2 Dedicated Hosts provide both single-tenant hardware isolation AND visibility into the physical host ID. Dedicated Hosts allow you to track which specific instances ran on which specific physical server, which is required for the auditor's report.",
+    "whyOthersAreWrong": {
+      "A": "Dedicated Instances ensure that your instances run on single-tenant hardware (isolated from other AWS accounts). However, you do NOT get visibility into the specific physical host ID, and instances might migrate between different physical servers behind the scenes, making it impossible to satisfy the auditor's specific requirement.",
+      "C": "Bare Metal instances provide direct access to the hardware but are not specifically designed to provide the fleet-wide host ID tracking and placement control that Dedicated Hosts offer for virtualization compliance.",
+      "D": "Cluster Placement Groups pack instances close together for low network latency; they do not guarantee single-tenant hardware or provide physical host IDs."
+    },
+    "learningObjective": "Differentiate between EC2 Dedicated Instances and Dedicated Hosts regarding compliance and physical hardware visibility.",
+    "topic": "Amazon EC2",
+    "tags": ["EC2", "Dedicated-Hosts", "compliance", "security"]
+  },
+  {
+    "id": "saa-010-06",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a primary application deployed in the `us-east-1` Region and a disaster recovery (DR) environment deployed in `us-west-2`. The company wants all user traffic to be routed to the primary environment during normal operations. If the primary environment goes completely offline, traffic should automatically be routed to the DR environment. Which Amazon Route 53 configuration provides this Active-Passive failover capability?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a Latency-based routing policy with health checks for both environments.",
+      "B": "Create a Failover routing policy. Set the `us-east-1` record as Primary with a health check, and the `us-west-2` record as Secondary.",
+      "C": "Create a Weighted routing policy. Set the weight for `us-east-1` to 100 and `us-west-2` to 0.",
+      "D": "Create a Multivalue Answer routing policy with health checks for both environments."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because the Route 53 Failover routing policy is explicitly designed for Active-Passive disaster recovery architectures. Traffic is routed exclusively to the Primary resource as long as its associated health check is healthy. If the health check fails, Route 53 automatically routes all traffic to the Secondary resource.",
+    "whyOthersAreWrong": {
+      "A": "Latency routing is Active-Active. Users would be routed to `us-west-2` even during normal operations if they lived physically closer to the West Coast, which violates the requirement to send ALL traffic to the primary environment normally.",
+      "C": "Weighted routing with a weight of 0 means Route 53 will stop serving the secondary record entirely. If the primary goes down, the secondary (at weight 0) will not automatically take over unless manual intervention occurs or a complex script updates the weights.",
+      "D": "Multivalue Answer is Active-Active and returns multiple IP addresses. It does not enforce a strict Primary/Secondary relationship."
+    },
+    "learningObjective": "Configure Route 53 Failover routing policies for Active-Passive disaster recovery architectures.",
+    "topic": "Amazon Route 53",
+    "tags": ["Route-53", "failover", "disaster-recovery", "networking"]
+  },
+  {
+    "id": "saa-010-07",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise has a legacy on-premises application that relies on an iSCSI Storage Area Network (SAN). The company wants to migrate the underlying storage to AWS to leverage unlimited capacity and reduce physical hardware costs. The on-premises application cannot be modified to use file protocols (NFS/SMB) or object APIs. The application requires low-latency access to its active dataset but rarely accesses older data. Which AWS Storage Gateway configuration is MOST appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Storage Gateway - File Gateway",
+      "B": "AWS Storage Gateway - Volume Gateway (Stored Volumes)",
+      "C": "AWS Storage Gateway - Volume Gateway (Cached Volumes)",
+      "D": "AWS Storage Gateway - Tape Gateway"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because Volume Gateway provides block storage to on-premises applications using the iSCSI protocol, which matches the legacy application's requirement. Specifically, Cached Volumes store the primary data in Amazon S3 and retain a cache of the most recently accessed data locally. This provides low-latency access to the active dataset while minimizing on-premises hardware costs.",
+    "whyOthersAreWrong": {
+      "A": "File Gateway provides a file interface (NFS/SMB), which the legacy application explicitly cannot use.",
+      "B": "Stored Volumes keep the entire dataset locally on-premises and asynchronously back it up to AWS. This does not reduce the physical hardware capacity requirements on-premises, violating a core goal.",
+      "D": "Tape Gateway acts as a Virtual Tape Library (VTL) for backup software to replace physical tapes. It is not used for primary active application block storage."
+    },
+    "learningObjective": "Select Storage Gateway Cached Volumes for hybrid block storage (iSCSI) with local caching.",
+    "topic": "AWS Storage Gateway",
+    "tags": ["Storage-Gateway", "hybrid", "storage", "iSCSI"]
+  },
+  {
+    "id": "saa-010-08",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company uses AWS Organizations to manage 50 AWS accounts. The company uses AWS IAM Identity Center (successor to AWS SSO) to manage user access. A new team of data scientists needs `AmazonS3ReadOnlyAccess` across all 50 accounts. What is the MOST scalable and operationally efficient way to grant this access?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Log into each of the 50 accounts and create an IAM Role with `AmazonS3ReadOnlyAccess`. Configure the role to trust the data scientists' IAM users.",
+      "B": "Create a new AWS Organizations Service Control Policy (SCP) that explicitly allows `s3:Get*` and `s3:List*` for the data scientists' IAM group.",
+      "C": "Create a Permission Set in IAM Identity Center containing the `AmazonS3ReadOnlyAccess` managed policy. Assign this Permission Set to the data scientists' group for all 50 accounts.",
+      "D": "Use AWS CloudFormation StackSets to deploy an IAM User with `AmazonS3ReadOnlyAccess` into all 50 accounts and distribute the credentials."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because IAM Identity Center uses 'Permission Sets' to define a collection of IAM policies. You can assign a Permission Set to a user or group and apply it to one, many, or all accounts within AWS Organizations centrally. IAM Identity Center automatically provisions the necessary IAM roles in all the target accounts, representing the most scalable and efficient solution.",
+    "whyOthersAreWrong": {
+      "A": "Logging into 50 accounts manually is highly inefficient and not scalable.",
+      "B": "SCPs do not grant permissions; they only set the maximum allowed permissions (guardrails). You still need IAM policies to explicitly grant the access.",
+      "D": "Creating IAM Users (with long-term access keys or passwords) in multiple accounts is an anti-pattern. IAM Identity Center provides federated, temporary access, which is much more secure and easier to manage."
+    },
+    "learningObjective": "Manage multi-account access scalably using IAM Identity Center Permission Sets.",
+    "topic": "AWS IAM Identity Center",
+    "tags": ["IAM-Identity-Center", "security", "Organizations", "SSO"]
+  },
+  {
+    "id": "saa-010-09",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company stores large video files on an Amazon Elastic File System (Amazon EFS) file system. The files are accessed heavily for the first 14 days after creation, but rarely accessed afterward. The company wants to automatically reduce storage costs for these older files without changing the file system directory structure or requiring application code changes. Which feature should the Solutions Architect enable?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an Amazon EventBridge rule to trigger an AWS Lambda function that moves older files to Amazon S3.",
+      "B": "Enable EFS Lifecycle Management and set a policy to transition files to the EFS Standard-Infrequent Access (Standard-IA) storage class after 14 days.",
+      "C": "Enable S3 Lifecycle rules on the EFS file system to transition data to S3 Glacier.",
+      "D": "Use AWS DataSync to archive files older than 14 days to a cheaper EFS One Zone file system."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because EFS Lifecycle Management automatically transitions files that have not been accessed for a specified period (e.g., 14 days) to a lower-cost storage class like EFS Standard-IA or EFS Archive. This process is entirely transparent to the applications; the directory structure remains identical, and if an application requests an older file, EFS seamlessly retrieves it, requiring zero application changes.",
+    "whyOthersAreWrong": {
+      "A": "Moving files to Amazon S3 would change the directory structure and the protocol (from NFS to S3 APIs), requiring significant application code changes.",
+      "C": "S3 Lifecycle rules apply to Amazon S3 buckets, not Amazon EFS file systems.",
+      "D": "Using DataSync to move files to a different file system changes the mount point and directory structure, disrupting the application."
+    },
+    "learningObjective": "Optimize EFS storage costs transparently using EFS Lifecycle Management (Standard-IA).",
+    "topic": "Amazon EFS",
+    "tags": ["EFS", "cost-optimization", "storage", "Lifecycle-Management"]
+  },
+  {
+    "id": "saa-010-10",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A microservice publishes messages to an Amazon S3 bucket. It then sends a notification message containing the S3 object key to an Amazon SQS Standard queue. A backend EC2 worker pulls messages from the queue and attempts to process the S3 object. However, the worker frequently fails because the object is not yet fully available in S3 when the worker attempts to read it. How can the Solutions Architect solve this issue with the LEAST application code changes?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure a Delay Queue in Amazon SQS to postpone the delivery of new messages to consumers by a few seconds.",
+      "B": "Increase the Visibility Timeout of the Amazon SQS queue.",
+      "C": "Modify the worker code to implement an exponential backoff and retry mechanism when reading from S3.",
+      "D": "Change the queue type from SQS Standard to SQS FIFO to ensure strict ordering."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because an SQS Delay Queue allows you to postpone the delivery of new messages to the queue for a specified number of seconds (up to 15 minutes). By delaying the message slightly, the worker won't receive it until the object is fully available in S3. This solves the race condition with zero changes to the application code.",
+    "whyOthersAreWrong": {
+      "B": "Visibility Timeout hides a message *after* a consumer has already received it, to prevent other consumers from processing it concurrently. It does not delay the *initial* delivery of the message.",
+      "C": "Implementing exponential backoff in the worker code is a valid solution, but the question asks for the LEAST application code changes. An SQS Delay Queue requires no code changes.",
+      "D": "A FIFO queue ensures messages are processed in the order they were sent, but it does not delay their delivery to solve the race condition with S3 consistency."
+    },
+    "learningObjective": "Solve timing issues and race conditions using Amazon SQS Delay Queues.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "architecture", "messaging", "Delay-Queue"]
+  },
+  {
+    "id": "saa-010-11",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company requires a real-time audit log of every modification (insert, update, delete) made to an Amazon DynamoDB table. The audit log must capture both the 'before' and 'after' images of the item. This stream of data will be processed by a fleet of custom applications running on EC2 instances using the Kinesis Client Library (KCL). Furthermore, the company requires the stream data to be retained for up to 1 year for compliance audits. Which solution should be implemented?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable DynamoDB Streams with the `NEW_AND_OLD_IMAGES` view type.",
+      "B": "Enable Kinesis Data Streams for DynamoDB.",
+      "C": "Configure AWS CloudTrail data events for the DynamoDB table and send the logs to Amazon S3.",
+      "D": "Use Amazon EventBridge to capture DynamoDB item-level changes and route them to Amazon S3."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Kinesis Data Streams for DynamoDB captures item-level changes (including before/after images) and sends them to a Kinesis Data Stream. Kinesis Data Streams supports a data retention period of up to 1 year (365 days), and it is natively designed to be consumed by KCL applications running on EC2. This perfectly meets all strict requirements.",
+    "whyOthersAreWrong": {
+      "A": "DynamoDB Streams does capture before/after images, but it has a hard, unchangeable retention limit of 24 hours. It cannot meet the 1-year compliance retention requirement.",
+      "C": "CloudTrail data events log API calls (like `PutItem`), but they do not capture the actual content of the item (the before/after image of the data itself).",
+      "D": "EventBridge does not natively capture every item-level insert/update/delete from DynamoDB in a continuous stream with before/after images in the same way native streaming does."
+    },
+    "learningObjective": "Differentiate between DynamoDB Streams (24h retention) and Kinesis Data Streams for DynamoDB (up to 1 year retention).",
+    "topic": "Amazon DynamoDB",
+    "tags": ["DynamoDB", "streaming", "Kinesis", "compliance"]
+  },
+  {
+    "id": "saa-010-12",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A startup runs two distinct web applications, `api.example.com` and `portal.example.com`, on two separate Auto Scaling groups of Amazon EC2 instances. The company wants to minimize costs by using a single load balancer to route traffic to both applications. The load balancer must route traffic to the correct Auto Scaling group based on the domain name the user requested. How should this be configured?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an Application Load Balancer (ALB) and create listener rules using host-based routing.",
+      "B": "Deploy a Network Load Balancer (NLB) and create target groups based on IP addresses.",
+      "C": "Deploy a Classic Load Balancer (CLB) and configure URL rewrite rules on the EC2 instances.",
+      "D": "Deploy an Application Load Balancer (ALB) and create listener rules using path-based routing."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Application Load Balancers (ALBs) operate at Layer 7 and natively support host-based routing. You can create a listener rule that inspects the `Host` header of the HTTP request (e.g., `api.example.com` vs `portal.example.com`) and routes the traffic to the corresponding target group (representing the specific Auto Scaling group).",
+    "whyOthersAreWrong": {
+      "B": "Network Load Balancers operate at Layer 4. They cannot inspect Layer 7 HTTP headers (like the Host header) to make routing decisions.",
+      "C": "Classic Load Balancers do not support native host-based or path-based routing. They only support one target group per listener.",
+      "D": "Path-based routing routes based on the URL path (e.g., `example.com/api` vs `example.com/portal`), not the domain (hostname)."
+    },
+    "learningObjective": "Use Application Load Balancer host-based routing to consolidate multiple applications behind a single ALB.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ALB", "networking", "routing", "cost-optimization"]
+  },
+  {
+    "id": "saa-010-13",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A quantitative trading firm is migrating its algorithmic trading platform to AWS. The platform relies on a heavily customized ZFS file system running on Linux servers. The applications require sub-millisecond latencies and millions of IOPS. The firm wants to migrate to a fully managed AWS file storage service without losing their reliance on ZFS features like instant snapshots and data cloning. Which service should the Solutions Architect recommend?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon FSx for Lustre",
+      "B": "Amazon FSx for OpenZFS",
+      "C": "Amazon Elastic File System (Amazon EFS)",
+      "D": "Amazon EBS Provisioned IOPS SSD (io2) with Multi-Attach"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon FSx for OpenZFS is a fully managed file storage service built on the popular OpenZFS file system. It is designed to provide sub-millisecond latencies and up to 1 million IOPS. Crucially, it natively supports ZFS features like ZFS snapshots and fast data cloning, allowing a seamless migration for applications built around ZFS capabilities.",
+    "whyOthersAreWrong": {
+      "A": "FSx for Lustre provides massive throughput for HPC, but it does not use the ZFS file system or support ZFS-specific features like native ZFS clones.",
+      "C": "Amazon EFS is a managed NFS file system. It does not provide the extreme high IOPS of FSx, nor does it support ZFS features.",
+      "D": "EBS Multi-Attach provides block storage, not a fully managed file system. To use ZFS, the customer would have to manually manage the ZFS cluster on top of the EBS volumes, which violates the 'fully managed' requirement."
+    },
+    "learningObjective": "Identify Amazon FSx for OpenZFS as the target for high-performance Linux workloads relying on ZFS features.",
+    "topic": "Amazon FSx",
+    "tags": ["FSx", "OpenZFS", "performance", "storage"]
+  },
+  {
+    "id": "saa-010-14",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A security team has enabled VPC Flow Logs for all VPCs across the organization to comply with a 3-year data retention policy. They currently publish the logs to Amazon CloudWatch Logs. Due to the massive volume of network traffic, their monthly CloudWatch Logs bill has become excessively high. The team rarely queries the logs unless a specific incident occurs. What is the MOST cost-effective way to store these logs while maintaining the 3-year retention policy?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure CloudWatch Logs to automatically expire logs after 30 days and export them to Amazon S3.",
+      "B": "Change the VPC Flow Logs destination from CloudWatch Logs directly to an Amazon S3 bucket. Configure an S3 Lifecycle policy to transition objects to S3 Glacier after 30 days.",
+      "C": "Change the VPC Flow Logs aggregation interval from 1 minute to 10 minutes to reduce data volume in CloudWatch Logs.",
+      "D": "Use Amazon Kinesis Data Firehose to stream the VPC Flow Logs from CloudWatch Logs to Amazon Redshift."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because publishing VPC Flow Logs directly to Amazon S3 is significantly cheaper than publishing them to CloudWatch Logs (especially for massive volumes). Because the logs are rarely queried, adding an S3 Lifecycle policy to transition the data to an even cheaper cold storage class (S3 Glacier) after a short period (30 days) provides the absolute lowest cost for long-term (3-year) compliance retention.",
+    "whyOthersAreWrong": {
+      "A": "While exporting to S3 works, you still pay the high initial ingestion costs for CloudWatch Logs before the export happens. Bypassing CloudWatch entirely avoids this ingest cost.",
+      "C": "Changing the aggregation interval might slightly reduce the log volume, but CloudWatch Logs storage and ingestion will still be vastly more expensive than direct-to-S3 storage.",
+      "D": "Streaming to Redshift is expensive (requires running a Redshift cluster) and is designed for active data warehousing, not cheap, cold compliance archiving."
+    },
+    "learningObjective": "Optimize VPC Flow Logs costs by publishing directly to Amazon S3 and using S3 Lifecycle policies.",
+    "topic": "AWS Networking",
+    "tags": ["VPC", "Flow-Logs", "cost-optimization", "S3"]
+  },
+  {
+    "id": "saa-010-15",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is designing a microservices architecture using Amazon ECS with the EC2 launch type. The security team requires that every single container task must have its own dedicated Elastic Network Interface (ENI), its own private IP address from the VPC subnet, and its own dedicated Security Group to enforce granular network isolation. Which ECS network mode MUST be configured in the task definition?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "bridge",
+      "B": "host",
+      "C": "awsvpc",
+      "D": "none"
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because the `awsvpc` network mode assigns each ECS task its own dedicated Elastic Network Interface (ENI) and a primary private IP address directly from the VPC subnet. Because the task has its own ENI, you can attach specific Security Groups directly to the task itself, providing the granular network isolation required by the security team. (Note: This mode is the default and only option for Fargate, but must be explicitly chosen for EC2 launch type to meet these requirements).",
+    "whyOthersAreWrong": {
+      "A": "The `bridge` mode utilizes Docker's default virtual network. Tasks share the EC2 instance's ENI and IP address, meaning you cannot attach a dedicated Security Group to an individual task.",
+      "B": "The `host` mode bypasses Docker's network and maps container ports directly to the EC2 instance's ENI. Again, tasks share the host's ENI and Security Group.",
+      "D": "The `none` mode disables external networking for the container entirely."
+    },
+    "learningObjective": "Select the 'awsvpc' network mode in Amazon ECS for granular, task-level network isolation and security.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS", "networking", "security", "awsvpc"]
+  },
+  {
+    "id": "saa-010-16",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An airline reservation website is experiencing performance degradation. Analytics reveal that automated scripts (web scrapers) are constantly polling the site for ticket prices, consuming 60% of the backend compute resources. The company wants to block these automated scrapers while allowing search engine bots (like Googlebot) and legitimate users to access the site. Which AWS service provides the MOST direct solution?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon GuardDuty",
+      "B": "AWS WAF Bot Control",
+      "C": "AWS Shield Advanced",
+      "D": "Amazon Macie"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because AWS WAF Bot Control is a managed rule group specifically designed to give you visibility and control over bot traffic. It automatically distinguishes between 'good' bots (like verified search engines) and 'bad' or pervasive bots (like scrapers, scanners, and crawlers). You can configure it to block the scrapers while allowing Googlebot and human users.",
+    "whyOthersAreWrong": {
+      "A": "GuardDuty detects malicious activity (like compromised instances communicating with known bad IPs), but it does not actively block HTTP layer web scraping bots.",
+      "C": "AWS Shield Advanced protects against Layer 3/4 and Layer 7 volumetric DDoS attacks. While scrapers consume resources, they are not typically a volumetric DDoS attack; Bot Control is the precise tool for this.",
+      "D": "Amazon Macie discovers and protects sensitive data (PII) in Amazon S3. It has nothing to do with web application bot mitigation."
+    },
+    "learningObjective": "Mitigate unwanted web scraping and automated traffic using AWS WAF Bot Control.",
+    "topic": "AWS WAF",
+    "tags": ["WAF", "security", "Bot-Control", "networking"]
+  },
+  {
+    "id": "saa-010-17",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An auditor is reviewing a company's AWS KMS encryption strategy. The company uses both AWS Managed Keys (e.g., `aws/s3`) and Customer Managed Keys (CMKs) to encrypt data. The compliance policy requires that all cryptographic keys be rotated automatically. The auditor asks the Solutions Architect to confirm the rotation schedule for both types of keys. What is the correct rotation behavior?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Managed Keys cannot be rotated. CMKs rotate automatically every 90 days.",
+      "B": "AWS Managed Keys are rotated automatically every 1 year. CMKs with automatic rotation enabled are rotated every 1 year (or on a customized schedule).",
+      "C": "Both AWS Managed Keys and CMKs are rotated automatically every 3 years by default.",
+      "D": "AWS Managed Keys are rotated automatically every 90 days. CMKs cannot be rotated automatically."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct. By default, AWS automatically rotates AWS Managed Keys every 1 year (365 days); you cannot change this schedule or disable it. For Customer Managed Keys (CMKs), you must explicitly enable automatic key rotation. Once enabled, KMS automatically rotates the CMK every 1 year by default (though AWS recently allowed customizing this between 90 to 2560 days). Both key types retain old backing keys to decrypt old data.",
+    "whyOthersAreWrong": {
+      "A": "AWS Managed Keys are absolutely rotated automatically by AWS. CMKs do not default to 90 days (default is 365).",
+      "C": "The standard rotation period is 1 year, not 3 years.",
+      "D": "AWS Managed Keys are rotated every 1 year, not 90 days. CMKs definitely can be rotated automatically."
+    },
+    "learningObjective": "Understand the default automatic key rotation schedules for AWS Managed Keys and Customer Managed Keys.",
+    "topic": "AWS KMS",
+    "tags": ["KMS", "encryption", "security", "compliance"]
+  },
+  {
+    "id": "saa-010-18",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An online retail application runs on an Amazon EC2 Auto Scaling group. The company is preparing for a major flash sale that will be advertised on national television at exactly 8:00 PM on Friday. Based on past experience, traffic will spike from 1,000 requests per minute to 100,000 requests per minute within 10 seconds. The application instances take 3 minutes to boot and become healthy. Which Auto Scaling strategy MUST the Solutions Architect use to ensure the application does not crash at 8:00 PM?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure a Target Tracking scaling policy targeting 40% CPU utilization.",
+      "B": "Configure a Step Scaling policy that aggressively adds instances when network throughput spikes.",
+      "C": "Configure Predictive Scaling to analyze the traffic pattern.",
+      "D": "Configure a Scheduled Scaling policy to scale out the group at 7:50 PM."
+    },
+    "correctAnswers": ["D"],
+    "explanation": "D is correct because Scheduled Scaling is the only reliable way to handle a massive, instantaneous, one-time spike whose exact time is known in advance. Because instances take 3 minutes to boot, scaling out at 7:50 PM ensures the capacity is fully initialized, healthy, and waiting before the flash sale hits at 8:00 PM.",
+    "whyOthersAreWrong": {
+      "A": "Target Tracking is reactive. It waits for CPU to hit 40%, then triggers a scale-out. Because the spike happens in 10 seconds and instances take 3 minutes to boot, the application will be overwhelmed and crash before the new instances are ready.",
+      "B": "Step Scaling is also reactive. It will be too slow to provision instances (3 minute boot time) for a 10-second massive spike.",
+      "C": "Predictive Scaling uses machine learning to analyze *historical* daily/weekly patterns. It does not know about one-off, externally driven events like a TV advertisement."
+    },
+    "learningObjective": "Use Scheduled Scaling for anticipated, massive one-off traffic spikes when instance boot times are high.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": ["Auto-Scaling", "performance", "scaling", "architecture"]
+  },
+  {
+    "id": "saa-010-19",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A healthcare organization stores millions of patient records in Amazon S3. The Chief Privacy Officer wants to ensure that no S3 buckets are accidentally made public and wants an automated system to constantly scan the contents of all S3 buckets across the organization to discover and report any unprotected Personally Identifiable Information (PII) or Protected Health Information (PHI). Which AWS service should be deployed?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon GuardDuty",
+      "B": "Amazon Macie",
+      "C": "AWS Security Hub",
+      "D": "Amazon Inspector"
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon Macie is a fully managed data security and data privacy service that uses machine learning and pattern matching to discover and protect sensitive data (like PII and PHI) in Amazon S3. It also constantly monitors S3 buckets for security risks, such as buckets being unencrypted, publicly accessible, or shared outside the organization.",
+    "whyOthersAreWrong": {
+      "A": "Amazon GuardDuty provides threat detection (e.g., unusual API calls, compromised EC2 instances). It does not scan the actual *contents* of S3 objects for PII/PHI.",
+      "C": "AWS Security Hub provides a comprehensive view of security alerts, but it relies on Macie to actually perform the deep content scanning for PII.",
+      "D": "Amazon Inspector scans EC2 instances and container images for software vulnerabilities, not S3 bucket contents for sensitive data."
+    },
+    "learningObjective": "Select Amazon Macie for discovering and protecting sensitive data (PII/PHI) within Amazon S3.",
+    "topic": "Amazon Macie",
+    "tags": ["Macie", "security", "S3", "compliance"]
+  },
+  {
+    "id": "saa-010-20",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An architecture uses Amazon Kinesis Data Firehose to stream application logs to an Amazon OpenSearch Service cluster for operational analytics. Occasionally, the OpenSearch cluster experiences a temporary outage or becomes overloaded, causing the data delivery from Firehose to fail. What happens to the streaming data during this failure, and how can the Solutions Architect ensure no data is lost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "The data is lost immediately. The Architect must implement a dead-letter queue (DLQ) using Amazon SQS.",
+      "B": "Firehose automatically retries the delivery. If it continues to fail after a configured duration, Firehose can be configured to back up the failed documents to an Amazon S3 bucket.",
+      "C": "Firehose pauses the stream and blocks the producers from sending more data until the OpenSearch cluster recovers.",
+      "D": "Firehose automatically provisions a larger OpenSearch cluster and redirects the traffic."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon Kinesis Data Firehose has built-in resilience for delivery failures. If the destination (like OpenSearch) is unavailable, Firehose will automatically retry the delivery for a configurable duration (up to 7,200 seconds). If the delivery still fails after the retry duration, Firehose can be configured to automatically write the failed records to an Amazon S3 backup bucket, ensuring zero data loss.",
+    "whyOthersAreWrong": {
+      "A": "Data is not lost immediately; Firehose natively retries. While S3 acts conceptually like a DLQ for Firehose, you do not use SQS for this native integration.",
+      "C": "Firehose does not block producers (like Kinesis Agent or applications) from sending data. It buffers the incoming data while retrying the destination.",
+      "D": "Firehose cannot manage or provision OpenSearch infrastructure; it simply delivers data to an existing endpoint."
+    },
+    "learningObjective": "Understand Kinesis Data Firehose failure handling and backup mechanisms (S3 fallback).",
+    "topic": "Amazon Kinesis",
+    "tags": ["Firehose", "OpenSearch", "resilience", "streaming"]
+  }
+]
