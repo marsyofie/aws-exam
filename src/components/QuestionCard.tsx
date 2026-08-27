@@ -65,9 +65,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
 
       <div className="card p-6 md:p-8">
         <div className="mb-6">
-          <span className="inline-block px-3 py-1 bg-aws-blue text-white text-xs font-semibold rounded-full mb-4 mr-2">
-            Topic: {question.topic}
-          </span>
+          {isSubmitted && (
+            <span className="inline-block px-3 py-1 bg-aws-blue text-white text-xs font-semibold rounded-full mb-4 mr-2">
+              Topic: {question.topic}
+            </span>
+          )}
           {question.answerType === 'multiple' && (
              <span className="inline-block px-3 py-1 bg-aws-orange text-white text-xs font-semibold rounded-full mb-4">
                Choose {question.correctAnswers.length}
