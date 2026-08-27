@@ -8,7 +8,7 @@ export interface QuestionSet {
 export const fetchQuestionSets = async (examId: string): Promise<QuestionSet[]> => {
   try {
     const timestamp = new Date().getTime();
-    const response = await fetch(`/questions/${examId}/index.json?t=${timestamp}`);
+    const response = await fetch(`${import.meta.env.BASE_URL}questions/${examId}/index.json?t=${timestamp}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch question sets: ${response.statusText}`);
     }
@@ -22,7 +22,7 @@ export const fetchQuestionSets = async (examId: string): Promise<QuestionSet[]> 
 export const fetchQuestions = async (examId: string, setId: string): Promise<Question[]> => {
   try {
     const timestamp = new Date().getTime();
-    const response = await fetch(`/questions/${examId}/${setId}.json?t=${timestamp}`);
+    const response = await fetch(`${import.meta.env.BASE_URL}questions/${examId}/${setId}.json?t=${timestamp}`);
     if (!response.ok) {
       throw new Error(`Failed to fetch questions: ${response.statusText}`);
     }
