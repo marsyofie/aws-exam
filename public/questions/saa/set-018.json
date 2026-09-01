@@ -1,0 +1,464 @@
+[
+  {
+    "id": "saa-018-01",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates workloads in three VPCs within the same AWS Region: a production VPC (10.0.0.0/16), a shared services VPC (10.1.0.0/16), and a development VPC (10.2.0.0/16). The production and development VPCs both need to access centralized logging and monitoring services in the shared services VPC. However, the production and development VPCs must NOT be able to communicate with each other directly. The company currently has no inter-VPC connectivity configured. Which networking architecture meets these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create two VPC peering connections: one between the production VPC and the shared services VPC, and another between the development VPC and the shared services VPC. Do not create a peering connection between the production and development VPCs.",
+      "B": "Deploy an AWS Transit Gateway and attach all three VPCs. Create two route tables on the Transit Gateway: one that routes production traffic only to the shared services VPC, and another that routes development traffic only to the shared services VPC.",
+      "C": "Deploy an AWS Transit Gateway and attach all three VPCs to a single route table with full mesh connectivity. Use network ACLs in each VPC to block traffic between the production and development VPCs.",
+      "D": "Configure AWS PrivateLink to expose the logging and monitoring services in the shared services VPC as endpoint services. Create interface VPC endpoints in both the production and development VPCs."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because VPC peering provides direct, low-latency connectivity between two VPCs and is simple to configure. By creating two separate peering connections (production-to-shared and development-to-shared) without creating a production-to-development peering connection, the network isolation requirement is inherently met. VPC peering is non-transitive — traffic from the production VPC cannot traverse the shared services VPC to reach the development VPC even though both are peered with the shared services VPC. This provides the required hub-and-spoke connectivity pattern with minimal configuration (two peering connections and corresponding route table entries) and no additional infrastructure costs. VPC peering has no hourly charges — only standard data transfer charges apply.",
+    "whyOthersAreWrong": {
+      "B": "AWS Transit Gateway with segregated route tables can achieve the same isolation, but it introduces unnecessary complexity and cost for this scenario. Transit Gateway charges per attachment per hour and per GB of data processed. With only three VPCs and a simple hub-and-spoke pattern, two VPC peering connections are simpler, less expensive, and provide the same connectivity and isolation. Transit Gateway is better suited for larger-scale connectivity (tens or hundreds of VPCs).",
+      "C": "Using a single Transit Gateway route table with full mesh connectivity and relying on network ACLs for isolation is fragile and error-prone. Network ACLs are stateless and operate at the subnet level, making them difficult to manage accurately for VPC-level isolation. Any misconfiguration could inadvertently allow traffic between production and development. Network-level isolation should be enforced by routing architecture, not by security rules alone.",
+      "D": "AWS PrivateLink exposes specific services through endpoint interfaces, which works well for exposing individual application services. However, if the production and development VPCs need broad access to multiple logging and monitoring services (such as centralized syslog, monitoring agents, and dashboard APIs), creating a separate PrivateLink endpoint for each service adds significant configuration complexity. PrivateLink is ideal for service-specific consumption, not general-purpose VPC connectivity."
+    },
+    "learningObjective": "Design a VPC connectivity architecture that provides selective inter-VPC communication using VPC peering's non-transitive property.",
+    "topic": "Amazon VPC",
+    "tags": ["VPC", "peering", "network-isolation", "hub-and-spoke", "connectivity"]
+  },
+  {
+    "id": "saa-018-02",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating a legacy three-tier application from on premises to AWS. The application tier communicates with a third-party licensing server on premises via a proprietary TCP protocol on port 8443. The licensing server cannot be moved to the cloud. The company needs a private, reliable network connection between the VPC and the on-premises data center. The connection must provide consistent network latency below 10 ms for the licensing traffic. The company's data center is located near an AWS Direct Connect location. The company wants the connection established within 2 weeks to meet the migration deadline. Which approach meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Order a dedicated AWS Direct Connect connection with a 1 Gbps port. Create a private virtual interface (VIF) to connect to the VPC.",
+      "B": "Configure an AWS Site-to-Site VPN connection over the internet between the on-premises data center and the VPC. Use BGP for dynamic routing.",
+      "C": "Order a hosted AWS Direct Connect connection through an AWS Direct Connect Partner with a sub-1 Gbps port speed. Create a private virtual interface (VIF) to connect to the VPC.",
+      "D": "Configure an AWS Client VPN endpoint in the VPC and install the VPN client on the licensing server to establish connectivity."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because a hosted Direct Connect connection through a Direct Connect Partner can typically be provisioned within days, meeting the 2-week deadline. Direct Connect provides consistent, low-latency private network connectivity that can achieve sub-10ms latency when the data center is near a Direct Connect location. A hosted connection with a sub-1 Gbps port speed (e.g., 200 Mbps or 500 Mbps) is cost-effective for licensing traffic that does not require high bandwidth. The private virtual interface provides Layer 3 connectivity between the VPC and the on-premises data center, allowing the proprietary TCP protocol on port 8443 to flow over the private connection.",
+    "whyOthersAreWrong": {
+      "A": "A dedicated Direct Connect connection requires a physical cross-connect to be provisioned at the Direct Connect location, which typically takes 2-8 weeks depending on the provider and location. This provisioning time may exceed the 2-week migration deadline. Additionally, a 1 Gbps dedicated port is more capacity and cost than needed for licensing server traffic.",
+      "B": "An AWS Site-to-Site VPN connection travels over the public internet, which means latency is variable and subject to internet congestion, jitter, and packet loss. The requirement for consistent latency below 10 ms cannot be guaranteed over the internet. While VPN can be set up quickly, it does not provide the network consistency required for the licensing traffic.",
+      "D": "AWS Client VPN is designed for individual user remote access, not for server-to-server connectivity. Installing a VPN client on the licensing server is not architecturally appropriate — the licensing server should not initiate connections to the cloud. Additionally, Client VPN uses TLS-based tunneling which adds overhead and latency, and the connectivity model (client-initiated) does not support the application tier initiating connections to the on-premises licensing server."
+    },
+    "learningObjective": "Select the appropriate Direct Connect connection type based on provisioning time constraints and bandwidth requirements.",
+    "topic": "AWS Direct Connect",
+    "tags": ["Direct-Connect", "hybrid-connectivity", "migration", "low-latency", "networking"]
+  },
+  {
+    "id": "saa-018-03",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a web application deployed across two AWS Regions (us-east-1 and eu-west-1) for latency optimization. Each Region has an Application Load Balancer fronting an Auto Scaling group of EC2 instances. The company uses Amazon Route 53 with latency-based routing to direct users to the nearest Region. The security team has observed an increase in Layer 7 DDoS attacks targeting the application's login API endpoint with HTTP POST floods. The company needs to protect both Regional deployments from these application-layer attacks while maintaining the latency-based routing for legitimate users. Which solution provides the MOST comprehensive Layer 7 protection?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy AWS WAF web ACLs on each Regional ALB with rate-based rules targeting the login API endpoint. Configure AWS Shield Standard for DDoS protection.",
+      "B": "Place an Amazon CloudFront distribution in front of both Regional ALBs using origin groups. Deploy a single AWS WAF web ACL on the CloudFront distribution with rate-based rules and managed rule groups for known attack patterns.",
+      "C": "Subscribe to AWS Shield Advanced on both ALBs. Enable automatic application-layer DDoS mitigation, which automatically creates and deploys WAF rules in response to detected attacks.",
+      "D": "Configure Amazon API Gateway in front of both Regional ALBs with throttling and usage plans configured to rate-limit the login endpoint."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because placing CloudFront in front of both Regional ALBs provides the most comprehensive Layer 7 protection. CloudFront's global edge network absorbs and filters attack traffic at edge locations before it reaches the Regional ALBs, reducing the impact on origin infrastructure. A single AWS WAF web ACL on the CloudFront distribution protects both Regions uniformly with rate-based rules (limiting requests per source IP to the login endpoint) and managed rule groups (blocking known attack patterns, SQL injection, XSS, and bot traffic). CloudFront can be configured with origin groups to route to the nearest ALB, preserving the latency optimization. The edge-based filtering ensures that only legitimate, cleaned traffic reaches the Regional ALBs.",
+    "whyOthersAreWrong": {
+      "A": "Deploying WAF on each Regional ALB provides application-layer filtering, but the attack traffic still reaches the Regional infrastructure before being inspected and blocked. AWS Shield Standard is included by default for all AWS customers and only protects against Layer 3/4 DDoS attacks (SYN floods, UDP floods), not Layer 7 HTTP POST floods. Without CloudFront, the ALBs absorb the full attack volume, which can cause scaling costs and potential availability issues.",
+      "C": "AWS Shield Advanced with automatic application-layer mitigation is a powerful protection, but it is significantly more expensive ($3,000/month per organization plus data transfer charges). For this scenario, CloudFront with WAF provides effective Layer 7 protection at lower cost. Shield Advanced is most beneficial for organizations with large-scale internet-facing applications that need 24/7 DDoS response team access and cost protection for scaling events caused by DDoS attacks.",
+      "D": "API Gateway can provide throttling, but placing it in front of ALBs adds an unnecessary additional layer. API Gateway Regional endpoints would only protect one Region each, requiring separate configurations. API Gateway throttling is blunt (based on total request rate) and does not provide the sophisticated rule matching (IP reputation, geographic blocking, pattern matching) that WAF offers. API Gateway also adds latency to every request, not just attack traffic."
+    },
+    "learningObjective": "Design a multi-Region application-layer DDoS protection strategy using CloudFront and AWS WAF.",
+    "topic": "AWS WAF",
+    "tags": ["WAF", "CloudFront", "DDoS", "security", "multi-Region", "Shield"]
+  },
+  {
+    "id": "saa-018-04",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an application that processes sensitive financial data on Amazon EC2 instances in a private subnet. The application needs to access Amazon S3 to store processed reports and Amazon DynamoDB to write audit records. The compliance team requires that no traffic from the application instances traverses the public internet. The company also wants to ensure that the S3 access is restricted to a specific bucket and that DynamoDB access is limited to a specific table, even if the EC2 instance's IAM role has broader permissions. Which combination of actions meets these requirements? (Choose THREE.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Create a gateway VPC endpoint for Amazon S3 and add a route to the private subnet's route table pointing to the gateway endpoint.",
+      "B": "Create an interface VPC endpoint for Amazon S3 in the private subnet.",
+      "C": "Create a gateway VPC endpoint for Amazon DynamoDB and add a route to the private subnet's route table pointing to the gateway endpoint.",
+      "D": "Create an interface VPC endpoint for Amazon DynamoDB in the private subnet.",
+      "E": "Attach endpoint policies to the S3 and DynamoDB VPC endpoints that restrict access to the specific S3 bucket and DynamoDB table."
+    },
+    "correctAnswers": ["A", "C", "E"],
+    "explanation": "A is correct because S3 gateway endpoints provide private connectivity from the VPC to S3 without traversing the internet. Gateway endpoints are added as a route in the route table, and traffic to S3 is routed through the AWS private network. Gateway endpoints for S3 have no hourly charges, making them cost-effective. C is correct because DynamoDB gateway endpoints work identically to S3 gateway endpoints — they provide private connectivity to DynamoDB via a route table entry without internet traversal. Gateway endpoints for DynamoDB also have no hourly charges. E is correct because VPC endpoint policies act as an additional access control layer on the endpoint itself. By attaching policies that restrict access to the specific S3 bucket and DynamoDB table, the endpoint enforces resource-level restrictions regardless of the permissions granted by the EC2 instance's IAM role. Even if the IAM role allows access to all S3 buckets, the endpoint policy limits the traffic flowing through that endpoint to only the specified bucket.",
+    "whyOthersAreWrong": {
+      "B": "An interface VPC endpoint for S3 (using AWS PrivateLink) is also a valid option for private S3 access, but it incurs hourly charges and per-GB data processing fees. Since S3 supports gateway endpoints (which are free), using an interface endpoint adds unnecessary cost. Interface endpoints for S3 are useful when connecting from on-premises via Direct Connect or from another Region, but for same-VPC access, gateway endpoints are the preferred choice.",
+      "D": "An interface VPC endpoint for DynamoDB is not available. DynamoDB only supports gateway VPC endpoints. DynamoDB does not have an AWS PrivateLink interface endpoint option."
+    },
+    "learningObjective": "Implement private VPC access to S3 and DynamoDB using gateway endpoints with endpoint policies for resource-level restriction.",
+    "topic": "Amazon VPC",
+    "tags": ["VPC-endpoint", "gateway-endpoint", "S3", "DynamoDB", "security", "endpoint-policy"]
+  },
+  {
+    "id": "saa-018-05",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating a 10 TB Oracle database from on premises to AWS. The database supports a customer-facing application that requires less than 4 hours of downtime during the migration. The database uses several Oracle-specific features including materialized views, Oracle Text search, and PL/SQL stored procedures. The company wants to continue using Oracle as the database engine after migration and needs Multi-AZ deployment for high availability. The company also requires automated backups with point-in-time recovery. Which migration strategy meets these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Launch an Amazon RDS for Oracle instance with Multi-AZ deployment. Use AWS Database Migration Service (DMS) with continuous replication to migrate the data while the source database remains operational. Perform a cutover by stopping application writes, allowing DMS to synchronize remaining changes, and redirecting the application to the RDS instance.",
+      "B": "Launch an Oracle database on Amazon EC2 instances with Amazon EBS storage. Use Oracle Data Guard to replicate data from the on-premises database to the EC2 instance. Perform a failover to the EC2 instance when ready.",
+      "C": "Export the Oracle database using Oracle Data Pump. Transfer the dump file to Amazon S3 using AWS Snowball. Import the dump file into an Amazon RDS for Oracle instance using S3 integration.",
+      "D": "Use the AWS Schema Conversion Tool to convert the Oracle schema to Amazon Aurora PostgreSQL. Use AWS DMS to migrate the data to Aurora PostgreSQL with continuous replication."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because it provides a low-downtime migration with the least operational overhead. Amazon RDS for Oracle is a managed service that provides automated backups, point-in-time recovery, and Multi-AZ deployment — all required by the company. AWS DMS with continuous replication (using Change Data Capture) replicates the existing data and ongoing changes from the on-premises Oracle database to the RDS instance while the source remains operational. The cutover involves briefly stopping application writes (minutes, not hours), allowing DMS to replicate the final changes, and redirecting the application. This minimizes downtime to well under 4 hours. Since the company wants to continue using Oracle, a homogeneous migration (Oracle-to-Oracle) preserves all Oracle-specific features including materialized views, Oracle Text, and PL/SQL without modification.",
+    "whyOthersAreWrong": {
+      "B": "Running Oracle on EC2 instances requires the company to manage the operating system, Oracle installation, patching, backups, and high availability configuration (including Oracle Data Guard setup and management). This introduces significant operational overhead compared to RDS, which handles these tasks as a managed service. The company would also need to manage Oracle licensing separately. This does not meet the requirement for least operational overhead.",
+      "C": "Oracle Data Pump export/import is a traditional migration method, but it requires the application to be offline during the export, transfer, and import process. For a 10 TB database, the Data Pump export, Snowball transfer (shipping time), and import process would take many days — far exceeding the 4-hour downtime requirement. Even with S3 integration for the import, the total process is not suitable for minimal downtime.",
+      "D": "Converting from Oracle to Aurora PostgreSQL (heterogeneous migration) would require converting Oracle-specific features — materialized views, Oracle Text search, and PL/SQL stored procedures — to PostgreSQL equivalents. This is a significant re-engineering effort that requires application code changes and extensive testing. The company explicitly wants to continue using Oracle after migration, making this option incompatible with the requirements."
+    },
+    "learningObjective": "Design a low-downtime homogeneous database migration from on-premises Oracle to Amazon RDS using AWS DMS continuous replication.",
+    "topic": "AWS Database Migration Service",
+    "tags": ["DMS", "RDS", "Oracle", "migration", "database", "continuous-replication"]
+  },
+  {
+    "id": "saa-018-06",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company uses AWS Organizations with service control policies (SCPs). The security team wants to ensure that no IAM user or role in any member account can create, modify, or delete AWS CloudTrail trails. The central security account has already configured an organization-level trail that logs all API activity across all accounts to a centralized S3 bucket. The SCP must not affect the management account and must allow CloudTrail read operations (such as DescribeTrails and GetTrailStatus) for troubleshooting. Which SCP statement achieves this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach an SCP to the root of the organization that denies cloudtrail:CreateTrail, cloudtrail:UpdateTrail, cloudtrail:DeleteTrail, and cloudtrail:StopLogging actions for all principals.",
+      "B": "Attach an SCP to each organizational unit (OU) containing member accounts that denies cloudtrail:CreateTrail, cloudtrail:UpdateTrail, cloudtrail:DeleteTrail, and cloudtrail:StopLogging actions for all principals, with no condition.",
+      "C": "Attach an SCP to the root of the organization that denies all cloudtrail:* actions for all principals in member accounts.",
+      "D": "Attach an IAM policy in each member account that denies cloudtrail:CreateTrail, cloudtrail:UpdateTrail, cloudtrail:DeleteTrail, and cloudtrail:StopLogging actions for all IAM users and roles."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because attaching the SCP to the OUs containing member accounts (rather than the organization root) ensures the management account is not affected. SCPs do not apply to the management account regardless of where they are attached, but attaching to OUs makes the intent explicit and follows AWS best practices. The SCP denies the specific CloudTrail write/modify actions (CreateTrail, UpdateTrail, DeleteTrail, StopLogging) while allowing read operations like DescribeTrails and GetTrailStatus, which are not listed in the deny statement. This prevents any principal in member accounts from tampering with CloudTrail configuration while still allowing them to view trail information for troubleshooting.",
+    "whyOthersAreWrong": {
+      "A": "While SCPs attached to the organization root do not affect the management account (SCPs never restrict the management account), this approach would affect all member accounts including any centralized security account that might need to manage trails. More importantly, attaching broad deny SCPs at the root level can have unintended consequences if the organization structure changes. Attaching to specific OUs provides more targeted control. However, the primary distinction is that option B's approach of attaching to OUs is the AWS-recommended best practice for clarity.",
+      "C": "Denying all cloudtrail:* actions would block read operations such as DescribeTrails and GetTrailStatus, which the company explicitly wants to allow for troubleshooting. This is overly restrictive and prevents member account administrators from viewing CloudTrail information needed for operational tasks.",
+      "D": "IAM policies in individual member accounts can be modified or removed by administrators within those accounts (unless restricted by SCPs). This approach does not provide the centralized, tamper-proof control that SCPs offer. An administrator in a member account could simply remove or modify the IAM deny policy and then modify the CloudTrail configuration. SCPs cannot be overridden by member account administrators."
+    },
+    "learningObjective": "Apply service control policies to prevent CloudTrail tampering in member accounts while preserving read access for troubleshooting.",
+    "topic": "AWS Organizations",
+    "tags": ["Organizations", "SCP", "CloudTrail", "security", "IAM", "governance"]
+  },
+  {
+    "id": "saa-018-07",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a containerized application on Amazon ECS with EC2 launch type. The application processes customer data and needs to access database credentials stored in AWS Secrets Manager. The security team has the following requirements: each ECS task must access only the specific secret assigned to its service, the credentials must be injected into the container as environment variables without application code changes, and the secret values must not be visible in the ECS task definition. Which approach meets ALL of these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store the credentials in AWS Systems Manager Parameter Store as SecureString parameters. Reference the parameters in the ECS task definition using the secrets section with the valueFrom field pointing to the parameter ARN. Assign a task execution role with permission to access only the specific parameter.",
+      "B": "Store the credentials in AWS Secrets Manager. Reference the secret in the ECS task definition using the secrets section with the valueFrom field pointing to the secret ARN. Assign a task execution role with permission to access only the specific secret.",
+      "C": "Store the credentials in AWS Secrets Manager. Write a custom entrypoint script in the Docker image that calls the Secrets Manager API at container startup to retrieve credentials and set them as environment variables. Assign a task role with permission to access the secret.",
+      "D": "Store the credentials as encrypted environment variables directly in the ECS task definition using AWS KMS for encryption. Grant the task execution role permission to decrypt using the KMS key."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because ECS natively integrates with AWS Secrets Manager through the task definition's secrets section. By using the valueFrom field with the Secrets Manager secret ARN, ECS automatically retrieves the secret value at task startup and injects it as an environment variable into the container. The secret value is never stored in the task definition itself — only the secret ARN reference is visible. The task execution role (used by the ECS agent to set up the task) is granted permission to retrieve only the specific secret ARN, ensuring each service can access only its assigned credentials. This requires no application code changes because the credentials appear as standard environment variables to the application.",
+    "whyOthersAreWrong": {
+      "A": "Systems Manager Parameter Store with SecureString parameters is a valid alternative that also integrates with ECS task definitions. However, the question specifies that credentials are stored in AWS Secrets Manager, and Secrets Manager provides additional features beneficial for database credentials: automatic rotation, cross-account access, and native integration with RDS for credential rotation. For database credentials specifically, Secrets Manager is the AWS-recommended service. Both A and B technically meet the requirements, but B is the best answer because the credentials are specifically in Secrets Manager.",
+      "C": "Writing a custom entrypoint script to call the Secrets Manager API at startup requires modifying the Docker image (application code changes) and adds complexity to the container initialization process. The task role (not execution role) would need Secrets Manager permissions, and the application would need to handle retrieval failures. This approach bypasses ECS's native secret injection capability, which is simpler and requires no code changes.",
+      "D": "Storing credentials directly in the task definition as environment variables, even with KMS encryption, means the encrypted values are visible in the task definition. Anyone with permission to describe the task definition can see the encrypted values, and the KMS key ID is also visible. This does not meet the requirement that secret values must not be visible in the task definition. Additionally, ECS does not natively support KMS-encrypted environment variables — the values would need to be stored in plaintext or referenced from Secrets Manager/Parameter Store."
+    },
+    "learningObjective": "Configure ECS task definitions to securely inject secrets from AWS Secrets Manager as container environment variables using native integration.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS", "Secrets-Manager", "security", "containers", "task-definition", "IAM"]
+  },
+  {
+    "id": "saa-018-08",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is designing a multi-account networking architecture on AWS. The company has 20 VPCs across 4 AWS accounts that need to communicate with each other, plus a hybrid connection to an on-premises data center via AWS Direct Connect. The networking team wants centralized management of routing and the ability to apply network-level isolation between production and non-production VPCs using a single connectivity solution. Which architecture provides centralized routing management and network isolation between environments?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an AWS Transit Gateway and attach all 20 VPCs. Create two Transit Gateway route tables: one for production VPCs and one for non-production VPCs. Associate each VPC attachment with the appropriate route table. Attach the Direct Connect gateway to both route tables.",
+      "B": "Create VPC peering connections between all VPCs that need to communicate. Use route tables and security groups in each VPC to control traffic between production and non-production environments.",
+      "C": "Deploy an AWS Transit Gateway in each account and peer the Transit Gateways together. Attach the Direct Connect connection to the Transit Gateway in the networking account.",
+      "D": "Deploy a shared VPC using AWS Resource Access Manager (RAM) and place all workloads from all accounts into the shared VPC subnets."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because AWS Transit Gateway provides centralized, hub-and-spoke connectivity for all 20 VPCs and the Direct Connect connection through a single gateway. Transit Gateway route tables enable network-level isolation between production and non-production environments: production VPCs are associated with the production route table (which only has routes to other production VPCs and the Direct Connect attachment), and non-production VPCs are associated with the non-production route table (which only has routes to other non-production VPCs). This prevents production and non-production traffic from crossing environments at the network routing level. The Direct Connect gateway can be associated with one or both route tables depending on whether on-premises access is needed for both environments. Transit Gateway supports cross-account attachments through RAM, providing centralized management from a single account.",
+    "whyOthersAreWrong": {
+      "B": "VPC peering at this scale (20 VPCs) would require up to 190 peering connections for full mesh, which is operationally unmanageable. VPC peering is non-transitive, so each pair of VPCs that needs to communicate requires a separate connection and route table entries. Managing network isolation through security groups and route tables across 20 VPCs in 4 accounts is extremely complex and error-prone. This does not provide centralized routing management.",
+      "C": "Deploying a Transit Gateway in each account and peering them adds unnecessary complexity. Transit Gateway supports cross-account attachments through AWS Resource Access Manager, so a single Transit Gateway can serve all 4 accounts. Transit Gateway peering also has limitations — it does not support transitive routing between peered Transit Gateways, which complicates the architecture. A single shared Transit Gateway is the simpler and recommended approach.",
+      "D": "A shared VPC places all workloads in the same network, which contradicts the requirement for network-level isolation between production and non-production environments. While RAM can share VPC subnets across accounts, all subnets are within the same VPC and share the same routing domain. This provides no network isolation between environments."
+    },
+    "learningObjective": "Design a centralized multi-account networking architecture using Transit Gateway with route table segregation for environment isolation.",
+    "topic": "AWS Transit Gateway",
+    "tags": ["Transit-Gateway", "multi-account", "networking", "route-tables", "Direct-Connect", "isolation"]
+  },
+  {
+    "id": "saa-018-09",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer-facing application that uses Amazon Cognito user pools for authentication. The application stores user profile data in Amazon DynamoDB. A new regulatory requirement mandates that user data must be deleted within 30 days of a deletion request, and the company must provide proof of deletion for audit purposes. The application currently has no user deletion workflow. The company wants to implement this with minimal custom code and ensure that deletion requests are tracked and auditable. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an Amazon API Gateway endpoint that triggers an AWS Step Functions workflow. The workflow deletes the user from the Cognito user pool, deletes the profile from DynamoDB, logs the deletion event to an Amazon CloudWatch Logs log group with a 7-year retention period, and sends a confirmation notification via Amazon SNS.",
+      "B": "Create a Lambda function triggered by the application that directly deletes the user from Cognito and DynamoDB. Log the deletion to an application log file stored on the EC2 instance.",
+      "C": "Configure Amazon Cognito to trigger a post-authentication Lambda function that checks for pending deletion requests and performs the deletion. Store deletion records in a separate DynamoDB table.",
+      "D": "Schedule a daily AWS Lambda function using Amazon EventBridge that scans a deletion request table in DynamoDB, processes pending requests by deleting users from Cognito and DynamoDB, and writes an audit record."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because AWS Step Functions provides a managed workflow orchestration that coordinates the multi-step deletion process reliably. The workflow ensures that all deletion steps execute in the correct order: Cognito user deletion, DynamoDB profile deletion, audit logging, and notification. Step Functions provides built-in error handling and retry logic — if any step fails, the workflow can retry or route to an error handler, ensuring no deletion is partially completed and forgotten. CloudWatch Logs with a 7-year retention period provides durable, tamper-evident audit proof of deletion that satisfies regulatory audit requirements. The API Gateway endpoint provides a standardized interface for the application to submit deletion requests. This approach requires minimal custom code — primarily the individual Lambda functions for each step, which are simple and focused.",
+    "whyOthersAreWrong": {
+      "B": "A single Lambda function performing all operations lacks the orchestration and error handling of Step Functions. If the Lambda succeeds in deleting the Cognito user but fails during the DynamoDB deletion, there is no built-in mechanism to track the partial completion or retry the failed step. Logging to an application log file on an EC2 instance is not durable — logs can be lost if the instance terminates — and does not provide the audit trail required for regulatory compliance.",
+      "C": "A post-authentication Lambda trigger only fires when a user authenticates. If a user requests deletion and never logs in again, the deletion would never be processed. This approach has a fundamental design flaw: it depends on the user to trigger their own deletion by logging in, which is unreliable and may not meet the 30-day regulatory deadline.",
+      "D": "A daily scheduled Lambda function introduces up to 24 hours of delay before a deletion request is processed. While this could still meet the 30-day requirement, it creates unnecessary lag and is less responsive than an event-driven workflow. Additionally, a single Lambda function processing all pending requests has the same error handling limitations as option B — partial failures during batch processing are difficult to manage without orchestration."
+    },
+    "learningObjective": "Design an auditable user data deletion workflow using Step Functions with Cognito and DynamoDB for regulatory compliance.",
+    "topic": "AWS Step Functions",
+    "tags": ["Step-Functions", "Cognito", "DynamoDB", "GDPR", "compliance", "audit"]
+  },
+  {
+    "id": "saa-018-10",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates an internal web application that is accessed only by employees within the corporate network. The application runs on Amazon EC2 instances behind an Application Load Balancer in a VPC. The company is implementing a zero-trust security model and wants to enforce that only authenticated corporate users can access the application. The company uses Microsoft Active Directory on premises for identity management and has federated it with AWS IAM Identity Center (AWS SSO). The company wants to implement authentication without modifying the application code. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure the Application Load Balancer with an OIDC-compliant identity provider (IdP) authentication action rule. Integrate the ALB authentication with the corporate IdP through Amazon Cognito user pools configured with a SAML federation to Active Directory.",
+      "B": "Deploy AWS Client VPN with Active Directory authentication. Require all employees to connect through the VPN before accessing the application.",
+      "C": "Configure an AWS WAF web ACL on the ALB with an IP-based rule that allows traffic only from the corporate network IP ranges.",
+      "D": "Deploy Amazon API Gateway in front of the ALB with a Lambda authorizer that validates Active Directory credentials passed in the request headers."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because the Application Load Balancer supports built-in OIDC authentication, which can be configured as an authentication action in ALB listener rules. By integrating with Amazon Cognito as the OIDC provider — with Cognito configured to federate with the corporate Active Directory via SAML — the ALB automatically redirects unauthenticated users to the Cognito login page, which in turn redirects to the corporate Active Directory login. After successful authentication, the ALB passes authenticated requests to the application with user identity information in HTTP headers. This requires zero application code changes because the ALB handles the entire authentication flow transparently. The application receives pre-authenticated requests with user identity headers it can optionally use for authorization.",
+    "whyOthersAreWrong": {
+      "B": "AWS Client VPN with Active Directory authentication provides network-level access control, but it requires all employees to install and connect through VPN software. In a zero-trust model, network location alone (VPN connection) should not be the sole authentication factor. VPN also does not authenticate individual HTTP requests to the application — once connected, any application on the employee's device could access the ALB. This provides network access, not application-level authentication.",
+      "C": "IP-based WAF rules restrict access to specific network ranges but do not authenticate individual users. This is a network perimeter control, not a zero-trust authentication mechanism. Any device on the corporate network (including potentially compromised devices or unauthorized users on the network) could access the application. This does not meet the zero-trust requirement of authenticating individual users.",
+      "D": "API Gateway with a Lambda authorizer could authenticate requests, but placing API Gateway in front of an ALB introduces an additional public-facing layer, adds latency, and increases cost. The ALB's built-in OIDC authentication action provides the same functionality natively without additional infrastructure. Additionally, modifying the application to pass Active Directory credentials in request headers requires application code changes."
+    },
+    "learningObjective": "Implement application-level authentication on an ALB using built-in OIDC authentication with Cognito and corporate Active Directory federation.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ALB", "authentication", "Cognito", "OIDC", "Active-Directory", "zero-trust"]
+  },
+  {
+    "id": "saa-018-11",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating a VMware-based virtualized environment from on premises to AWS. The environment consists of 150 virtual machines running various Linux and Windows workloads. The company wants to minimize the migration effort and avoid manually recreating each VM on EC2. The VMs have complex configurations including custom kernel modules, specific OS versions, and application dependencies that make manual recreation risky. The company wants to perform a lift-and-shift migration that preserves the exact VM configurations. Which AWS service is MOST appropriate for this migration?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Application Migration Service (AWS MGN) to install replication agents on the source VMs, continuously replicate data to AWS, and perform non-disruptive test migrations before the final cutover.",
+      "B": "Use VM Import/Export to export each VMware VM as an OVA file, upload the files to S3, and import them as AMIs to launch on EC2.",
+      "C": "Use AWS Database Migration Service (DMS) to replicate the VM data to EBS volumes in AWS, then attach the volumes to new EC2 instances.",
+      "D": "Use AWS Application Discovery Service to catalog all VMs, then manually create matching EC2 instances with the same configurations."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because AWS Application Migration Service (MGN) is the primary recommended service for lift-and-shift migrations to AWS. MGN installs a lightweight replication agent on each source VM that continuously replicates the server's storage to AWS in the background, without impacting the production workload. This continuous replication ensures the target is always up-to-date with the source. MGN supports non-disruptive test migrations — the company can launch test instances from the replicated data to validate that the VM works correctly on EC2 without affecting the source VM. When ready, the company performs a final cutover by stopping the source VM and launching the target EC2 instance. MGN preserves the exact disk contents including the OS, kernel modules, applications, and configurations. For 150 VMs, MGN provides a scalable, automated migration workflow with centralized management.",
+    "whyOthersAreWrong": {
+      "B": "VM Import/Export requires exporting each VM as an OVA file, which takes time and storage space on premises. For 150 VMs, this process is labor-intensive and slow. The OVA files must be uploaded to S3 (which could take days over a standard internet connection for large VMs), and then imported one at a time. This process does not support continuous replication, so the VMs may diverge between export and import. VM Import/Export is an older approach that has been largely superseded by AWS MGN for server migrations.",
+      "C": "AWS Database Migration Service is designed for database migrations, not virtual machine migrations. DMS replicates database contents (schemas, tables, data) between database engines, not entire VM disk images. It cannot be used to replicate VM storage to EBS volumes.",
+      "D": "AWS Application Discovery Service collects information about on-premises servers (CPU, memory, disk, network, running processes) to help plan migrations, but it does not perform the actual migration. Manually creating matching EC2 instances based on discovery data is time-consuming, error-prone, and does not preserve exact configurations. Custom kernel modules and specific OS configurations would need to be manually replicated, which is risky for 150 VMs."
+    },
+    "learningObjective": "Select AWS Application Migration Service for large-scale lift-and-shift VM migrations that preserve exact server configurations.",
+    "topic": "AWS Application Migration Service",
+    "tags": ["MGN", "migration", "lift-and-shift", "VMware", "EC2", "replication"]
+  },
+  {
+    "id": "saa-018-12",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an Amazon S3 bucket that stores customer invoices. The bucket receives approximately 10,000 new objects per day. The company needs to be notified within 5 minutes whenever an object with the prefix 'urgent/' is uploaded. The notification must include the object key and bucket name and be delivered to a Slack channel and an email distribution list. The company also needs to trigger a Lambda function to process the urgent invoice immediately. Which architecture delivers notifications to all three destinations reliably?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure an S3 event notification to publish to an Amazon SNS topic filtered by the 'urgent/' prefix. Subscribe the Lambda function, the Slack webhook (via HTTPS subscription), and the email distribution list to the SNS topic.",
+      "B": "Configure an S3 event notification to publish to an Amazon EventBridge. Create three EventBridge rules targeting the Lambda function, an SNS topic for email, and another Lambda function for Slack notification.",
+      "C": "Configure three separate S3 event notifications for the 'urgent/' prefix: one to invoke the Lambda function, one to publish to an SNS topic for email, and one to invoke another Lambda function for Slack.",
+      "D": "Configure an S3 event notification to invoke a Lambda function for the 'urgent/' prefix. The Lambda function processes the invoice, sends an email via Amazon SES, and posts to Slack via the Slack API."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon EventBridge provides the most flexible and reliable event routing for multi-destination delivery. When S3 event notifications are sent to EventBridge, EventBridge can route the same event to multiple targets using separate rules. Each rule operates independently — if one target fails, it does not affect the others. EventBridge has built-in retry logic and dead-letter queue support for each target. The architecture uses one EventBridge rule to invoke the processing Lambda, another rule to publish to an SNS topic (which emails the distribution list), and a third rule to invoke a Slack notification Lambda. EventBridge rules can filter on the S3 object prefix, ensuring only 'urgent/' objects trigger the rules. This provides clean separation of concerns and independent failure domains.",
+    "whyOthersAreWrong": {
+      "A": "SNS with HTTPS subscriptions (for Slack webhooks) can work, but SNS HTTPS subscriptions require the Slack webhook URL to respond to the SNS subscription confirmation protocol and handle the SNS message format. Slack incoming webhooks expect a specific JSON payload format that differs from SNS's message format. A Lambda function would still be needed to transform the SNS message to Slack's expected format. Additionally, S3 event notifications to SNS do not support EventBridge's flexible rule-based routing.",
+      "C": "S3 event notifications have a limitation: you cannot configure multiple notifications for the same event type and prefix to different destinations. Each combination of event type and prefix can only have one notification configuration. Configuring three separate notifications for the same 'urgent/' prefix and s3:ObjectCreated event would conflict, and only the last configuration would take effect.",
+      "D": "A single Lambda function handling all three tasks (processing, email, Slack) creates tight coupling. If the Slack API is temporarily unavailable, the entire Lambda function may timeout or fail, potentially causing the invoice processing to fail as well. If the Lambda function fails after processing but before sending notifications, the notifications are lost. This approach also violates the single-responsibility principle and makes the Lambda function harder to maintain and debug."
+    },
+    "learningObjective": "Design a multi-destination event notification architecture using Amazon EventBridge for S3 events with independent routing to multiple targets.",
+    "topic": "Amazon EventBridge",
+    "tags": ["EventBridge", "S3", "Lambda", "SNS", "event-driven", "notifications"]
+  },
+  {
+    "id": "saa-018-13",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a data analytics platform that processes large datasets stored in Amazon S3. The analytics team uses Amazon EMR clusters to run Apache Spark jobs that read from and write to S3. The security team has identified that the EMR cluster nodes are currently using the EC2 instance profile role, which has broad S3 access permissions. The security team wants to implement least-privilege access so that individual Spark jobs can only access the specific S3 buckets and prefixes required for their processing. Different jobs running on the same cluster should have different S3 access permissions. Which approach implements least-privilege access for Spark jobs on EMR with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create separate IAM roles for each Spark job with specific S3 permissions. Use EMR runtime roles to assign different IAM roles to different Spark jobs running on the same cluster.",
+      "B": "Create separate EMR clusters for each Spark job, each with a different instance profile role that has only the permissions required by that specific job.",
+      "C": "Use S3 bucket policies to restrict access based on the source IP addresses of the EMR cluster nodes, with different policies for different job types.",
+      "D": "Configure the Spark jobs to use temporary AWS STS credentials obtained by calling AssumeRole at the application level, passing different role ARNs for each job."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because EMR runtime roles allow different applications or jobs running on the same EMR cluster to assume different IAM roles. Each Spark job can be configured to use a specific runtime role that has only the S3 permissions required for that particular job (e.g., read access to a specific source bucket prefix and write access to a specific output prefix). This provides true least-privilege access at the job level without requiring separate clusters. Runtime roles are managed centrally through IAM, and the EMR cluster handles the role assumption transparently. This requires minimal operational overhead because the cluster infrastructure is shared and only the role assignments differ between jobs.",
+    "whyOthersAreWrong": {
+      "B": "Creating separate EMR clusters for each job provides isolation but introduces significant operational overhead and cost. Each cluster requires provisioning, configuration, and management. The startup time for new clusters adds latency to job execution. For a platform running many different Spark jobs, this approach is not scalable or cost-effective. The cluster resources are not shared, leading to underutilization.",
+      "C": "S3 bucket policies based on source IP addresses do not provide job-level isolation because all jobs running on the same cluster nodes share the same IP addresses. The bucket policies would apply equally to all jobs from the same cluster, defeating the purpose of per-job access control. Additionally, EMR cluster node IP addresses can change when nodes are replaced or the cluster scales, making IP-based policies fragile.",
+      "D": "Calling STS AssumeRole at the application level within Spark job code requires custom code changes in every Spark job to manage credential retrieval, refresh, and error handling. This adds development overhead to every job and is error-prone — developers might forget to implement it correctly. EMR runtime roles provide the same functionality natively without application code changes, with automatic credential management and refresh handled by the EMR framework."
+    },
+    "learningObjective": "Implement least-privilege S3 access for individual Spark jobs on shared EMR clusters using runtime roles.",
+    "topic": "Amazon EMR",
+    "tags": ["EMR", "IAM", "runtime-roles", "least-privilege", "S3", "Spark"]
+  },
+  {
+    "id": "saa-018-14",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a public REST API on Amazon API Gateway that serves mobile applications. The API receives 5,000 requests per second during peak hours. The company observes that 80% of GET requests return the same data for the same parameters within a 60-second window. The API backend is an AWS Lambda function that queries Amazon DynamoDB, and the DynamoDB read costs are the largest component of the monthly bill. The company wants to reduce DynamoDB read costs without modifying the Lambda function code. Which solution is MOST effective at reducing costs?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable API Gateway caching on the API stage with a 60-second TTL. Configure cache key parameters to include the query string parameters that determine the response.",
+      "B": "Deploy Amazon DynamoDB Accelerator (DAX) in front of the DynamoDB table and update the Lambda function's DynamoDB client configuration to use the DAX endpoint.",
+      "C": "Implement Amazon CloudFront in front of API Gateway with a 60-second TTL for GET requests. Configure CloudFront to forward the relevant query string parameters as cache keys.",
+      "D": "Switch the DynamoDB table from provisioned capacity to on-demand capacity mode to pay only for actual reads."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because Amazon CloudFront provides edge caching for API responses, significantly reducing the number of requests that reach API Gateway and, consequently, the Lambda function and DynamoDB. With a 60-second TTL matching the data freshness window, CloudFront caches GET responses at edge locations. Since 80% of GET requests return the same data within 60 seconds, CloudFront's cache hit rate would be approximately 80%, reducing DynamoDB reads by 80%. CloudFront's global edge network also improves response latency for mobile users. By forwarding the relevant query string parameters as cache keys, CloudFront ensures that different parameter combinations are cached separately. This requires no Lambda function code changes — CloudFront is placed in front of API Gateway as a transparent caching layer.",
+    "whyOthersAreWrong": {
+      "A": "API Gateway caching can also reduce backend calls, but API Gateway cache is a single cache instance in a single Region (the same Region as the API). For 5,000 requests per second, the API Gateway cache may experience capacity limitations depending on the cache size selected. CloudFront provides a globally distributed cache with much larger capacity. Additionally, API Gateway caching charges per hour based on cache size, while CloudFront's per-request pricing at this volume is typically more cost-effective. The question also states no Lambda code changes — API Gateway caching meets this requirement, but CloudFront is more effective at the stated scale.",
+      "B": "DynamoDB Accelerator (DAX) would reduce DynamoDB read latency and potentially reduce read capacity consumption, but the question states the Lambda function code must not be modified. Integrating DAX requires changing the DynamoDB client in the Lambda function to use the DAX SDK and endpoint, which constitutes a code change. Additionally, DAX cluster nodes run continuously, incurring per-hour charges regardless of usage.",
+      "D": "Switching to on-demand capacity mode changes the billing model but does not reduce the actual number of reads. The company would still pay for every read request. On-demand pricing per read is actually slightly higher than provisioned capacity pricing for sustained, predictable workloads. This does not address the core issue of redundant reads for the same data."
+    },
+    "learningObjective": "Implement CloudFront edge caching in front of API Gateway to reduce backend read costs for cacheable API responses.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "API-Gateway", "caching", "DynamoDB", "cost-optimization"]
+  },
+  {
+    "id": "saa-018-15",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an AWS account that hosts production workloads. The company wants to enable AWS CloudTrail to log all management events and S3 data events across the account. The CloudTrail logs must be stored in a separate security account's S3 bucket to prevent administrators in the production account from tampering with the logs. The logs must be encrypted and the production account administrators must not have access to the encryption key. Which combination of actions ensures tamper-proof CloudTrail log storage? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Create the CloudTrail trail in the production account configured to deliver logs to the S3 bucket in the security account. Configure the S3 bucket policy in the security account to allow CloudTrail from the production account to write logs.",
+      "B": "Create the CloudTrail trail in the security account and configure it as an organization trail to capture events from the production account.",
+      "C": "Enable S3 Object Lock in compliance mode on the security account's S3 bucket to prevent any modification or deletion of CloudTrail log files.",
+      "D": "Encrypt the S3 bucket with SSE-S3 (Amazon S3 managed keys) and restrict the bucket policy to deny production account principals from reading the log files.",
+      "E": "Encrypt the S3 bucket with a KMS customer managed key in the security account. Configure the KMS key policy to allow only security account principals to use the key, denying all production account principals."
+    },
+    "correctAnswers": ["A", "E"],
+    "explanation": "A is correct because creating the trail in the production account ensures all management and data events in that account are captured. The trail is configured to deliver logs to a cross-account S3 bucket in the security account. The S3 bucket policy must explicitly allow the CloudTrail service principal to write logs on behalf of the production account. Once the logs are in the security account's S3 bucket, production account administrators have no control over the bucket or its contents. E is correct because encrypting the bucket with a KMS customer managed key in the security account, with a key policy that denies production account principals, ensures that even if a production account administrator somehow obtains the S3 object, they cannot decrypt it. The KMS key is entirely under the security account's control, providing an additional layer of protection. Without access to the KMS key, the log files are unreadable to production account administrators.",
+    "whyOthersAreWrong": {
+      "B": "An organization trail in the security account would require the accounts to be in an AWS Organization with the security account having the appropriate delegated administrator permissions for CloudTrail. The question does not mention an AWS Organization or the relationship between the accounts. Creating the trail directly in the production account with cross-account delivery (option A) works regardless of organizational structure and is more straightforward.",
+      "C": "S3 Object Lock in compliance mode prevents modification and deletion of objects, which is a valid tamper-protection mechanism. However, Object Lock alone does not prevent production account administrators from reading the log files if they have S3 read permissions. The question asks for tamper-proof storage — Object Lock protects integrity but does not address the encryption requirement. While useful as an additional control, it does not satisfy the encryption requirement that option E addresses.",
+      "D": "SSE-S3 uses keys managed entirely by AWS. Production account administrators who can call S3 GetObject on the bucket (if the bucket policy allows it) can automatically decrypt SSE-S3 encrypted objects because the decryption is handled transparently by S3. SSE-S3 does not provide customer-controlled key access restriction. The encryption is transparent to anyone with S3 read permission, so it does not meet the requirement that production administrators cannot access the encryption key."
+    },
+    "learningObjective": "Implement cross-account CloudTrail log storage with KMS encryption to prevent log tampering by the source account.",
+    "topic": "AWS CloudTrail",
+    "tags": ["CloudTrail", "cross-account", "KMS", "encryption", "security", "audit"]
+  },
+  {
+    "id": "saa-018-16",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a web application that uses Amazon CloudFront to serve content from an S3 origin. The application stores user-uploaded content (profile pictures and documents) in the S3 bucket. The company wants to ensure that users can only access their own uploaded content and cannot access other users' files. The pre-signed URL approach is already in use, but the company wants an additional layer of security that restricts access to CloudFront URLs and prevents direct access to the S3 bucket URL. Which combination of actions provides this security? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure CloudFront with an Origin Access Control (OAC) to restrict S3 bucket access only to the CloudFront distribution.",
+      "B": "Make the S3 bucket public and use CloudFront signed URLs to control access to individual objects.",
+      "C": "Use CloudFront signed URLs or signed cookies to restrict access to content through CloudFront, with the signing key managed in CloudFront key groups.",
+      "D": "Configure the S3 bucket policy to allow public read access but restrict the 'Referer' header to match the CloudFront domain.",
+      "E": "Configure an S3 bucket policy that explicitly denies all access except from the CloudFront distribution's identity."
+    },
+    "correctAnswers": ["A", "C"],
+    "explanation": "A is correct because Origin Access Control (OAC) restricts access to the S3 bucket so that only the specified CloudFront distribution can retrieve objects from S3. This prevents users from bypassing CloudFront and accessing S3 objects directly using the S3 URL. OAC is the AWS-recommended mechanism for this purpose, replacing the legacy Origin Access Identity (OAI). When OAC is configured, the S3 bucket policy is updated to allow access only from the CloudFront distribution's service principal with the specific distribution ID condition. C is correct because CloudFront signed URLs or signed cookies enforce user-level access control at the CloudFront layer. The application generates signed URLs with the user's specific content path, expiration time, and optionally an IP restriction. Users can only access content through valid signed URLs, preventing them from accessing other users' files. Key groups managed in CloudFront provide secure key management for the signing process.",
+    "whyOthersAreWrong": {
+      "B": "Making the S3 bucket public completely undermines the security architecture. Even with CloudFront signed URLs controlling access through CloudFront, users could directly access the S3 bucket URL and bypass all CloudFront access controls. Public bucket access is the exact vulnerability the company wants to prevent.",
+      "D": "Restricting access based on the Referer header is a weak security mechanism. The Referer header can be easily spoofed by any HTTP client. An attacker could set a custom Referer header matching the CloudFront domain to access any S3 object directly. This does not provide meaningful security.",
+      "E": "This option describes the bucket policy configuration that accompanies OAC (option A). While the bucket policy is necessary, it is automatically configured as part of the OAC setup. Selecting both A and E would be redundant — the bucket policy is the mechanism by which OAC enforces its restriction. The second required component is the user-level access control (signed URLs in option C), not the redundant bucket policy."
+    },
+    "learningObjective": "Implement CloudFront Origin Access Control with signed URLs to secure user-specific content access through CloudFront.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "OAC", "signed-URLs", "S3", "security", "content-delivery"]
+  },
+  {
+    "id": "saa-018-17",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a real-time bidding platform for digital advertising that requires single-digit millisecond response times for reading bid configuration data. The data consists of 50,000 items, each approximately 1 KB in size, with a uniform access pattern across all items. The platform handles 100,000 read requests per second at peak. Write operations are infrequent (approximately 100 per hour) and occur during configuration updates. The company currently uses Amazon DynamoDB with provisioned capacity. The DynamoDB bill is dominated by read capacity unit charges. Which change MOST effectively reduces the DynamoDB read costs while maintaining single-digit millisecond read latency?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable DynamoDB Accelerator (DAX) with a cluster of three nodes in front of the DynamoDB table. Update the application to use the DAX client for read operations.",
+      "B": "Switch the DynamoDB table to on-demand capacity mode to eliminate the need for provisioned read capacity units.",
+      "C": "Enable DynamoDB global tables to distribute reads across multiple Regions and reduce per-Region read throughput.",
+      "D": "Implement a read-through cache using Amazon ElastiCache for Redis between the application and DynamoDB."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because DynamoDB Accelerator (DAX) is an in-memory cache purpose-built for DynamoDB that provides microsecond response times for cached reads. With 50,000 items at 1 KB each (approximately 50 MB total), the entire dataset fits comfortably in a DAX cluster's memory. Since writes are infrequent (100 per hour), the cache invalidation rate is extremely low, resulting in a near-100% cache hit rate. At 100,000 reads per second, DAX handles the load from its in-memory cache without forwarding requests to DynamoDB, effectively reducing DynamoDB read capacity consumption to near zero for cached reads. The DAX cluster cost (three t3.medium nodes, for example) is significantly lower than provisioning 100,000+ read capacity units on DynamoDB. DAX is API-compatible with DynamoDB — the application only needs to change the client endpoint, requiring minimal code modification.",
+    "whyOthersAreWrong": {
+      "B": "On-demand capacity mode charges per read request unit at a higher per-unit price than provisioned capacity. At 100,000 reads per second, on-demand mode would actually cost significantly more than provisioned capacity. On-demand mode is cost-effective for unpredictable workloads, but for a sustained 100,000 reads per second, provisioned capacity (or reserved capacity) is cheaper. This option does not reduce costs — it increases them.",
+      "C": "DynamoDB global tables replicate data across Regions and can distribute read traffic, but they do not reduce cost — each Region's table consumes its own read capacity, and the global table replication itself consumes additional write capacity. The total read capacity across all Regions would need to equal the total request volume. Global tables are designed for multi-Region availability and low-latency access for globally distributed users, not for cost reduction.",
+      "D": "ElastiCache for Redis can serve as a read-through cache and would effectively reduce DynamoDB read load. However, ElastiCache requires the application to implement cache logic (cache key management, TTL, invalidation, read-through/write-through patterns) at the application layer, which is more complex than DAX. DAX provides the same caching benefit with a DynamoDB-compatible API that requires minimal code changes. For DynamoDB-specific caching, DAX is the purpose-built and simpler solution."
+    },
+    "learningObjective": "Reduce DynamoDB read costs for high-throughput, read-heavy workloads with infrequent writes using DynamoDB Accelerator (DAX).",
+    "topic": "Amazon DynamoDB",
+    "tags": ["DynamoDB", "DAX", "caching", "cost-optimization", "performance", "read-heavy"]
+  },
+  {
+    "id": "saa-018-18",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is deploying a new application that uses an Amazon Aurora PostgreSQL database. The application team wants to implement a blue/green deployment strategy for database schema changes. When deploying a schema update, the company wants to create a copy of the production database, apply the schema changes to the copy, validate the changes, and then switch production traffic to the updated database with minimal downtime. The company wants to use an AWS-native solution that simplifies this process. Which approach BEST supports this database deployment strategy?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an Aurora clone of the production database, apply schema changes to the clone, validate, and then update the application connection string to point to the clone.",
+      "B": "Use Amazon RDS Blue/Green Deployments to create a staging environment from the production Aurora cluster, apply schema changes to the staging environment, and then switch over to the staging environment.",
+      "C": "Create an Aurora read replica, promote it to a standalone cluster, apply schema changes, and redirect application traffic to the new cluster.",
+      "D": "Use AWS Database Migration Service to create a copy of the production database, apply schema changes to the copy, and use Route 53 weighted routing to shift traffic."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Amazon RDS Blue/Green Deployments is a managed feature specifically designed for this use case. It creates a staging environment (green) that is a synchronized copy of the production environment (blue), including the Aurora cluster and its replicas. The staging environment stays in sync with production through logical replication while the schema changes are applied and validated. When the company is ready to switch, the blue/green deployment performs a managed switchover that updates the DB cluster endpoints to point to the green environment, requiring no application connection string changes. The switchover typically completes in under a minute with minimal downtime. After switchover, the old blue environment is retained for rollback if needed.",
+    "whyOthersAreWrong": {
+      "A": "An Aurora clone provides a copy of the database at a point in time, but the clone is not continuously synchronized with the source. After creating the clone and applying schema changes, any data written to the production database during the validation period would be lost when switching to the clone. The application connection string must be manually updated, and there is no built-in mechanism for fast switchover or rollback. Aurora clones are useful for testing but not for zero-data-loss blue/green deployments.",
+      "C": "Promoting an Aurora read replica to a standalone cluster breaks the replication link, so the new cluster diverges from production immediately upon promotion. Any schema changes applied after promotion would be on a database that is no longer synchronized with production. The data written to production during the schema migration and validation period would not be present in the promoted cluster, resulting in data loss.",
+      "D": "AWS DMS can replicate data to a copy, but managing the replication, schema changes, and traffic switching manually introduces significant operational complexity. Route 53 weighted routing operates at the DNS level and cannot perform the atomic endpoint switching that RDS Blue/Green Deployments provides. DNS propagation delays could cause some application instances to connect to the old database while others connect to the new one, creating inconsistency."
+    },
+    "learningObjective": "Use Amazon RDS Blue/Green Deployments for safe database schema updates with managed switchover and minimal downtime.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "Blue-Green", "deployment", "schema-migration", "RDS", "database"]
+  },
+  {
+    "id": "saa-018-19",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a data processing workflow that receives files from external partners via SFTP. The files are deposited into an Amazon S3 bucket and must be processed in the exact order they are received. Each file takes approximately 30 seconds to process. The company receives 200-500 files per day with occasional bursts of 50 files within a few minutes. Files from different partners can be processed in parallel, but files from the SAME partner must be processed in strict order. The company identifies partners by a partner ID prefix in the filename (e.g., 'PARTNER-001/invoice-2024.csv'). Which architecture ensures strict per-partner ordering while maximizing parallel processing across partners?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure S3 event notifications to publish to an Amazon SQS FIFO queue. Set the message group ID to the partner ID prefix. Use a Lambda function to process messages from the FIFO queue.",
+      "B": "Configure S3 event notifications to publish to an Amazon SQS standard queue. Use a Lambda function consumer with a DynamoDB table to track per-partner processing order.",
+      "C": "Configure S3 event notifications to invoke a Lambda function directly. The Lambda function uses a DynamoDB table with conditional writes to ensure per-partner ordering.",
+      "D": "Configure S3 event notifications to publish to an Amazon Kinesis Data Stream with the partner ID as the partition key. Use a Lambda function as the stream consumer."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because SQS FIFO queues guarantee exactly-once processing and strict ordering within a message group. By setting the message group ID to the partner ID prefix, messages for each partner are ordered independently. SQS FIFO queues allow parallel processing across different message groups — messages from PARTNER-001 are processed in order, and messages from PARTNER-002 are processed in order, but the two partners' messages can be processed concurrently. The Lambda function polls the FIFO queue and processes messages, with SQS ensuring that only one message per message group is in-flight at a time (maintaining ordering). For 200-500 files per day with bursts of 50, the FIFO queue's throughput (300 messages per second per message group, 3,000 per second per queue with high throughput mode) is more than sufficient.",
+    "whyOthersAreWrong": {
+      "B": "SQS standard queues do not guarantee message ordering and provide at-least-once delivery. Building custom ordering logic using DynamoDB tracking adds significant application complexity — the Lambda function would need to check DynamoDB for the last processed file per partner, potentially reprocess messages received out of order, and handle concurrent processing conflicts. This is error-prone and requires substantial custom code compared to FIFO queue's built-in ordering.",
+      "C": "Direct Lambda invocation from S3 events does not guarantee ordering. S3 event notifications can be delivered out of order, and if multiple files are uploaded in quick succession, multiple Lambda invocations run concurrently with no ordering guarantee. DynamoDB conditional writes can prevent duplicate processing but cannot enforce sequential ordering across concurrent Lambda invocations without complex coordination logic.",
+      "D": "Kinesis Data Streams with the partner ID as partition key would route all files for the same partner to the same shard, providing per-partner ordering. However, Kinesis has a minimum of 1 shard ($15/month) and the throughput is shard-based (1 MB/sec or 1,000 records/sec per shard). For 200-500 files per day, Kinesis is over-provisioned and more expensive than SQS FIFO. Kinesis is designed for high-volume real-time streaming, not low-volume ordered message processing. Additionally, Kinesis retains messages for a default of 24 hours even after processing, which is unnecessary for this use case."
+    },
+    "learningObjective": "Design an ordered message processing architecture using SQS FIFO queues with message group IDs for per-entity ordering.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "FIFO", "ordering", "Lambda", "event-driven", "message-processing"]
+  },
+  {
+    "id": "saa-018-20",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a batch data processing system that executes nightly ETL jobs using Amazon EMR. Each job processes approximately 2 TB of raw data from Amazon S3 and loads the transformed output into an Amazon Redshift data warehouse. The jobs typically complete within 3 hours but can tolerate up to 6 hours. The company currently uses On-Demand m5.4xlarge instances for the EMR core and task nodes, and the monthly compute cost is $8,000. The data is not time-sensitive — if a job fails, it can be restarted the following night. The company wants to reduce the EMR compute cost by at least 60% while maintaining processing reliability. Which approach BEST achieves this cost reduction?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use a mix of On-Demand instances for EMR core nodes (to protect HDFS data) and Spot Instances for EMR task nodes. Configure instance fleet diversification across multiple instance types for the task nodes.",
+      "B": "Switch all EMR core and task nodes to Spot Instances with a single instance type (m5.4xlarge) to maximize the discount.",
+      "C": "Purchase 1-year Reserved Instances for the m5.4xlarge instances used by the EMR cluster to reduce hourly costs.",
+      "D": "Migrate the ETL workload from EMR to AWS Glue with standard workers to take advantage of Glue's serverless pricing model."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because using On-Demand instances for core nodes (which manage HDFS data and must remain stable) and Spot Instances for task nodes (which only process data and can be terminated without data loss) provides cost savings of 60-90% on task node compute while maintaining reliability. Instance fleet diversification across multiple instance types (e.g., m5.4xlarge, m5.2xlarge, m4.4xlarge, r5.4xlarge) increases the likelihood of obtaining Spot capacity because EMR can launch instances from whichever pool has available capacity. If one Spot pool is interrupted, EMR automatically provisions from another pool. Since the task nodes only perform computation (not storage), Spot interruptions only affect in-progress tasks, which can be reassigned to other nodes. Core nodes on On-Demand ensure HDFS stability. This mix typically achieves 60-70% cost reduction compared to all On-Demand.",
+    "whyOthersAreWrong": {
+      "B": "Using Spot Instances for all nodes including core nodes risks data loss. EMR core nodes manage HDFS data; if a core Spot Instance is interrupted, the HDFS blocks stored on that node are lost and must be re-replicated from other nodes. With all nodes on Spot, simultaneous interruptions could cause HDFS data loss and job failure. Using a single instance type also concentrates risk — if the m5.4xlarge Spot pool is reclaimed, all nodes could be interrupted simultaneously.",
+      "C": "Reserved Instances provide approximately 30-40% savings compared to On-Demand (for 1-year, no upfront). This does not meet the 60% cost reduction requirement. Additionally, Reserved Instances require a commitment and are not ideal for batch workloads that run only a few hours per night — the reserved capacity sits unused for 21+ hours per day, reducing the effective savings. Spot Instances provide much larger discounts (60-90%) for interruptible workloads.",
+      "D": "AWS Glue can run ETL jobs, but for a 2 TB dataset with 3-hour processing time, the Glue costs may not be lower than EMR with Spot Instances. Glue charges per DPU-hour, and processing 2 TB in 3 hours would require significant DPU capacity. Additionally, migrating existing Spark EMR jobs to Glue requires rewriting job configurations, potentially modifying scripts, and testing. The cost comparison is not guaranteed to achieve 60% savings compared to EMR with Spot Instances."
+    },
+    "learningObjective": "Optimize EMR batch processing costs by combining On-Demand core nodes with diversified Spot Instance task nodes.",
+    "topic": "Amazon EMR",
+    "tags": ["EMR", "Spot-Instances", "cost-optimization", "batch-processing", "instance-fleet"]
+  }
+]

@@ -1,0 +1,464 @@
+[
+  {
+    "id": "saa-020-01",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building an IoT platform that collects telemetry data from 100,000 connected vehicles. Each vehicle sends a GPS position update every 5 seconds (approximately 200 bytes per message). The platform must ingest all telemetry data in real time, aggregate vehicle positions by geographic region every minute, and store the raw telemetry data for 90 days for historical replay. The aggregated data must be available for querying within 2 minutes of the aggregation window closing. Which architecture handles the ingestion, real-time aggregation, and storage requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use Amazon Kinesis Data Streams to ingest vehicle telemetry. Use an Amazon Managed Service for Apache Flink application to aggregate positions by region in 1-minute tumbling windows. Write aggregated results to Amazon DynamoDB for querying. Configure the Kinesis stream with extended data retention (90 days) for historical replay.",
+      "B": "Use Amazon SQS to ingest vehicle telemetry. Create a Lambda function that polls the queue, aggregates data by region, and writes results to DynamoDB. Store raw data in S3 using S3 lifecycle policies for 90-day retention.",
+      "C": "Use Amazon IoT Core to ingest vehicle telemetry. Configure IoT Core rules to write raw data to Amazon Timestream. Use Timestream's built-in aggregation queries for real-time regional summaries.",
+      "D": "Use Amazon Kinesis Data Firehose to ingest vehicle telemetry. Configure a 1-minute buffering interval to batch and deliver data to S3. Use Amazon Athena scheduled queries to aggregate data by region."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because this architecture handles all three requirements efficiently. Amazon Kinesis Data Streams can ingest 20,000 messages per second per shard (100,000 vehicles × 1 message every 5 seconds = 20,000 messages/second), which is achievable with sufficient shards. Amazon Managed Service for Apache Flink provides real-time stream processing with tumbling window aggregation, computing regional position summaries every minute and writing results to DynamoDB within seconds of the window closing — meeting the 2-minute query availability requirement. Kinesis Data Streams supports extended data retention up to 365 days, allowing the raw telemetry to be replayed for 90 days directly from the stream. This architecture provides true real-time processing with sub-second latency from ingestion to aggregation.",
+    "whyOthersAreWrong": {
+      "B": "Amazon SQS is designed for message queuing, not real-time stream processing. SQS does not provide the windowed aggregation capabilities needed for 1-minute regional summaries — a Lambda function polling SQS would need to implement custom time-window logic, manage state across invocations, and coordinate across concurrent Lambda instances. At 20,000 messages per second, the Lambda concurrency and SQS polling overhead would be significant. SQS also does not support message replay (messages are deleted after processing), so a separate mechanism is needed for the 90-day retention.",
+      "C": "Amazon IoT Core can ingest vehicle telemetry, but routing 20,000 messages per second through IoT Core rules to Amazon Timestream may exceed IoT Core rule action throughput limits. Timestream stores time-series data efficiently and supports aggregation queries, but executing queries for real-time 1-minute aggregation across 100,000 vehicles requires careful query design and may not consistently meet the 2-minute availability requirement. Timestream is better suited for storing and querying historical time-series data rather than real-time stream aggregation at this scale.",
+      "D": "Kinesis Data Firehose with 1-minute buffering delivers data to S3 in micro-batches, but the data is not queryable until the buffer is flushed and the S3 objects are written. Athena scheduled queries can then aggregate the data, but Athena query scheduling has a minimum interval of several minutes, and query execution time adds to the latency. The total time from data generation to queryable aggregation would likely exceed the 2-minute requirement. Firehose + Athena is better suited for near-real-time analytics with relaxed latency requirements."
+    },
+    "learningObjective": "Design a real-time IoT telemetry ingestion and aggregation architecture using Kinesis Data Streams and managed Apache Flink.",
+    "topic": "Amazon Kinesis",
+    "tags": ["Kinesis", "Flink", "IoT", "real-time", "stream-processing", "DynamoDB"]
+  },
+  {
+    "id": "saa-020-02",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is modernizing a monolithic application that currently runs on a single EC2 instance. The application has four main modules: user authentication, order processing, inventory management, and reporting. The company wants to decompose the monolith into microservices but needs to maintain synchronous communication between the order processing and inventory modules because order processing must verify inventory availability before confirming an order. The reporting module can process data asynchronously. The company wants the microservices to scale independently and minimize inter-service coupling. Which architecture pattern BEST addresses these communication requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy all microservices on Amazon ECS. Use direct HTTP calls between the order processing and inventory services. Publish events from the order processing service to an Amazon SQS queue for the reporting service to consume asynchronously.",
+      "B": "Deploy all microservices on Amazon ECS. Use AWS App Mesh to manage synchronous communication between the order processing and inventory services. Use Amazon EventBridge to publish order events for the reporting service.",
+      "C": "Deploy all microservices as Lambda functions. Use synchronous Lambda invocations between the order processing and inventory services. Use Amazon SNS to notify the reporting service asynchronously.",
+      "D": "Deploy all microservices on Amazon ECS. Use Amazon API Gateway as the communication layer between all microservices, including order-to-inventory synchronous calls and order-to-reporting asynchronous notifications."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because it uses the appropriate communication pattern for each interaction type. AWS App Mesh is a service mesh that manages service-to-service communication, providing features like service discovery, traffic management, retries, timeouts, and circuit breaking for the synchronous communication between the order processing and inventory services. This ensures reliable synchronous calls with built-in resilience patterns. For the asynchronous reporting requirement, Amazon EventBridge provides event-driven communication — the order processing service publishes order events, and the reporting service subscribes to these events independently. This decouples the reporting service from the order processing service, allowing them to scale independently. App Mesh also provides observability (request tracing, metrics) for the synchronous communication, which aids in monitoring and debugging.",
+    "whyOthersAreWrong": {
+      "A": "Direct HTTP calls between services work for synchronous communication but lack the resilience features (circuit breaking, retries with backoff, timeout management, traffic shifting) that a service mesh provides. If the inventory service becomes temporarily unavailable, the order processing service has no built-in mechanism to handle the failure gracefully. Direct HTTP calls also lack centralized observability for inter-service communication. SQS for reporting is viable but EventBridge provides better event routing and filtering capabilities.",
+      "C": "Synchronous Lambda invocations create tight coupling between the two services. The invoking Lambda function is billed for the total execution time of both functions, and the Lambda concurrency limits of both functions interact. If the inventory Lambda is throttled, the order processing Lambda blocks and eventually times out. Lambda-to-Lambda synchronous invocation is an anti-pattern for microservices because it creates runtime coupling and cascading failures. Lambda also has cold start latency that can affect synchronous response times.",
+      "D": "Using API Gateway as the internal communication layer between microservices adds unnecessary latency and cost. API Gateway is designed for external-facing APIs, not internal service-to-service communication. Each inter-service call would pass through API Gateway's request processing pipeline, adding 10-30ms of latency per hop. At high request volumes, the per-request API Gateway charges accumulate. For internal synchronous communication, a service mesh (App Mesh) or direct service discovery is more appropriate."
+    },
+    "learningObjective": "Design microservices communication patterns using App Mesh for synchronous calls and EventBridge for asynchronous events.",
+    "topic": "AWS App Mesh",
+    "tags": ["App-Mesh", "microservices", "EventBridge", "ECS", "service-mesh", "architecture"]
+  },
+  {
+    "id": "saa-020-03",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company hosts a static website on Amazon S3 with CloudFront distribution. The website serves a React single-page application (SPA). Users report that after deployments, they sometimes see a mix of old and new JavaScript files, causing the application to break. Investigation shows that CloudFront serves cached old versions of some files while the new versions have already been uploaded to S3. The company wants deployments to be atomic — users should see either the entirely old version or the entirely new version, never a mix. Which deployment strategy ensures atomic updates?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a CloudFront invalidation for all files (/*) after each deployment to force CloudFront to fetch the new versions from S3.",
+      "B": "Use content-hashed filenames for all JavaScript and CSS assets (e.g., main.a1b2c3d4.js). Deploy new files to S3 first, then update the index.html to reference the new filenames. Create a CloudFront invalidation only for index.html.",
+      "C": "Set the Cache-Control header to no-cache on all S3 objects so CloudFront always fetches the latest version from S3.",
+      "D": "Create a new S3 bucket for each deployment, update the CloudFront origin to point to the new bucket, and delete the old bucket after the TTL expires."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because content-hashed filenames ensure that each version of a file has a unique name. When the build process generates new JavaScript and CSS files, they have new hash values in their filenames (e.g., main.a1b2c3d4.js becomes main.e5f6g7h8.js). These new files are uploaded to S3 alongside the old files — both versions coexist in the bucket. The critical step is updating index.html (the entry point) to reference the new filenames. Since index.html is the only file that needs updating (and it's small), invalidating only index.html is fast and inexpensive. Users who load index.html get either the old version (referencing old file hashes) or the new version (referencing new file hashes) — never a mix. Old hashed files remain in S3 and CloudFront cache, so users mid-session with the old index.html continue to load old assets without errors. This is the standard best practice for SPA deployments.",
+    "whyOthersAreWrong": {
+      "A": "A wildcard CloudFront invalidation (/*) forces CloudFront to fetch all files from S3, but invalidations take time to propagate across all CloudFront edge locations (typically 1-5 minutes). During this propagation window, some edge locations serve new files while others serve old files, which is the exact mixed-version problem the company wants to avoid. Invalidations also have cost implications — the first 1,000 invalidation paths per month are free, but wildcard invalidations count as one path and are expensive at scale.",
+      "C": "Setting no-cache on all S3 objects forces CloudFront to revalidate every request with the origin, effectively eliminating the caching benefit of CloudFront. Every request generates an origin fetch, increasing S3 request costs and response latency. For a static website with high traffic, this defeats the purpose of using a CDN and significantly degrades performance.",
+      "D": "Creating a new S3 bucket per deployment is operationally complex and wasteful. Each deployment creates infrastructure that must be managed and cleaned up. Updating the CloudFront origin configuration takes a few minutes to propagate, during which time some edge locations use the old origin and others use the new origin — creating the same mixed-version risk. Additionally, CloudFront origin changes require a distribution update, which can take 15-30 minutes to deploy globally."
+    },
+    "learningObjective": "Implement atomic SPA deployments using content-hashed filenames and targeted CloudFront invalidation.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "S3", "SPA", "deployment", "caching", "static-website"]
+  },
+  {
+    "id": "saa-020-04",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a financial trading platform that executes automated trading algorithms on Amazon EC2 instances. The trading algorithms require the absolute lowest possible network latency between the EC2 instances and the exchange's matching engine, which is hosted in a specific Availability Zone in us-east-1. The application uses UDP multicast for market data distribution between instances and requires kernel-bypass networking for sub-microsecond latency. The company is willing to pay premium prices for performance. Which EC2 configuration provides the LOWEST network latency?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy c5n.18xlarge instances with enhanced networking (ENA) in a placement group in the same Availability Zone as the exchange. Use a Network Load Balancer for traffic distribution.",
+      "B": "Deploy c5n.18xlarge instances with Elastic Fabric Adapter (EFA) in a cluster placement group in the same Availability Zone as the exchange.",
+      "C": "Deploy c5.18xlarge instances with enhanced networking (ENA) across multiple Availability Zones for high availability. Use an Application Load Balancer.",
+      "D": "Deploy metal instance types (c5.metal) in a spread placement group in the same Availability Zone as the exchange."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because this configuration provides the absolute lowest network latency available on AWS. Elastic Fabric Adapter (EFA) provides OS-bypass networking (kernel-bypass), which eliminates the overhead of the kernel's network stack and provides direct hardware access for network communication. This enables sub-microsecond latency between instances. A cluster placement group co-locates instances on the same underlying hardware rack, minimizing the physical network distance between instances to achieve the lowest possible inter-instance latency. The c5n.18xlarge instances provide 100 Gbps network bandwidth, which supports high-throughput market data distribution. Placing the instances in the same Availability Zone as the exchange minimizes the network hops between the trading platform and the exchange's matching engine.",
+    "whyOthersAreWrong": {
+      "A": "Enhanced networking (ENA) provides higher bandwidth and lower latency than standard networking but does not provide kernel-bypass capabilities. ENA operates through the standard kernel network stack, adding microseconds of latency compared to EFA's OS-bypass mode. A Network Load Balancer adds a network hop and processing latency, which is unacceptable for sub-microsecond latency requirements. Placement groups without the cluster type do not guarantee co-location on the same rack.",
+      "C": "Deploying across multiple Availability Zones adds cross-AZ network latency (typically 1-2 ms), which is orders of magnitude higher than the sub-microsecond latency requirement. An Application Load Balancer adds additional latency and does not support UDP traffic (only HTTP/HTTPS). This configuration prioritizes availability over latency, which contradicts the requirements.",
+      "D": "A spread placement group distributes instances across distinct underlying hardware to reduce correlated failures. This increases the physical distance between instances, increasing network latency — the opposite of what's needed. Metal instances provide bare-metal access to the host hardware but do not inherently provide kernel-bypass networking. Without EFA, the networking still goes through the kernel stack. Spread placement groups are designed for high availability, not low latency."
+    },
+    "learningObjective": "Select the EC2 networking configuration that provides the lowest possible network latency using EFA and cluster placement groups.",
+    "topic": "Amazon EC2",
+    "tags": ["EC2", "EFA", "placement-group", "low-latency", "networking", "high-performance"]
+  },
+  {
+    "id": "saa-020-05",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates an analytics platform that processes customer behavior data. The data pipeline writes processed data to Amazon S3 in Parquet format, partitioned by date (year/month/day). The company's data analysts create new tables and partitions frequently using AWS Glue crawlers. However, the analysts complain that after new data is written to S3, it takes 15-30 minutes before they can query the new partitions in Amazon Athena because the Glue crawler runs on a scheduled interval. The company wants to make new partitions available for querying within 1 minute of the data being written to S3. Which solution meets this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the frequency of the Glue crawler schedule from every 30 minutes to every 1 minute.",
+      "B": "Configure the Athena queries to use partition projection, defining the partition schema (year, month, day) and their value ranges in the Glue table properties.",
+      "C": "Configure an S3 event notification to trigger a Lambda function that calls the Glue CreatePartition API to register new partitions immediately when new S3 prefixes are created.",
+      "D": "Run the Athena MSCK REPAIR TABLE command before every query to discover new partitions.",
+      "E": "Enable automatic partition discovery in the Glue Data Catalog settings."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Athena partition projection eliminates the need to maintain partition metadata in the Glue Data Catalog entirely. With partition projection, Athena calculates the partition locations mathematically based on the partition schema definition (e.g., year as integer range 2020-2030, month as integer range 1-12, day as integer range 1-31). When a query filters on partition columns, Athena generates the S3 paths directly without querying the Glue Data Catalog. This means new partitions are immediately queryable as soon as the data appears in S3 — there is no delay for partition registration. Partition projection also improves query planning performance because Athena skips the Glue catalog GetPartitions API call, which can be slow for tables with many partitions.",
+    "whyOthersAreWrong": {
+      "A": "Running a Glue crawler every minute would generate excessive costs (crawler charges per DPU-hour of runtime) and may cause overlapping crawler runs that lead to consistency issues. Even with a 1-minute schedule, there is still a delay between data landing and the crawler discovering it (the crawler needs time to start, scan, and update the catalog). This is an expensive and fragile approach to the problem.",
+      "C": "Using a Lambda function to call CreatePartition is a valid approach that provides near-real-time partition registration. However, it requires implementing and maintaining custom infrastructure (Lambda function, S3 event notification, IAM permissions, error handling). If the Lambda function fails, partitions are not registered. Partition projection (option B) achieves the same result with zero infrastructure and zero operational overhead — it's a configuration-only solution.",
+      "D": "MSCK REPAIR TABLE scans all S3 prefixes to discover partitions, which is slow for tables with many partitions (potentially minutes for large tables). Running it before every query adds latency to every query, not just queries that access new partitions. For a table with thousands of partitions, MSCK REPAIR TABLE can take several minutes, negating any benefit.",
+      "E": "There is no 'automatic partition discovery' setting in the Glue Data Catalog that provides real-time partition registration. The Glue Data Catalog relies on crawlers or API calls to register partitions."
+    },
+    "learningObjective": "Implement Athena partition projection to eliminate partition registration delays for time-partitioned S3 data.",
+    "topic": "Amazon Athena",
+    "tags": ["Athena", "partition-projection", "Glue", "S3", "data-lake", "analytics"]
+  },
+  {
+    "id": "saa-020-06",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an existing VPC (10.0.0.0/16) with 4 subnets, each using a /24 CIDR block. The company has exhausted the available IP addresses in the VPC due to growing ECS task deployments and Lambda functions in VPC mode. The company needs an additional 65,536 IP addresses but cannot recreate the VPC or migrate existing resources. Which solution adds IP capacity to the existing VPC?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add a secondary CIDR block to the existing VPC (e.g., 100.64.0.0/16) and create new subnets from the secondary CIDR range for the additional workloads.",
+      "B": "Create a new VPC with a larger CIDR block and use VPC peering to connect it to the existing VPC.",
+      "C": "Increase the existing VPC CIDR block from /16 to /8 to gain more IP addresses.",
+      "D": "Enable IPv6 on the existing VPC and assign IPv6 addresses to all resources to free up IPv4 addresses."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because AWS allows adding secondary CIDR blocks to an existing VPC without disrupting existing resources. The company can add a CIDR like 100.64.0.0/16 (or any valid non-overlapping CIDR) as a secondary CIDR block, which provides an additional 65,536 IP addresses. New subnets can be created from this secondary CIDR range in any Availability Zone, and new ECS tasks, Lambda functions, and other resources can be launched in these new subnets. Existing resources in the original subnets are unaffected. The secondary CIDR range uses the same VPC route tables, security groups, and network ACLs as the primary CIDR. This is the simplest and most direct solution to the IP exhaustion problem.",
+    "whyOthersAreWrong": {
+      "B": "Creating a new VPC with VPC peering adds complexity. Resources in the new VPC are in a separate network domain with separate security groups, route tables, and network ACLs. VPC peering has limitations — security group references across peered VPCs are not supported in all configurations, and traffic between peered VPCs has different routing behavior. This creates an unnecessary split architecture when a secondary CIDR block achieves the same result within the existing VPC.",
+      "C": "VPC CIDR blocks cannot be expanded once created. The /16 primary CIDR cannot be changed to /8. AWS allows adding secondary CIDR blocks but not modifying the primary CIDR. This operation is not supported.",
+      "D": "IPv6 addresses are a separate address family and do not free up IPv4 addresses. Many AWS services and features require IPv4 addresses (e.g., ECS task ENIs, Lambda VPC ENIs use IPv4 addresses). Simply enabling IPv6 does not solve the IPv4 address exhaustion. Resources that require IPv4 addresses (which is most resources) would still need IPv4 addresses from the CIDR block."
+    },
+    "learningObjective": "Resolve VPC IP address exhaustion by adding secondary CIDR blocks to an existing VPC.",
+    "topic": "Amazon VPC",
+    "tags": ["VPC", "CIDR", "networking", "IP-address", "scaling"]
+  },
+  {
+    "id": "saa-020-07",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer-facing application on AWS that stores user profile images in Amazon S3. The company operates in the EU and must comply with GDPR data residency requirements, ensuring that all user data (including images) is stored and processed only within the EU. The application is deployed in the eu-west-1 Region. The company wants to add a technical control that prevents any S3 objects from being copied, replicated, or moved outside the EU, even by administrators with full S3 permissions. Which solution enforces this data residency requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure an S3 bucket policy that denies s3:PutReplicationConfiguration actions and denies s3:PutObject actions when the destination bucket is outside the EU Regions.",
+      "B": "Enable S3 Object Lock in governance mode to prevent objects from being deleted or modified, including replication.",
+      "C": "Attach a service control policy (SCP) at the AWS Organizations OU level that denies S3 actions when the aws:RequestedRegion is outside the EU Regions. Additionally, deny s3:PutReplicationConfiguration for non-EU destination buckets.",
+      "D": "Create an S3 bucket lifecycle policy that transitions objects to Glacier within the same Region after upload to prevent cross-Region access."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because service control policies (SCPs) are applied at the organizational level and cannot be bypassed by any principal within the affected accounts, including administrators with full S3 permissions. An SCP that denies S3 actions when aws:RequestedRegion is outside EU Regions prevents the creation of S3 buckets, copying objects, or configuring replication to non-EU Regions. Additionally, denying s3:PutReplicationConfiguration with a condition on the destination bucket Region prevents cross-Region replication to non-EU Regions. SCPs provide the strongest enforcement mechanism because they override IAM policies — even an account administrator cannot perform actions denied by an SCP. This is the appropriate technical control for GDPR data residency enforcement.",
+    "whyOthersAreWrong": {
+      "A": "An S3 bucket policy can restrict actions on a specific bucket, but administrators with full S3 permissions can modify or delete the bucket policy itself. A bucket policy is not a tamper-proof control — an administrator could remove the restrictions, copy the data to a non-EU bucket, and then restore the policy. Additionally, S3 bucket policies do not have a condition key for the destination bucket's Region for PutObject actions (PutObject targets the current bucket, not a destination).",
+      "B": "S3 Object Lock prevents object deletion and modification (overwrite), but it does not prevent copying objects to other buckets or Regions. An administrator could use the S3 CopyObject API to copy objects to a bucket in a non-EU Region, violating data residency. Object Lock protects data integrity, not data residency.",
+      "D": "S3 lifecycle policies transition objects between storage classes within the same bucket/Region, but they do not prevent cross-Region access or copying. Transitioning to Glacier does not restrict where the data can be copied to — an administrator could still restore the object from Glacier and copy it to a non-EU bucket. Lifecycle policies control storage class, not data residency."
+    },
+    "learningObjective": "Enforce S3 data residency requirements using service control policies to prevent cross-Region data movement.",
+    "topic": "AWS Organizations",
+    "tags": ["Organizations", "SCP", "S3", "GDPR", "data-residency", "compliance"]
+  },
+  {
+    "id": "saa-020-08",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a machine learning pipeline that trains models using large datasets stored in Amazon S3. The training job runs on Amazon SageMaker and takes 8 hours to complete. The dataset (2 TB) must be downloaded from S3 to the training instance's local storage at the start of each training run. Currently, the download takes 45 minutes, delaying the training start. The company wants to reduce the data loading time to under 5 minutes while keeping the data in S3 as the primary storage. Which solution meets this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use Amazon FSx for Lustre with S3 data repository integration. Link the FSx file system to the S3 bucket and mount the FSx file system on the SageMaker training instance. FSx for Lustre lazy-loads data from S3 on first access and caches it for subsequent reads.",
+      "B": "Use S3 Transfer Acceleration to speed up the download from S3 to the SageMaker training instance.",
+      "C": "Copy the dataset to an Amazon EBS volume before training and attach the EBS volume to the training instance.",
+      "D": "Use SageMaker Pipe mode to stream the dataset from S3 directly into the training algorithm without downloading the entire dataset first."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Amazon FSx for Lustre integrated with S3 provides a high-performance file system that transparently serves data from S3. When linked to an S3 bucket, FSx for Lustre creates a POSIX-compatible file system that maps S3 objects to files. The first time a file is accessed, FSx for Lustre fetches it from S3 and caches it locally on the Lustre file system's high-performance storage (SSD-backed). For subsequent training runs using the same dataset, the data is already cached in FSx for Lustre and available at file system speed (hundreds of MB/s to GB/s throughput). Even for the first run, FSx for Lustre can prefetch the data from S3 using the hsm_restore command to populate the cache before training starts. The SageMaker training instance mounts FSx for Lustre as a local file system, requiring no changes to the training code.",
+    "whyOthersAreWrong": {
+      "B": "S3 Transfer Acceleration improves data transfer speeds by routing traffic through CloudFront edge locations, but it is designed for uploads to S3, not downloads from S3. Even if used for downloads, the speedup would be marginal for same-Region transfers (SageMaker and S3 are typically in the same Region). Transfer Acceleration helps with long-distance transfers over the internet, not local Region transfers.",
+      "C": "Copying 2 TB to an EBS volume before each training run would take a similar amount of time as the current S3 download (the data still needs to be transferred from S3 to EBS). Pre-creating the EBS volume reduces copy time but requires managing EBS volume lifecycle, snapshots, and availability zone placement. FSx for Lustre's caching provides the same performance benefit with less operational overhead.",
+      "D": "SageMaker Pipe mode streams data directly from S3 to the training algorithm, eliminating the download step. However, the training algorithm must be specifically coded to read from a streaming pipe rather than local files, which requires modifying the training code. Some training frameworks (like TensorFlow with custom data loaders) support Pipe mode, but many existing training scripts expect local file access. The question asks to reduce loading time without specifying code changes, and FSx for Lustre provides local file system semantics compatible with any training framework."
+    },
+    "learningObjective": "Use Amazon FSx for Lustre with S3 integration to accelerate ML training data access through high-performance caching.",
+    "topic": "Amazon FSx for Lustre",
+    "tags": ["FSx-Lustre", "SageMaker", "S3", "ML-training", "performance", "caching"]
+  },
+  {
+    "id": "saa-020-09",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a web application on Amazon ECS with Fargate. The application serves API requests and generates detailed access logs. The company needs to analyze these logs to identify patterns such as the top 10 API endpoints by request count, average response time per endpoint, and error rate trends over time. The log volume is approximately 50 GB per day. The company wants to perform interactive queries on the logs and create visualization dashboards. The solution should minimize operational overhead. Which log analysis solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure ECS to send logs to Amazon CloudWatch Logs. Use CloudWatch Logs Insights for interactive queries and CloudWatch dashboards for visualization.",
+      "B": "Configure ECS to send logs to Amazon CloudWatch Logs. Create a subscription filter to stream logs to Amazon OpenSearch Service. Use OpenSearch Dashboards (Kibana) for queries and visualization.",
+      "C": "Configure ECS to send logs directly to Amazon S3 using Firehose. Use Amazon Athena for interactive queries and Amazon QuickSight for dashboards.",
+      "D": "Configure ECS to send logs to a self-managed Elasticsearch cluster on EC2 instances. Use Kibana for queries and visualization."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because CloudWatch Logs Insights provides a purpose-built, serverless query engine for analyzing log data with no infrastructure to manage. The query language supports aggregation functions (count, avg, percentile), grouping, sorting, and time-series analysis — sufficient for identifying top endpoints, average response times, and error rate trends. CloudWatch Logs Insights can query up to 20 log groups simultaneously and handles 50 GB/day of log data without any capacity planning. CloudWatch dashboards can embed Logs Insights query results as widgets, providing the visualization requirement. ECS Fargate natively integrates with CloudWatch Logs through the awslogs log driver, requiring minimal configuration. This solution has zero operational overhead — no clusters, indexes, or storage management.",
+    "whyOthersAreWrong": {
+      "B": "Amazon OpenSearch Service provides powerful log analytics and Kibana dashboards, but it requires provisioning and managing an OpenSearch cluster (choosing instance types, configuring storage, managing indexes, handling cluster health). At 50 GB/day, the cluster needs adequate storage and compute capacity planning. OpenSearch clusters run continuously, incurring costs regardless of query volume. For the analysis requirements described (top N, averages, trends), CloudWatch Logs Insights provides sufficient functionality with zero infrastructure management.",
+      "C": "Sending logs to S3 via Firehose and querying with Athena works but adds multiple components (Firehose delivery stream, S3 bucket, Athena queries) and introduces query latency (Firehose buffers data before delivery, and Athena must scan S3 files). Athena charges per data scanned, so querying 50 GB/day of uncompressed logs could be expensive for frequent interactive queries. QuickSight adds another service to manage. This approach has more components and higher operational complexity than CloudWatch Logs Insights.",
+      "D": "A self-managed Elasticsearch cluster on EC2 requires managing EC2 instances, Elasticsearch installation, configuration, patching, scaling, backup, and monitoring. This is the highest operational overhead option and contradicts the requirement to minimize operational overhead."
+    },
+    "learningObjective": "Use CloudWatch Logs Insights for serverless, interactive log analysis with embedded dashboard visualization.",
+    "topic": "Amazon CloudWatch",
+    "tags": ["CloudWatch", "Logs-Insights", "ECS", "log-analysis", "observability", "serverless"]
+  },
+  {
+    "id": "saa-020-10",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building a document collaboration platform where multiple users can simultaneously edit the same document in real time. The platform must broadcast each user's edits to all other users viewing the same document within 200 milliseconds. The number of concurrent users per document varies from 2 to 50. The platform currently uses a polling mechanism where each user's browser sends HTTP requests every 2 seconds to check for updates, but this creates excessive API Gateway and Lambda invocation costs and does not meet the 200ms latency requirement. Which architecture provides real-time bidirectional communication MOST cost-effectively?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use Amazon API Gateway WebSocket APIs with Lambda functions to manage connections and broadcast messages. Store active connection IDs in DynamoDB, keyed by document ID.",
+      "B": "Use Amazon AppSync with GraphQL subscriptions over WebSocket connections. Configure AppSync resolvers to broadcast mutations to all subscribers of the same document.",
+      "C": "Deploy an Amazon EC2 instance running a WebSocket server (e.g., Socket.IO) behind a Network Load Balancer. Manage connections and broadcasting in the application code.",
+      "D": "Use Amazon SNS to broadcast updates. Each user's browser subscribes to an SNS topic for their document and receives push notifications."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because API Gateway WebSocket APIs provide managed, persistent, bidirectional connections between clients (browsers) and the backend. Unlike HTTP polling, WebSocket connections remain open, allowing the server to push updates to clients instantly when edits occur. When a user makes an edit, the Lambda function retrieves all connection IDs for that document from DynamoDB and sends the update to each connected client through the API Gateway management API (PostToConnection). This delivers updates within milliseconds, meeting the 200ms requirement. API Gateway WebSocket APIs charge per message and per connection-minute, which is significantly cheaper than the polling approach (which generates thousands of unnecessary API calls). DynamoDB provides fast lookup of connection IDs by document ID, supporting the broadcast pattern efficiently.",
+    "whyOthersAreWrong": {
+      "B": "Amazon AppSync with GraphQL subscriptions is a valid approach for real-time updates, but AppSync is designed for data-driven GraphQL APIs with a specific data model pattern. For a document collaboration platform with custom operational transformation or conflict resolution logic, AppSync's subscription model is more rigid than raw WebSocket APIs. AppSync subscriptions are triggered by mutations, which works for simple data broadcasts but may require complex resolver logic for collaborative editing semantics. AppSync also has higher per-message costs compared to API Gateway WebSocket APIs for this use case.",
+      "C": "Running a WebSocket server on EC2 requires managing instances, load balancing (NLB with sticky sessions for WebSocket), scaling, patching, and high availability. If the EC2 instance fails, all WebSocket connections are dropped. The company must implement connection management, broadcasting, and scaling logic in the application code. This has significant operational overhead compared to managed WebSocket APIs.",
+      "D": "Amazon SNS does not support direct push notifications to web browsers. SNS supports HTTPS endpoints, email, SMS, SQS, Lambda, and mobile push notifications (via platform applications), but not direct WebSocket or browser push connections. A web browser cannot subscribe to an SNS topic directly. This architecture is not feasible for real-time browser-based collaboration."
+    },
+    "learningObjective": "Implement real-time bidirectional communication for collaborative applications using API Gateway WebSocket APIs.",
+    "topic": "Amazon API Gateway",
+    "tags": ["API-Gateway", "WebSocket", "real-time", "Lambda", "DynamoDB", "collaboration"]
+  },
+  {
+    "id": "saa-020-11",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a data lake in Amazon S3 that contains sensitive customer data including PII (personally identifiable information). The company needs to discover and classify all PII data across 200 S3 buckets, create an inventory of where PII is stored, and continuously monitor for new PII data as it is added. The company must generate weekly compliance reports showing the types and locations of PII data. The solution should be automated and require minimal ongoing management. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable Amazon Macie across all 200 S3 buckets. Configure automated sensitive data discovery to classify objects containing PII. Use Macie findings to generate compliance reports through Amazon Security Hub.",
+      "B": "Create Lambda functions that use regular expressions to scan S3 objects for PII patterns. Schedule the Lambda functions to run weekly using EventBridge.",
+      "C": "Use Amazon Comprehend to analyze S3 objects for PII detection. Store detection results in DynamoDB and create a custom dashboard.",
+      "D": "Deploy Amazon Textract to extract text from all S3 objects and then use custom NLP models to identify PII."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Amazon Macie is purpose-built for PII discovery and data classification in Amazon S3. Macie uses machine learning and pattern matching to automatically identify sensitive data types including names, addresses, credit card numbers, Social Security numbers, passport numbers, and many other PII categories across multiple data formats (CSV, JSON, Parquet, text, etc.). Macie's automated sensitive data discovery continuously monitors S3 buckets for new objects and classifies them as they are added, meeting the continuous monitoring requirement. Macie generates detailed findings showing the type and location of PII, which can be aggregated through Security Hub for compliance reporting. The weekly compliance reports can be generated using Macie's built-in findings export or through Security Hub insights. Macie requires minimal configuration — enable it, select the buckets, and it handles discovery automatically.",
+    "whyOthersAreWrong": {
+      "B": "Custom Lambda functions with regular expressions require building and maintaining PII detection patterns for every possible PII format — names, addresses (in multiple formats), phone numbers (in multiple country formats), credit card numbers, SSNs, passport numbers, etc. This is an enormous development effort with high false-positive and false-negative rates. Regular expressions cannot handle variations in PII formatting, multi-language content, or contextual PII detection. Lambda functions scanning 200 buckets weekly would be costly and slow for large data volumes.",
+      "C": "Amazon Comprehend provides NLP capabilities including PII detection, but it requires extracting text from S3 objects, sending it to the Comprehend API, and processing results — this is not automated for S3 bucket scanning. Building a pipeline to scan 200 buckets, handle all file formats, and process results requires significant custom infrastructure. Comprehend also charges per character analyzed, which could be expensive for a 200-bucket data lake. Macie is specifically designed for this use case with S3-native integration.",
+      "D": "Amazon Textract extracts text from images and documents (PDFs, photos), not from structured data formats like CSV, JSON, or Parquet that typically comprise a data lake. Using Textract as a general-purpose text extraction tool for all S3 objects is inappropriate and expensive. Building custom NLP models for PII detection requires ML expertise, training data, and ongoing model maintenance. This approach is overengineered compared to Macie's built-in capabilities."
+    },
+    "learningObjective": "Implement automated PII discovery and classification across S3 data lakes using Amazon Macie.",
+    "topic": "Amazon Macie",
+    "tags": ["Macie", "PII", "data-classification", "S3", "compliance", "security"]
+  },
+  {
+    "id": "saa-020-12",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a global content management system that serves media files (images, videos, documents) to users worldwide. The content is stored in Amazon S3 in us-east-1. The company uses Amazon CloudFront for global distribution. Some premium content must only be accessible to paid subscribers, and access must expire after 24 hours. The company wants to restrict premium content access at the CloudFront level and prevent direct S3 access. The solution must support thousands of concurrent premium users without generating individual signed URLs for each file. Which approach MOST efficiently restricts premium content access?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use CloudFront signed URLs for each premium content request. Generate a unique signed URL for each file the subscriber accesses.",
+      "B": "Use CloudFront signed cookies. When a subscriber authenticates, set a signed cookie with a 24-hour expiration that grants access to all premium content paths. CloudFront validates the cookie on each request.",
+      "C": "Use CloudFront Origin Access Control to restrict S3 access. Add the subscriber's IP address to the CloudFront distribution's IP whitelist.",
+      "D": "Create separate CloudFront distributions for premium and free content. Restrict the premium distribution's access using AWS WAF IP-based rules."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because CloudFront signed cookies grant access to multiple files using a single authentication token. When a subscriber authenticates to the premium content system, the application sets three signed cookies (CloudFront-Policy, CloudFront-Signature, CloudFront-Key-Pair-Id) in the subscriber's browser with a custom policy specifying the premium content paths and a 24-hour expiration. For every subsequent request to premium content, the browser automatically sends the cookies, and CloudFront validates the signature and expiration before serving the content. This is efficient because a single sign-in grants access to all premium files without generating individual signed URLs for each file — important when a page may load dozens of images and videos. The signed cookies use a trusted key group managed in CloudFront for signing.",
+    "whyOthersAreWrong": {
+      "A": "CloudFront signed URLs work but require generating a unique URL for every individual file the subscriber accesses. For media-rich pages with dozens of images, videos, and documents, this means generating and managing dozens of signed URLs per page load. Each URL must be unique and individually signed, creating overhead in the application and increasing latency. Signed cookies provide the same security with much less overhead for multi-file access patterns.",
+      "C": "CloudFront OAC restricts S3 access to only the CloudFront distribution (preventing direct S3 access), which is a good practice but does not provide subscriber-level access control. IP whitelisting is not practical for thousands of subscribers whose IP addresses change frequently (mobile networks, ISP dynamic IPs, VPN usage). CloudFront does not have a simple 'IP whitelist' feature for this purpose.",
+      "D": "Separate CloudFront distributions for premium and free content add operational complexity (two distributions to manage, two domain names, separate cache behaviors). WAF IP-based rules cannot effectively restrict access for thousands of dynamic subscriber IPs. IP-based rules are suitable for blocking known bad actors, not for authenticating legitimate subscribers."
+    },
+    "learningObjective": "Implement CloudFront signed cookies for efficient multi-file premium content access with time-based expiration.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "signed-cookies", "content-restriction", "security", "premium-content"]
+  },
+  {
+    "id": "saa-020-13",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a batch processing system that reads input files from Amazon S3, processes them using Amazon EMR, and writes output files back to S3. The input files range from 100 MB to 10 GB each. The EMR cluster uses EMRFS to access S3. The company notices that when multiple EMR steps try to write output to the same S3 prefix simultaneously, some output files are occasionally missing or corrupted. What is the MOST likely cause, and what is the recommended solution?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "S3 does not support concurrent writes from multiple sources. Use Amazon EFS as the output storage and copy the results to S3 after all jobs complete.",
+      "B": "The EMRFS consistent view feature is not enabled, causing eventual consistency issues with S3 LIST operations after write operations. Enable EMRFS consistent view using DynamoDB metadata tracking.",
+      "C": "The EMR steps are writing files with the same object keys, causing overwrites. Modify the output prefix to include the step ID or timestamp to ensure unique output locations.",
+      "D": "The S3 bucket has versioning disabled, causing concurrent PUT operations to the same key to lose data. Enable S3 versioning on the output bucket."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because when multiple EMR steps write output to the same S3 prefix with potentially overlapping filenames (such as part-00000, part-00001, etc. — the default Hadoop output file naming), the later write overwrites the earlier write for the same object key. This is the most common cause of missing or corrupted output files in concurrent EMR processing scenarios. S3 provides strong read-after-write consistency for PUT operations, but if two processes write to the same object key, the last writer wins. The recommended solution is to ensure each EMR step writes to a unique output prefix — for example, including the step ID, job ID, or timestamp in the S3 key prefix (s3://bucket/output/step-001/, s3://bucket/output/step-002/). This eliminates key collisions entirely.",
+    "whyOthersAreWrong": {
+      "A": "S3 does support concurrent writes from multiple sources. S3 is designed for high-throughput concurrent access. The issue is not that S3 cannot handle concurrent writes — the issue is that multiple writes to the same object key result in the last writer winning. S3's architecture supports millions of concurrent PUT operations to different keys.",
+      "B": "As of late 2020, Amazon S3 provides strong read-after-write consistency for all operations, including LIST operations after PUT. The eventual consistency issue that EMRFS consistent view addressed has been resolved by S3's strong consistency model. EMRFS consistent view is no longer needed for this purpose. The issue described (missing files) is more likely caused by key collisions than by consistency problems.",
+      "D": "S3 versioning preserves all versions of an object, so concurrent PUTs to the same key would create multiple versions rather than losing data. However, versioning adds complexity — the application would need to know which version to read, and multiple versions of output files create confusion. The correct solution is to avoid key collisions in the first place by using unique output prefixes, not to preserve all colliding writes as versions."
+    },
+    "learningObjective": "Prevent S3 output file collisions in concurrent EMR processing by using unique output prefixes per job step.",
+    "topic": "Amazon EMR",
+    "tags": ["EMR", "S3", "EMRFS", "batch-processing", "concurrency", "data-integrity"]
+  },
+  {
+    "id": "saa-020-14",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a microservices application where each service writes structured logs to Amazon CloudWatch Logs in JSON format. The operations team needs to correlate logs across services for a single user request that flows through 5 different services. Currently, finding all log entries for a single request requires searching each service's log group separately using the request ID. The company wants to query logs from all services in a single query and correlate them by request ID with sub-second query response times for the most recent 3 hours of data. Which approach provides the MOST efficient cross-service log correlation?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use CloudWatch Logs Insights to query multiple log groups simultaneously. Structure the query to filter by the request ID field across all 5 service log groups in a single query.",
+      "B": "Stream all service logs to a centralized Amazon OpenSearch Service cluster using CloudWatch Logs subscription filters. Use OpenSearch to query and correlate logs by request ID.",
+      "C": "Configure each service to write logs to a single shared CloudWatch Logs log group with a log stream per service. Query the single log group by request ID.",
+      "D": "Export all service logs to S3 every 5 minutes and use Amazon Athena to run cross-service queries on the exported log files."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because CloudWatch Logs Insights natively supports querying up to 50 log groups in a single query. By including all 5 service log groups in one Logs Insights query and filtering on the request ID field (parsed from the JSON log format), the operations team can retrieve all correlated log entries across all services in one query. Logs Insights automatically parses JSON fields, so filtering by @requestId or similar fields is straightforward. For the most recent 3 hours of data, Logs Insights queries return results quickly (typically seconds). This approach requires no additional infrastructure — CloudWatch Logs Insights is a built-in feature of CloudWatch Logs with no additional cost beyond the query charges. Each service maintains its own log group, preserving operational boundaries.",
+    "whyOthersAreWrong": {
+      "B": "OpenSearch Service would provide powerful querying and sub-second response times, but it requires provisioning a cluster (instance types, storage, networking), managing the cluster health, configuring subscription filters for each log group, and handling the operational overhead of an additional service. For the described use case (correlating logs by request ID for the recent 3 hours), CloudWatch Logs Insights provides sufficient capability without the operational burden of an OpenSearch cluster.",
+      "C": "Writing all service logs to a single log group breaks the operational boundary between services. Each service's log volume, retention policy, and access permissions are now shared, making it impossible to apply different retention periods or IAM access controls per service. A single log group also has throughput limits that could be reached when all 5 services write to it simultaneously. Separate log groups with multi-group Logs Insights queries provide the same correlation capability while maintaining service isolation.",
+      "D": "Exporting logs to S3 every 5 minutes introduces a minimum 5-minute delay before logs are queryable, violating the sub-second requirement for recent data. CloudWatch Logs export to S3 is also not a real-time operation — it can take hours to complete for large log groups. Athena queries on exported log files have higher latency than Logs Insights for recent data due to S3 file listing and scanning overhead."
+    },
+    "learningObjective": "Use CloudWatch Logs Insights multi-group queries for efficient cross-service log correlation by request ID.",
+    "topic": "Amazon CloudWatch",
+    "tags": ["CloudWatch", "Logs-Insights", "microservices", "log-correlation", "observability"]
+  },
+  {
+    "id": "saa-020-15",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an on-premises application that uses NFS file shares for shared storage. The company is migrating the application to AWS and wants to use Amazon EFS for the shared file system. During the migration, both the on-premises application and the AWS-based application must access the same file system simultaneously for a 2-week transition period. The on-premises data center is connected to AWS via an existing AWS Direct Connect connection. After the transition, all access will be from AWS only. Which configuration enables on-premises NFS access to Amazon EFS during the transition period?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an EFS file system in the VPC. Create an EFS mount target in each Availability Zone. Configure the on-premises servers to mount the EFS file system using the mount target's IP address over the Direct Connect connection.",
+      "B": "Deploy an AWS Storage Gateway File Gateway on premises. Configure the File Gateway to use the EFS file system as its backend storage.",
+      "C": "Create an EFS file system and use AWS DataSync to continuously synchronize files between the on-premises NFS share and the EFS file system.",
+      "D": "Create an EFS file system with an access point. Configure VPN connectivity from on premises and mount the EFS access point from the on-premises servers."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Amazon EFS supports NFS access from on-premises servers over AWS Direct Connect (or VPN). The EFS mount target creates an elastic network interface in the VPC with an IP address. On-premises servers can mount the EFS file system using the mount target's IP address (or DNS name, if DNS resolution is configured) over the existing Direct Connect connection, using the standard NFS protocol. This provides simultaneous access from both on-premises and AWS-based applications to the same EFS file system, with full read-write capabilities. The on-premises servers must have network connectivity to the VPC (via Direct Connect) and the security group on the EFS mount target must allow NFS traffic (port 2049) from the on-premises IP ranges. After the transition, the on-premises mount can be removed.",
+    "whyOthersAreWrong": {
+      "B": "AWS Storage Gateway File Gateway stores files in Amazon S3, not Amazon EFS. File Gateway presents an NFS interface to on-premises clients but uses S3 as the backend storage. It cannot connect to EFS as a backend. To use EFS as the shared file system, on-premises servers must mount EFS directly over Direct Connect.",
+      "C": "AWS DataSync synchronizes files between storage locations but creates separate copies of the data. If both the on-premises NFS share and EFS have separate copies, modifications made on one side must be synchronized to the other, which introduces latency and potential conflicts. This is not true simultaneous access to the same file system — it's data replication. Direct EFS mounting (option A) provides true shared access with immediate consistency.",
+      "D": "EFS access points are an entry point into an EFS file system that enforce a specific user identity and root directory. Access points do not change the network connectivity model — on-premises servers still need Direct Connect or VPN to reach the EFS mount target. Using a VPN instead of the existing Direct Connect adds unnecessary complexity and potentially lower performance. The question states that Direct Connect is already available, making VPN redundant."
+    },
+    "learningObjective": "Configure Amazon EFS for hybrid access during migration using on-premises NFS mounting over Direct Connect.",
+    "topic": "Amazon EFS",
+    "tags": ["EFS", "Direct-Connect", "hybrid", "NFS", "migration", "file-storage"]
+  },
+  {
+    "id": "saa-020-16",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an event-driven application that processes order events. When an order is placed, the application must perform three independent actions: charge the customer's payment method, reserve inventory, and send a confirmation email. Each action is handled by a separate microservice. If the payment charge fails, the inventory reservation must be rolled back. If the inventory reservation fails, the payment charge must be refunded. The company wants to implement this coordinated transaction across microservices using an AWS-managed orchestration service. Which architecture pattern BEST implements this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Step Functions with a saga pattern. Define the workflow with sequential steps for payment, inventory reservation, and email notification. Add compensation steps (refund payment, release inventory) in Catch blocks that execute when a step fails.",
+      "B": "Use Amazon SQS queues between each microservice. The order service sends messages to all three queues simultaneously. Each microservice processes its queue independently.",
+      "C": "Use Amazon EventBridge to emit an order event. Each microservice subscribes to the event and processes it independently. Use a dead-letter queue for failed events.",
+      "D": "Implement a two-phase commit protocol across all three microservices using distributed locking in Amazon DynamoDB."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because the saga pattern implemented in AWS Step Functions provides coordinated transaction management across microservices with compensation logic. The Step Functions workflow defines the order of operations: (1) charge payment, (2) reserve inventory, (3) send email. Each step invokes the respective microservice (via Lambda, ECS, or API). If step 2 (inventory) fails, the Catch block triggers a compensation step that calls the payment service to refund the charge. If step 1 (payment) fails, the workflow stops before inventory reservation (no compensation needed). Step Functions manages the state machine execution, retry logic, error handling, and compensation flow — all without custom orchestration code. The workflow execution history provides a complete audit trail of each transaction's outcome.",
+    "whyOthersAreWrong": {
+      "B": "SQS queues provide independent message delivery to each microservice, but they do not coordinate transactions across services. If the payment service succeeds but the inventory service fails, there is no built-in mechanism to trigger a payment refund. Each queue consumer operates independently without knowledge of the other consumers' outcomes. Implementing cross-service compensation would require additional coordination logic, effectively rebuilding what Step Functions provides natively.",
+      "C": "EventBridge with independent subscribers has the same coordination problem as SQS. Each microservice processes the event independently, and there is no orchestration to detect failures in one service and trigger compensation in another. A dead-letter queue captures failed events but does not trigger compensating actions in other services. This pattern is suitable for fire-and-forget events, not for coordinated transactions requiring rollback.",
+      "D": "Two-phase commit (2PC) is extremely difficult to implement correctly across distributed microservices and introduces significant complexity and performance overhead. 2PC requires all participants to hold locks during the prepare phase, which creates latency and reduces throughput. In distributed systems, 2PC is fragile — if the coordinator fails during the commit phase, participants may be left in an uncertain state. The saga pattern (option A) is the recommended approach for distributed transactions in microservices architectures because it uses compensating actions rather than distributed locking."
+    },
+    "learningObjective": "Implement the saga pattern using AWS Step Functions for coordinated transactions with compensation across microservices.",
+    "topic": "AWS Step Functions",
+    "tags": ["Step-Functions", "saga-pattern", "microservices", "transactions", "orchestration"]
+  },
+  {
+    "id": "saa-020-17",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a large-scale data processing platform that uses Amazon S3 for storage. The platform stores 500 million objects across 50 S3 buckets. The company needs to generate a daily report showing the total storage size, object count, and storage class distribution across all buckets. The company also needs to identify objects that have not been accessed in the last 180 days for potential archival. Running S3 LIST operations on 500 million objects is too slow and expensive. Which solution provides these analytics MOST efficiently?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable S3 Storage Lens across all buckets in the account. Use the Storage Lens dashboard to view aggregate metrics including storage size, object count, and storage class distribution. Use S3 Storage Lens advanced metrics for access pattern analysis.",
+      "B": "Enable S3 Inventory on each bucket to generate daily CSV reports of all objects. Use Amazon Athena to query the inventory reports for aggregate metrics and access pattern analysis.",
+      "C": "Use the S3 CloudWatch metrics (BucketSizeBytes and NumberOfObjects) for each bucket. Create a CloudWatch dashboard that aggregates these metrics across all 50 buckets.",
+      "D": "Write a Lambda function that calls the S3 ListObjectsV2 API on each bucket, processes the results, and writes summary statistics to DynamoDB."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because S3 Inventory generates comprehensive daily (or weekly) reports of all objects in a bucket, including object key, size, storage class, last modified date, and optionally additional metadata. The inventory reports are delivered as CSV, ORC, or Parquet files to a destination S3 bucket, where they can be queried with Amazon Athena. For 500 million objects, S3 Inventory efficiently generates complete reports without making individual LIST API calls. Athena queries on the inventory data can calculate total storage size, object count, storage class distribution, and identify objects not modified in the last 180 days (as a proxy for last accessed when combined with S3 access logging or S3 Storage Class Analysis). S3 Inventory is the most efficient method for comprehensive per-object analytics at this scale.",
+    "whyOthersAreWrong": {
+      "A": "S3 Storage Lens provides aggregate metrics (storage size, object count, storage class distribution) at the bucket, account, and organization level, which addresses the first part of the requirement. However, Storage Lens advanced metrics provide activity metrics (request counts, bytes transferred) at the bucket level, not individual object-level access tracking. Storage Lens cannot identify specific objects that have not been accessed in 180 days — it provides bucket-level aggregates, not per-object analytics. S3 Inventory (option B) provides the per-object granularity needed for archival identification.",
+      "C": "CloudWatch S3 metrics (BucketSizeBytes and NumberOfObjects) provide bucket-level aggregates for storage size and object count. However, these metrics are reported once daily and do not include storage class distribution or per-object access information. CloudWatch cannot identify individual objects for archival. These metrics address only part of the requirement.",
+      "D": "Listing 500 million objects using ListObjectsV2 would generate enormous numbers of API calls (each call returns up to 1,000 objects, requiring 500,000 API calls minimum). This is extremely slow (potentially hours), expensive (S3 LIST request charges), and would likely exceed Lambda's 15-minute timeout for individual buckets. S3 Inventory provides the same data without API call overhead."
+    },
+    "learningObjective": "Use S3 Inventory with Athena for efficient large-scale object analytics and archival identification.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "Inventory", "Athena", "analytics", "storage-management", "cost-optimization"]
+  },
+  {
+    "id": "saa-020-18",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a mobile application backend running on AWS that uses Amazon Cognito for user authentication. The backend API runs on Amazon API Gateway with Lambda functions. The company wants to implement a feature where users can share specific resources (e.g., a photo album) with other users by generating a shareable link. The link should grant temporary read access to the shared resource for anyone who has the link, without requiring the recipient to have an account. The link must expire after 7 days. Which approach implements this sharing feature MOST securely?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Generate an S3 presigned URL for the shared resource with a 7-day expiration. Share the presigned URL as the shareable link.",
+      "B": "Create a unique share token stored in DynamoDB with the resource ID and a 7-day TTL. The shareable link includes the token. A Lambda function validates the token and returns the resource if valid and not expired.",
+      "C": "Create a temporary IAM user with read permissions scoped to the specific resource. Embed the IAM credentials in the shareable link.",
+      "D": "Configure Amazon Cognito to issue a guest access token with a 7-day expiration. The shareable link includes the guest token for API Gateway authentication."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because it provides a secure, controlled sharing mechanism with fine-grained access control. When a user shares a resource, a Lambda function generates a unique, cryptographically random share token and stores it in DynamoDB with the resource ID, the sharing user's ID, permissions (read-only), and a 7-day TTL. The shareable link (e.g., https://app.example.com/share/{token}) is sent to the recipient. When the recipient clicks the link, the API Gateway invokes a Lambda function that validates the token against DynamoDB: checking existence, expiration, and permissions. If valid, the function retrieves and returns the resource. DynamoDB's TTL automatically deletes expired tokens, and the sharing user can revoke access by deleting the token from DynamoDB. This approach provides complete control over access without exposing underlying AWS resources.",
+    "whyOthersAreWrong": {
+      "A": "S3 presigned URLs can work for direct S3 object access, but they have limitations for this use case. Presigned URLs expose the S3 bucket name and object key in the URL, potentially leaking internal architecture details. Once generated, presigned URLs cannot be revoked before expiration unless the signing credentials are rotated (which affects all presigned URLs signed with those credentials). Additionally, presigned URLs bypass any application-level access logging or analytics, making it difficult to track who accessed shared resources.",
+      "C": "Creating IAM users for temporary sharing is an anti-pattern. IAM credentials embedded in URLs are long-term credentials that pose a security risk if the link is shared beyond the intended recipient. IAM users count toward account limits, and managing thousands of temporary IAM users for sharing operations is operationally unmanageable. IAM credentials do not inherently expire based on the share timeframe.",
+      "D": "Cognito guest access tokens (unauthenticated identities) provide temporary AWS credentials through Cognito Identity Pools, but they are designed for providing limited AWS service access to anonymous users, not for resource-specific sharing. Guest tokens grant the same permissions to all guests based on the unauthenticated IAM role, not per-resource permissions. They also cannot be scoped to a specific shared resource or controlled per-link."
+    },
+    "learningObjective": "Design a secure resource sharing mechanism using DynamoDB-backed tokens with TTL for temporary access without authentication.",
+    "topic": "Application Architecture",
+    "tags": ["DynamoDB", "Lambda", "API-Gateway", "sharing", "security", "TTL"]
+  },
+  {
+    "id": "saa-020-19",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has deployed an application that uses Amazon Aurora MySQL as its primary database. The company's data science team needs to run complex analytical queries (aggregations, joins across large tables, window functions) against the production data without impacting the production application's performance. The analytical queries scan millions of rows and take 5-15 minutes to complete. Running these queries on the production Aurora cluster causes CPU spikes that degrade the production application's response times. Which solution allows the data science team to run analytical queries without impacting production?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add Aurora Replicas to the cluster and direct the data science team's queries to the reader endpoint.",
+      "B": "Enable Aurora zero-ETL integration with Amazon Redshift. The data science team runs analytical queries in Redshift, which automatically receives near-real-time data from Aurora without manual ETL processes.",
+      "C": "Create a nightly Aurora snapshot, restore it to a separate Aurora cluster, and have the data science team query the restored cluster.",
+      "D": "Create an Aurora clone of the production cluster daily and have the data science team query the clone."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because Aurora zero-ETL integration with Amazon Redshift continuously replicates data from Aurora to Redshift without requiring manual ETL pipelines. The data is available in Redshift within seconds of being written to Aurora. Amazon Redshift is purpose-built for analytical workloads — it uses columnar storage, massively parallel processing (MPP), and query optimization for the types of complex analytical queries the data science team needs to run (aggregations, large joins, window functions). Running these queries in Redshift has zero impact on the Aurora production cluster because Redshift operates independently. The replication is managed by AWS, requiring no custom code or ETL maintenance. Redshift can handle queries scanning millions of rows efficiently with its distributed architecture.",
+    "whyOthersAreWrong": {
+      "A": "Aurora Replicas share the same underlying storage cluster as the writer instance. While read queries on replicas do not consume writer CPU for query processing, the shared storage layer means that heavy analytical queries on replicas can generate I/O contention that affects the writer's performance. Long-running queries (5-15 minutes) scanning millions of rows can also cause the replica to lag behind the writer, and Aurora's page cache on the replica can be polluted by the analytical workload, affecting subsequent production read queries. Aurora is optimized for OLTP, not OLAP workloads.",
+      "C": "Nightly snapshots provide a static copy of the data that is up to 24 hours old. The data science team cannot access data written after the snapshot was taken. Restoring from a snapshot creates a new Aurora cluster that takes 15-30 minutes to become available and runs continuously until deleted, incurring compute costs. This approach requires manual coordination and does not provide near-real-time data.",
+      "D": "Daily Aurora clones are faster to create than snapshot restores (they use copy-on-write), but they still represent a point-in-time copy that becomes stale immediately after creation. Running analytical queries on a clone does not impact the production cluster (clones have separate compute), but the data staleness issue remains. Additionally, each clone runs as a separate Aurora cluster with compute charges. Redshift Serverless or provisioned Redshift with zero-ETL provides continuously updated data without manual clone management."
+    },
+    "learningObjective": "Use Aurora zero-ETL integration with Redshift to enable near-real-time analytical queries without impacting OLTP production workloads.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "Redshift", "zero-ETL", "analytics", "OLTP", "OLAP"]
+  },
+  {
+    "id": "saa-020-20",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a three-tier web application deployed in a single AWS Region. The architecture includes an Application Load Balancer, EC2 instances in an Auto Scaling group, and an Amazon RDS for PostgreSQL database. The company wants to optimize costs across the entire stack. Analysis shows: the ALB handles an average of 100 new connections per second with 50 LCUs during peak; the Auto Scaling group maintains 8-12 instances of m5.xlarge during business hours and 3 instances during off-hours; the RDS instance is a db.r5.2xlarge running 24/7. The company can commit to 1 year of usage. Which combination of purchasing strategies provides the MOST cost savings? (Choose THREE.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Purchase a Compute Savings Plan to cover the consistent baseline of 3 EC2 instances running 24/7, and use On-Demand pricing for the additional instances during business hours.",
+      "B": "Purchase Reserved Instances for all 12 EC2 instances to maximize the Reserved Instance discount.",
+      "C": "Purchase an RDS Reserved Instance for the db.r5.2xlarge instance with a 1-year term to reduce the database compute costs.",
+      "D": "Switch from the Application Load Balancer to a Network Load Balancer to reduce load balancer costs.",
+      "E": "Use Spot Instances for the additional instances beyond the baseline 3, since the application tier is stateless and behind a load balancer."
+    },
+    "correctAnswers": ["A", "C", "E"],
+    "explanation": "A is correct because a Compute Savings Plan covers the baseline of 3 instances running 24/7 at a significant discount (up to 66% compared to On-Demand). The Savings Plan commitment is set to the hourly spend equivalent of 3 m5.xlarge instances. Compute Savings Plans offer flexibility — they apply to EC2, Fargate, and Lambda, and are not locked to a specific instance type. Any usage beyond the commitment is charged at On-Demand rates. C is correct because the RDS instance runs 24/7 with a consistent instance type, making it an ideal candidate for Reserved Instance pricing. A 1-year RDS Reserved Instance provides approximately 30-42% savings compared to On-Demand pricing (depending on upfront payment choice). Since the database runs continuously with no plans to change, the reserved pricing is clearly beneficial. E is correct because the additional instances beyond the baseline 3 (scaling to 8-12 during business hours) are stateless application tier instances behind a load balancer. If a Spot Instance is interrupted, the Auto Scaling group automatically launches a replacement, and the ALB routes traffic to healthy instances. Spot Instances provide 60-90% savings compared to On-Demand, which is significantly more than any commitment-based discount for the variable portion of the fleet.",
+    "whyOthersAreWrong": {
+      "B": "Reserving all 12 instances wastes money because 12 instances are only needed during peak business hours. During off-hours (roughly 14 hours per day and weekends — approximately 70% of total hours), only 3 instances are running, meaning 9 Reserved Instances sit unused. Reserved Instances are charged regardless of usage, so reserving the peak capacity means paying for unused reservations during most of the day.",
+      "D": "Switching from ALB to NLB to save cost is inappropriate because the application is a web application that likely uses HTTP/HTTPS features (path-based routing, host-based routing, sticky sessions, WebSocket support, HTTP/2) that NLB does not provide. NLB operates at Layer 4 (TCP/UDP) and does not understand HTTP semantics. While NLB pricing is different (per-NLCU-hour vs per-LCU-hour), the functional capabilities would be lost. Cost optimization should not compromise application functionality."
+    },
+    "learningObjective": "Apply the optimal combination of Savings Plans, Reserved Instances, and Spot Instances for cost optimization across a multi-tier application.",
+    "topic": "AWS Cost Optimization",
+    "tags": ["Savings-Plans", "Reserved-Instances", "Spot-Instances", "cost-optimization", "EC2", "RDS"]
+  }
+]
