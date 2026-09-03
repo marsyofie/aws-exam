@@ -20,4 +20,6 @@ export interface ExamState {
   submittedQuestions: Record<string, boolean>; // true if correct, false if wrong
   score: number;
   phase: "setup" | "exam" | "result" | "review";
+  examName?: string;
+  setName?: string;
 }

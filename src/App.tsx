@@ -20,7 +20,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const startExam = async (examId: string, setId: string) => {
+  const startExam = async (examId: string, setId: string, examName: string, setName: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -33,7 +33,9 @@ function App() {
       setExamState({
         ...initialState,
         questions,
-        phase: "exam"
+        phase: "exam",
+        examName,
+        setName
       });
     } catch (err) {
       setError("Failed to load questions.");
@@ -116,6 +118,8 @@ function App() {
             total={examState.questions.length}
             savedAnswer={examState.answers[examState.questions[examState.currentQuestionIndex].id]}
             isSubmitted={examState.submittedQuestions[examState.questions[examState.currentQuestionIndex].id] !== undefined}
+            examName={examState.examName}
+            setName={examState.setName}
             onAnswerSubmit={handleAnswerSubmit}
             onNext={nextQuestion}
             onPrevious={previousQuestion}

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { QuestionSet, fetchQuestionSets } from '../utils/questionUtils';
 
 interface ExamSetupProps {
-  onStart: (examId: string, setId: string) => void;
+  onStart: (examId: string, setId: string, examName: string, setName: string) => void;
 }
 
 const ExamSetup: React.FC<ExamSetupProps> = ({ onStart }) => {
@@ -26,7 +26,13 @@ const ExamSetup: React.FC<ExamSetupProps> = ({ onStart }) => {
 
   const handleStart = () => {
     if (selectedSet) {
-      onStart(examId, selectedSet);
+      const selectedSetObj = sets.find(s => s.id === selectedSet);
+      const setName = selectedSetObj ? selectedSetObj.name : selectedSet;
+      // Map examId to name manually since it's hardcoded in select for now
+      let examName = "Solutions Architect - Associate";
+      if (examId === 'saa') examName = "AWS Solutions Architect - Associate";
+      
+      onStart(examId, selectedSet, examName, setName);
     }
   };
 

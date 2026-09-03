@@ -10,6 +10,8 @@ interface QuestionCardProps {
   total: number;
   savedAnswer: string[] | undefined;
   isSubmitted: boolean;
+  examName?: string;
+  setName?: string;
   onAnswerSubmit: (answer: string[]) => void;
   onNext: () => void;
   onPrevious: () => void;
@@ -21,6 +23,8 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   total,
   savedAnswer,
   isSubmitted,
+  examName,
+  setName,
   onAnswerSubmit,
   onNext,
   onPrevious
@@ -59,7 +63,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   return (
     <div className="max-w-3xl mx-auto mt-10 p-4">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-2">AWS Solutions Architect - Associate</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-1">
+          {examName || 'AWS Solutions Architect - Associate'}
+        </h2>
+        {setName && <p className="text-sm text-gray-600 mb-3">{setName}</p>}
         <ProgressBar current={currentIndex + 1} total={total} />
       </div>
 
