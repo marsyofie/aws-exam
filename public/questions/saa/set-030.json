@@ -1,0 +1,466 @@
+[
+  {
+    "id": "saa-030-01",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial services company runs a portfolio risk calculation application on a fleet of Amazon EC2 instances in a private subnet. The application must retrieve updated market data files every 5 minutes from a third-party provider's HTTPS endpoint on the public internet. The security team requires that all outbound internet traffic from the VPC be inspected by a centralized network firewall appliance running on EC2 instances in a shared services VPC. The two VPCs are connected via AWS Transit Gateway. The company wants to minimize the operational overhead of maintaining the network path for this traffic. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a NAT gateway in the shared services VPC. Configure the Transit Gateway route table to route 0.0.0.0/0 traffic from the application VPC to the shared services VPC. Configure the shared services VPC route table to send traffic through the firewall appliance and then to the NAT gateway.",
+      "B": "Create a NAT gateway in the application VPC's private subnet. Configure the private subnet route table to send 0.0.0.0/0 traffic to the NAT gateway. Configure a security group on the NAT gateway to allow only HTTPS traffic.",
+      "C": "Deploy an AWS Network Firewall endpoint in the application VPC. Configure the private subnet route table to send 0.0.0.0/0 traffic to the Network Firewall endpoint. Create a NAT gateway in the application VPC and route inspected traffic through it.",
+      "D": "Create a VPC endpoint for the third-party HTTPS endpoint. Configure the private subnet route table to route traffic to the VPC endpoint. Use endpoint policies to restrict access to the specific provider."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because the requirement explicitly states that all outbound internet traffic must be inspected by a centralized firewall appliance running in the shared services VPC. Since the VPCs are already connected via Transit Gateway, routing 0.0.0.0/0 from the application VPC through the Transit Gateway to the shared services VPC allows traffic to pass through the existing firewall appliance before reaching the internet via a NAT gateway. This approach centralizes the inspection point and leverages the existing Transit Gateway connectivity, minimizing operational overhead compared to deploying additional firewall infrastructure.",
+    "whyOthersAreWrong": {
+      "B": "A NAT gateway in the application VPC bypasses the centralized firewall in the shared services VPC, violating the security requirement. Additionally, NAT gateways do not support security groups.",
+      "C": "Deploying AWS Network Firewall in the application VPC creates a separate inspection point rather than using the existing centralized firewall appliance in the shared services VPC, which contradicts the stated architecture requirement and increases operational overhead.",
+      "D": "VPC endpoints provide private connectivity to supported AWS services or AWS Marketplace partner services, not arbitrary third-party HTTPS endpoints on the public internet. This solution is technically infeasible."
+    },
+    "learningObjective": "Design centralized internet egress with traffic inspection using Transit Gateway and a shared services VPC.",
+    "topic": "AWS Transit Gateway",
+    "tags": ["Transit Gateway", "NAT Gateway", "network firewall", "centralized egress", "VPC"]
+  },
+  {
+    "id": "saa-030-02",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company stores raw video files in Amazon S3. An AWS Lambda function is triggered by S3 event notifications to transcode each uploaded video into multiple formats. The Lambda function calls Amazon Elastic Transcoder to perform the transcoding. Recently, users have reported that some large video files (over 2 GB) are not being transcoded. The operations team confirmed that the Lambda function is timing out before the transcoding job completes. The company needs a solution that reliably processes all video files regardless of size, with minimal changes to the existing workflow. Which solution should the solutions architect recommend?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the Lambda function timeout to the maximum of 15 minutes and increase the memory allocation to improve processing speed.",
+      "B": "Modify the Lambda function to submit the transcoding job and immediately return. Create a second Lambda function triggered by an Amazon EventBridge rule that monitors the Elastic Transcoder job completion event to handle post-processing.",
+      "C": "Replace the Lambda function with an Amazon EC2 instance that polls the S3 bucket for new objects and processes transcoding synchronously.",
+      "D": "Configure S3 event notifications to send messages to an Amazon SNS topic instead of invoking Lambda directly. Subscribe the Lambda function to the SNS topic to increase the processing window."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because the root cause is the Lambda function waiting synchronously for the transcoding job to complete, which exceeds the 15-minute Lambda timeout for large files. By modifying the Lambda function to submit the job and return immediately (asynchronous pattern), the function executes in seconds regardless of file size. A second Lambda function triggered by the Elastic Transcoder completion event via EventBridge handles any post-processing. This event-driven, asynchronous approach is reliable for files of any size and requires minimal changes to the existing workflow.",
+    "whyOthersAreWrong": {
+      "A": "Even with the maximum 15-minute timeout, transcoding large video files can take much longer than 15 minutes. This does not solve the fundamental issue of synchronous waiting for a long-running job.",
+      "C": "Replacing Lambda with an EC2 instance that polls S3 significantly increases operational overhead (instance management, scaling, availability) and represents a major architecture change rather than a minimal modification.",
+      "D": "Routing through SNS does not change the Lambda execution timeout. The Lambda function would still time out waiting for the transcoding job to complete, regardless of how it was invoked."
+    },
+    "learningObjective": "Design an asynchronous, event-driven architecture to handle long-running processing tasks that exceed Lambda timeout limits.",
+    "topic": "AWS Lambda",
+    "tags": ["Lambda", "event-driven", "asynchronous", "S3", "EventBridge", "media processing"]
+  },
+  {
+    "id": "saa-030-03",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A retail company operates a multi-account AWS environment managed by AWS Organizations. The company has separate AWS accounts for development, staging, and production workloads. The security team needs to ensure that no IAM user or role in any account can launch EC2 instances using instance types larger than m5.xlarge, except in the production account. The solution must be enforceable across all current and future accounts in the organization, and individual account administrators must not be able to override this restriction. Which approach meets these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an IAM policy that denies the ec2:RunInstances action for instance types larger than m5.xlarge. Attach this policy to all IAM users and roles in the development and staging accounts.",
+      "B": "Create a service control policy (SCP) that denies the ec2:RunInstances action for instance types larger than m5.xlarge. Attach the SCP to the organizational units (OUs) containing the development and staging accounts.",
+      "C": "Create an AWS Config rule that detects EC2 instances larger than m5.xlarge. Configure an automatic remediation action to terminate non-compliant instances in all non-production accounts.",
+      "D": "Create a service control policy (SCP) that denies the ec2:RunInstances action for instance types larger than m5.xlarge. Attach the SCP to the root of the organization and use a condition key to exclude the production account."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because SCPs provide a centralized, enforceable guardrail that cannot be overridden by individual account administrators. Attaching the SCP to the OUs containing development and staging accounts applies the restriction to all accounts in those OUs (including future accounts added to these OUs) while naturally excluding the production account. This approach requires no per-account IAM policy management and ensures the restriction is enforced regardless of what account administrators do.",
+    "whyOthersAreWrong": {
+      "A": "IAM policies attached to individual users and roles can be modified or detached by account administrators, meaning the restriction can be overridden. This approach also requires ongoing management as new users and roles are created.",
+      "C": "AWS Config remediation is reactive, not preventive. Instances would be launched and then terminated, which could cause disruption. It also does not prevent the launch in the first place, only detects and remediates after the fact.",
+      "D": "While using an SCP at the root is a valid approach, SCP condition keys do not support filtering by AWS account ID for the ec2:RunInstances action in this manner. The OU-based approach in B is the standard and cleaner way to exclude specific accounts from an SCP."
+    },
+    "learningObjective": "Apply service control policies to enforce preventive guardrails across an AWS Organizations multi-account environment.",
+    "topic": "AWS Organizations",
+    "tags": ["Organizations", "SCP", "multi-account", "governance", "IAM", "EC2"]
+  },
+  {
+    "id": "saa-030-04",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A healthcare company stores patient imaging data in Amazon S3. The data must be retained for 7 years to comply with regulatory requirements. During the first 90 days, the images are accessed frequently for diagnostic review. After 90 days, images are accessed approximately once per quarter. After 1 year, images are rarely accessed but must remain available within 12 hours when requested. The company wants to minimize storage costs while ensuring that no data can be deleted before the 7-year retention period expires. Which combination of S3 configurations meets these requirements? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure an S3 Lifecycle policy to transition objects to S3 Standard-Infrequent Access after 90 days, to S3 Glacier Flexible Retrieval after 1 year.",
+      "B": "Configure an S3 Lifecycle policy to transition objects to S3 One Zone-Infrequent Access after 90 days, to S3 Glacier Deep Archive after 1 year.",
+      "C": "Enable S3 Object Lock in compliance mode with a retention period of 7 years on the bucket.",
+      "D": "Enable S3 Versioning and configure a bucket policy that denies the s3:DeleteObject action for all principals.",
+      "E": "Enable S3 Object Lock in governance mode with a retention period of 7 years on the bucket."
+    },
+    "correctAnswers": ["A", "C"],
+    "explanation": "A is correct because it matches the access patterns: S3 Standard for the first 90 days of frequent access, S3 Standard-IA for the quarter-by-quarter access pattern from 90 days to 1 year, and Glacier Flexible Retrieval (which supports retrieval within 3-12 hours) for the rarely accessed data after 1 year. C is correct because S3 Object Lock in compliance mode provides WORM (Write Once Read Many) protection that prevents anyone, including the root user, from deleting objects before the retention period expires. This satisfies the regulatory requirement that no data can be deleted before 7 years.",
+    "whyOthersAreWrong": {
+      "B": "S3 One Zone-IA stores data in a single Availability Zone, which is inappropriate for healthcare patient data requiring high durability. Glacier Deep Archive has a default retrieval time of up to 48 hours, which exceeds the 12-hour retrieval requirement.",
+      "D": "A bucket policy denying s3:DeleteObject can be modified or removed by account administrators with sufficient IAM permissions. This does not provide the immutable, regulatory-grade protection required. Versioning alone does not prevent deletion of objects.",
+      "E": "S3 Object Lock in governance mode allows users with the s3:BypassGovernanceRetention permission to override the retention settings and delete objects. This does not meet the requirement that no data can be deleted before the 7-year retention period."
+    },
+    "learningObjective": "Design a cost-optimized S3 storage strategy with regulatory-compliant data retention using lifecycle policies and Object Lock.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "lifecycle", "Object Lock", "compliance", "Glacier", "data retention", "healthcare"]
+  },
+  {
+    "id": "saa-030-05",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A logistics company runs a fleet management application that tracks 50,000 delivery vehicles in real time. Each vehicle sends GPS location updates every 5 seconds. The application must ingest these location updates, store the current position of each vehicle for a real-time dashboard, and archive all historical location data for route analysis. The dashboard must reflect the latest position within 2 seconds of receipt. The company expects the vehicle fleet to double within the next year. Which architecture meets these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Ingest location updates through Amazon Kinesis Data Streams. Use an AWS Lambda consumer to write the latest position to Amazon DynamoDB and archive all records to Amazon S3 via Amazon Data Firehose.",
+      "B": "Ingest location updates through Amazon SQS. Use an Auto Scaling group of EC2 instances to consume messages, write the latest position to Amazon RDS MySQL, and archive records to Amazon S3.",
+      "C": "Ingest location updates through Amazon API Gateway backed by AWS Lambda. Write each update directly to Amazon Aurora and use Aurora read replicas for the dashboard.",
+      "D": "Ingest location updates through Amazon Managed Streaming for Apache Kafka (Amazon MSK). Deploy an Apache Flink application on Amazon EMR to process streams, write to Amazon Redshift for the dashboard, and archive to Amazon S3."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Amazon Kinesis Data Streams can handle the high-throughput ingestion (10,000+ records per second, scaling to 20,000+). A Lambda consumer provides sub-second processing for writing the latest position to DynamoDB, which offers single-digit millisecond latency for the dashboard reads. Amazon Data Firehose can archive all records to S3 for historical analysis. This serverless architecture scales automatically and requires the least operational overhead. DynamoDB's key-value model is ideal for storing the latest position per vehicle using the vehicle ID as the partition key.",
+    "whyOthersAreWrong": {
+      "B": "Amazon SQS does not guarantee ordered processing and introduces polling latency, making it harder to meet the 2-second dashboard requirement. Managing an Auto Scaling group of EC2 instances for consumers adds significant operational overhead. RDS MySQL would face write throughput bottlenecks at this scale.",
+      "C": "API Gateway with Lambda synchronous invocation introduces additional latency and has concurrency limits that may be challenging at 10,000 updates per second. Writing every update directly to Aurora would create write contention at this scale, and Aurora is not optimal for simple key-value lookups required by the real-time dashboard.",
+      "D": "Amazon MSK and Apache Flink on EMR are powerful but introduce significant operational overhead for cluster management, scaling, and maintenance. Amazon Redshift is optimized for analytical queries, not the low-latency, point-read pattern required by a real-time dashboard."
+    },
+    "learningObjective": "Design a real-time data ingestion and processing pipeline for IoT-scale workloads using serverless AWS services.",
+    "topic": "Amazon Kinesis",
+    "tags": ["Kinesis", "DynamoDB", "Lambda", "real-time", "IoT", "Data Firehose", "serverless"]
+  },
+  {
+    "id": "saa-030-06",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A SaaS company provides a document collaboration platform to enterprise customers. Each customer's data must be completely isolated from other customers. The application uses Amazon RDS PostgreSQL for metadata and Amazon S3 for document storage. The company currently has 200 customers and expects to grow to 2,000 within 2 years. Some enterprise customers require dedicated database resources to meet their SLAs, while most customers can share infrastructure. The company wants a solution that balances cost efficiency with the ability to provide dedicated resources when required. Which approach BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a separate AWS account for each customer using AWS Organizations. Deploy an individual RDS instance and S3 bucket in each account. Use AWS Resource Access Manager to share common resources.",
+      "B": "Use a shared RDS PostgreSQL instance with schema-based isolation for standard customers. Provision dedicated RDS instances for enterprise customers requiring dedicated resources. Use separate S3 bucket prefixes per customer with bucket policies enforcing isolation.",
+      "C": "Deploy a single large RDS PostgreSQL instance for all customers using row-level security. Store all documents in a single S3 bucket with object-level IAM policies for isolation.",
+      "D": "Deploy Amazon Aurora Serverless for all customers in a single database with separate tables per customer. Use a single S3 bucket with S3 Access Points for each customer."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because it provides a tiered approach that balances cost efficiency with isolation requirements. Schema-based isolation in a shared RDS instance is cost-effective for the majority of standard customers while providing logical data separation. Enterprise customers who require dedicated resources receive their own RDS instances, meeting their specific SLA requirements. Separate S3 prefixes with bucket policies provide data isolation at the storage layer. This architecture scales from 200 to 2,000 customers without requiring 2,000 separate database instances.",
+    "whyOthersAreWrong": {
+      "A": "Creating a separate AWS account for each of 2,000 customers results in extreme operational overhead for account management, deployment, monitoring, and maintenance. This approach does not scale cost-effectively for the majority of standard customers.",
+      "C": "A single large RDS instance with row-level security creates a single point of failure for all customers and does not support the requirement to provide dedicated resources for enterprise customers. Row-level security in PostgreSQL also adds application complexity and may impact query performance at scale.",
+      "D": "Using separate tables per customer in a single database becomes unmanageable at 2,000 customers (2,000+ tables). Aurora Serverless does not support the dedicated resource isolation required by enterprise customers. This approach provides no path to dedicated database resources."
+    },
+    "learningObjective": "Design a multi-tenant SaaS architecture that balances data isolation, cost efficiency, and the ability to offer dedicated resources.",
+    "topic": "Amazon RDS",
+    "tags": ["RDS", "multi-tenant", "SaaS", "S3", "data isolation", "PostgreSQL"]
+  },
+  {
+    "id": "saa-030-07",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a web application running on Amazon EC2 instances behind an Application Load Balancer (ALB) in the us-east-1 Region. The application uses Amazon RDS MySQL with a Multi-AZ deployment for its database. The company needs to implement a disaster recovery solution in us-west-2 with an RTO of 30 minutes and an RPO of 5 minutes. During normal operations, the DR environment should not serve production traffic. The company wants to minimize the cost of the DR infrastructure. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an RDS cross-Region read replica in us-west-2. Deploy a minimal set of EC2 instances behind an ALB in us-west-2. Use Amazon Route 53 with a failover routing policy to direct traffic to the us-west-2 ALB during a disaster. Scale up the EC2 instances after failover.",
+      "B": "Set up automated RDS snapshots with cross-Region snapshot copy to us-west-2 every hour. Create an AMI of the EC2 instances and copy to us-west-2. During a disaster, restore the RDS snapshot and launch EC2 instances from the AMI.",
+      "C": "Deploy a fully scaled identical production environment in us-west-2. Use Amazon Route 53 with weighted routing to distribute 0% of traffic to us-west-2 during normal operations. Shift traffic to 100% during a disaster.",
+      "D": "Use AWS Database Migration Service with continuous replication to replicate the RDS database to us-west-2. Deploy EC2 instances in us-west-2 using an Auto Scaling group with a desired capacity of zero. Increase the capacity during a disaster."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because an RDS cross-Region read replica provides continuous asynchronous replication with an RPO of typically seconds to minutes (within the 5-minute requirement). During a disaster, the read replica can be promoted to a standalone primary database within minutes. A minimal set of EC2 instances (warm standby) behind an ALB in us-west-2 can be scaled up quickly. Route 53 failover routing automatically redirects traffic when the primary Region is unhealthy. This warm standby approach meets the 30-minute RTO while minimizing costs by running minimal infrastructure during normal operations.",
+    "whyOthersAreWrong": {
+      "B": "Hourly snapshot copies provide an RPO of up to 1 hour, which exceeds the 5-minute RPO requirement. Restoring an RDS instance from a snapshot and launching new EC2 instances typically takes well over 30 minutes, violating the RTO requirement.",
+      "C": "A fully scaled identical production environment meets the RTO and RPO requirements but is the most expensive option. Since the DR environment does not serve traffic during normal operations, running a full production copy is unnecessarily costly and does not satisfy the requirement to minimize DR infrastructure cost.",
+      "D": "While DMS continuous replication can meet the RPO, an Auto Scaling group with zero capacity means no instances are running. Launching instances from zero during a disaster requires AMI boot, application initialization, and health checks, which may exceed the 30-minute RTO depending on application complexity."
+    },
+    "learningObjective": "Design a cross-Region disaster recovery architecture using a warm standby approach that balances RTO/RPO requirements with cost optimization.",
+    "topic": "Disaster Recovery",
+    "tags": ["DR", "cross-Region", "RDS", "read replica", "Route 53", "warm standby", "RTO", "RPO"]
+  },
+  {
+    "id": "saa-030-08",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a data analytics platform that processes large datasets stored in Amazon S3. Data scientists use Amazon EMR clusters with Apache Spark for analysis. The data scientists frequently launch new EMR clusters for different experiments, and clusters typically run for 2-8 hours before being terminated. The company has noticed that EMR cluster costs have increased significantly. Analysis shows that many clusters are over-provisioned, with average CPU utilization below 30%. The company wants to reduce EMR costs while maintaining the flexibility for data scientists to launch clusters on demand. Which combination of actions should the solutions architect recommend? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use EMR managed scaling to automatically adjust the number of instances based on workload metrics such as YARN memory utilization.",
+      "B": "Require all data scientists to use a single shared EMR cluster with Apache YARN queue-based isolation to consolidate workloads.",
+      "C": "Purchase Reserved Instances for the EC2 instance types commonly used by EMR clusters to reduce the hourly cost.",
+      "D": "Configure EMR clusters to use a combination of On-Demand instances for core nodes and Spot Instances for task nodes.",
+      "E": "Migrate all analytics workloads from Amazon EMR to AWS Glue to eliminate cluster management entirely."
+    },
+    "correctAnswers": ["A", "D"],
+    "explanation": "A is correct because EMR managed scaling dynamically adjusts cluster size based on actual workload demand. This directly addresses the over-provisioning problem by scaling down when CPU and memory utilization are low and scaling up when needed, eliminating the waste from clusters sitting at 30% utilization. D is correct because using Spot Instances for task nodes (which handle only computation, not data storage) can reduce costs by up to 60-90% compared to On-Demand pricing. Core nodes remain On-Demand for HDFS data reliability, while task nodes can safely use Spot since they can be reclaimed without data loss. Together, these two approaches address both the over-provisioning and the per-instance pricing concerns.",
+    "whyOthersAreWrong": {
+      "B": "Requiring a single shared cluster removes the flexibility for data scientists to launch clusters for different experiments with different configurations. This contradicts the requirement to maintain on-demand flexibility and could create resource contention issues.",
+      "C": "Reserved Instances provide cost savings for steady-state workloads, but EMR clusters in this scenario run for only 2-8 hours and are frequently created and terminated. The usage pattern is too variable and short-lived to benefit from 1-year or 3-year Reserved Instance commitments.",
+      "E": "AWS Glue is suitable for ETL workloads but does not support the full range of Apache Spark interactive analytics and experimentation workflows that data scientists perform on EMR. This is a major architecture change that may not support all existing workloads."
+    },
+    "learningObjective": "Optimize Amazon EMR cluster costs using managed scaling and Spot Instance strategies for variable, short-lived analytics workloads.",
+    "topic": "Amazon EMR",
+    "tags": ["EMR", "cost optimization", "Spot Instances", "managed scaling", "Spark", "analytics"]
+  },
+  {
+    "id": "saa-030-09",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating an on-premises application to AWS. The application uses a message queue to decouple a web tier from a processing tier. Messages must be processed in strict first-in-first-out (FIFO) order, and each message must be processed exactly once. The on-premises system processes approximately 500 messages per second. Each message contains a customer order with a unique order ID. Orders from the same customer must be processed in the order they were submitted, but orders from different customers can be processed in parallel. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use an Amazon SQS FIFO queue with the customer ID as the message group ID. Configure the processing tier to process messages from each message group in order.",
+      "B": "Use an Amazon SQS standard queue with message deduplication based on the order ID. Configure the processing tier to sort messages by timestamp before processing.",
+      "C": "Use Amazon Kinesis Data Streams with the customer ID as the partition key. Configure the processing tier to read from each shard sequentially.",
+      "D": "Use an Amazon SQS FIFO queue with a single message group ID for all messages. Enable content-based deduplication to ensure exactly-once processing."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because SQS FIFO queues guarantee strict ordering and exactly-once processing. Using the customer ID as the message group ID ensures that orders from the same customer are processed in FIFO order, while allowing orders from different customers (different message groups) to be processed in parallel. SQS FIFO queues support up to 30,000 messages per second with batching when using multiple message group IDs, which exceeds the 500 messages per second requirement. The unique order ID can be used as the deduplication ID to ensure exactly-once delivery.",
+    "whyOthersAreWrong": {
+      "B": "SQS standard queues provide best-effort ordering, not strict FIFO. Sorting by timestamp at the consumer does not guarantee the correct order because messages may arrive out of order. Standard queues also provide at-least-once delivery, not exactly-once processing.",
+      "C": "Kinesis Data Streams guarantees ordering within a shard using the partition key, but it provides at-least-once delivery, not exactly-once processing. The processing tier would need to implement idempotency logic, adding application complexity. Kinesis also requires provisioning and managing shard capacity.",
+      "D": "Using a single message group ID for all messages forces all 500 messages per second into sequential processing, eliminating the parallelism possible between different customers. This creates a bottleneck since SQS FIFO queues process messages sequentially within a single message group."
+    },
+    "learningObjective": "Select the appropriate messaging service and configuration to achieve FIFO ordering with parallel processing using message group IDs.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "FIFO", "message group ID", "exactly-once", "decoupling", "migration"]
+  },
+  {
+    "id": "saa-030-10",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a microservices application deployed on Amazon ECS with AWS Fargate. The application consists of 12 services that communicate with each other via HTTP APIs. The company has experienced several outages caused by a single failing service overwhelming downstream services with retry storms. The company wants to implement a solution that provides automatic circuit breaking, connection pooling, and observability for inter-service communication without modifying application code. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy AWS App Mesh as a service mesh for the ECS services. Configure virtual nodes, virtual services, and virtual routers. Use Envoy proxy sidecars to handle circuit breaking, connection pooling, and traffic telemetry.",
+      "B": "Deploy an Application Load Balancer for each ECS service. Configure ALB health checks with circuit breaker settings. Use Amazon CloudWatch metrics from the ALBs for observability.",
+      "C": "Implement Amazon API Gateway as a proxy between all services. Configure throttling and caching on each API route. Use API Gateway access logs for observability.",
+      "D": "Deploy AWS Cloud Map for service discovery. Configure ECS service connect with retry policies. Use Amazon X-Ray to trace requests between services."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because AWS App Mesh is a service mesh that provides circuit breaking, connection pooling, retry policies, and observability (via integration with CloudWatch, X-Ray, and third-party tools) at the infrastructure layer without requiring application code changes. Envoy proxy sidecars are automatically injected alongside each ECS task and handle all inter-service communication transparently. This directly addresses the retry storm issue through circuit breaking and provides the connection management and observability requirements.",
+    "whyOthersAreWrong": {
+      "B": "ALBs do not provide circuit breaker functionality. Deploying a separate ALB for each of 12 services increases infrastructure cost and complexity. ALB health checks detect unhealthy targets but do not prevent retry storms between services.",
+      "C": "Using API Gateway as an intermediary between all 12 internal microservices introduces unnecessary latency and cost for service-to-service communication. API Gateway throttling is designed for external API management, not internal circuit breaking patterns. This also adds a single point of failure.",
+      "D": "AWS Cloud Map provides service discovery but does not provide circuit breaking or connection pooling. ECS Service Connect provides basic load balancing but lacks the full circuit breaking capabilities needed to prevent retry storms. This combination does not fully address the requirements without application code changes."
+    },
+    "learningObjective": "Select the appropriate service mesh solution to implement circuit breaking and observability for microservices communication on Amazon ECS.",
+    "topic": "AWS App Mesh",
+    "tags": ["App Mesh", "ECS", "Fargate", "service mesh", "circuit breaker", "microservices", "Envoy"]
+  },
+  {
+    "id": "saa-030-11",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates an e-commerce platform that generates 500 GB of clickstream data daily. The marketing team needs to run complex analytical queries on this data combined with the transactional data from the company's Amazon Aurora PostgreSQL database. The clickstream data is stored in Amazon S3 in Parquet format. The marketing team runs queries several times per week and expects query results within minutes. The company wants to minimize infrastructure management and optimize costs for this intermittent analytical workload. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Set up an Amazon Redshift Serverless endpoint. Use Redshift Spectrum to query the clickstream data in S3. Use a federated query to join with data in the Aurora PostgreSQL database.",
+      "B": "Copy clickstream data from S3 into the Aurora PostgreSQL database nightly using AWS Glue. Run analytical queries directly against Aurora using read replicas.",
+      "C": "Set up an Amazon EMR cluster with Apache Presto. Configure connectors for both S3 and Aurora PostgreSQL. Schedule the cluster to start before marketing team queries.",
+      "D": "Load all clickstream data from S3 into a provisioned Amazon Redshift cluster nightly using the COPY command. Create an Aurora PostgreSQL read replica and query both systems separately."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Redshift Serverless eliminates infrastructure management by automatically provisioning and scaling compute capacity based on query demand. Redshift Spectrum allows querying Parquet data directly in S3 without loading it, avoiding data movement costs and storage duplication. Federated queries enable joining S3 clickstream data with Aurora transactional data in a single SQL query. Since the marketing team queries intermittently (several times per week), Redshift Serverless charges only for the compute used during queries, making it cost-optimal for this access pattern.",
+    "whyOthersAreWrong": {
+      "B": "Loading 500 GB of clickstream data daily into Aurora PostgreSQL is not practical for analytical workloads. Aurora is optimized for transactional operations, not large-scale analytical queries. This would degrade transactional performance and significantly increase Aurora storage costs.",
+      "C": "Managing an Amazon EMR cluster adds significant operational overhead including cluster sizing, Presto configuration, and scheduling. Even with auto-termination, this requires more infrastructure management than the serverless alternative.",
+      "D": "A provisioned Redshift cluster runs continuously, incurring costs 24/7 even when the marketing team queries only several times per week. Loading data nightly also creates a delay and operational overhead with ETL management. Querying two systems separately does not meet the requirement of combining the data."
+    },
+    "learningObjective": "Design a cost-optimized analytical architecture that queries data across Amazon S3 and Amazon Aurora using Redshift Serverless.",
+    "topic": "Amazon Redshift",
+    "tags": ["Redshift Serverless", "Redshift Spectrum", "federated query", "analytics", "S3", "Aurora", "cost optimization"]
+  },
+  {
+    "id": "saa-030-12",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is deploying a new web application that must comply with strict data residency requirements. All data, including application logs, database records, and user-uploaded files, must remain within the eu-west-1 (Ireland) Region at all times. The application uses Amazon CloudFront to deliver content to users globally. The company's compliance team is concerned that CloudFront edge caches in non-EU locations may store customer data. Which approach ensures that CloudFront is used for performance while maintaining compliance with the data residency requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure CloudFront to use a custom cache policy that sets the maximum TTL to 0 seconds, preventing any data from being cached at edge locations outside the EU.",
+      "B": "Use a CloudFront geographic restriction (geo-restriction) allowlist to permit access only from EU countries, preventing non-EU edge locations from caching content.",
+      "C": "Remove CloudFront entirely and serve all content directly from an Application Load Balancer in eu-west-1 to guarantee data never leaves the Region.",
+      "D": "Use field-level encryption in CloudFront to encrypt sensitive data fields at the edge locations. Store the private decryption key only in the eu-west-1 Region."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because setting the maximum TTL to 0 seconds instructs CloudFront to forward every request to the origin in eu-west-1 without caching the response at edge locations. CloudFront still provides benefits such as TLS termination, DDoS protection via AWS Shield, and optimized network routing through the AWS backbone, while ensuring that customer data is not stored at edge locations outside the EU. This approach maintains the performance benefits of CloudFront's global network while ensuring data residency compliance.",
+    "whyOthersAreWrong": {
+      "B": "Geo-restriction controls which users can access the content based on their geographic location, but it does not prevent CloudFront from caching data at non-EU edge locations for allowed users. If EU users connect through non-EU edge locations, data could still be cached outside the EU.",
+      "C": "Removing CloudFront eliminates the performance, DDoS protection, and TLS termination benefits. Users outside the EU Region would experience significantly higher latency connecting directly to the ALB. This approach does not balance performance and compliance.",
+      "D": "Field-level encryption protects specific sensitive fields but does not address the fundamental data residency concern. The encrypted data, along with non-encrypted data, is still cached at edge locations worldwide, which may not satisfy strict data residency requirements that mandate data must not leave the Region at all."
+    },
+    "learningObjective": "Configure Amazon CloudFront to comply with data residency requirements while maintaining performance benefits.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "data residency", "compliance", "caching", "EU", "GDPR"]
+  },
+  {
+    "id": "saa-030-13",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A gaming company runs a multiplayer game backend on Amazon EC2 instances in an Auto Scaling group behind a Network Load Balancer (NLB). The game uses persistent TCP connections, and each game session lasts approximately 30 minutes. The Auto Scaling group scales in during off-peak hours. Players have reported being disconnected from active game sessions when instances are terminated during scale-in events. The company needs to ensure that active game sessions are not disrupted by scale-in activities. Which solution addresses this issue with the LEAST amount of development effort?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable connection draining on the NLB target group with a deregistration delay of 1,800 seconds to allow active game sessions to complete before the instance is terminated.",
+      "B": "Implement an EC2 Auto Scaling lifecycle hook for the instance termination event. Configure the hook to wait until the instance reports that all game sessions have completed before allowing termination.",
+      "C": "Configure the Auto Scaling group to use instance scale-in protection. Set scale-in protection on instances that have active game sessions using a background process on each instance.",
+      "D": "Replace the Auto Scaling group with a fixed fleet of EC2 instances. Use Amazon CloudWatch alarms to manually add or remove instances during peak and off-peak hours."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because Auto Scaling instance scale-in protection prevents specific instances from being selected for termination during a scale-in event. A lightweight background process on each instance can monitor whether active game sessions exist and set or remove scale-in protection accordingly via the AWS SDK. When all game sessions on an instance complete, the process removes scale-in protection, allowing Auto Scaling to terminate the instance during the next scale-in event. This approach requires minimal development effort (a simple background script) and integrates natively with Auto Scaling.",
+    "whyOthersAreWrong": {
+      "A": "While connection draining prevents new connections from being routed to the deregistering instance, setting a 1,800-second (30-minute) deregistration delay means the instance remains in the target group for 30 minutes but Auto Scaling still terminates the instance when the lifecycle action completes. Connection draining on NLB does not prevent instance termination by Auto Scaling; it only controls how the load balancer handles existing connections.",
+      "B": "Lifecycle hooks can delay termination, but the maximum heartbeat timeout is 7,200 seconds (2 hours) and requires the instance to actively send heartbeat signals and complete the lifecycle action. This approach requires more development effort than scale-in protection, as you need to implement heartbeat management and lifecycle action completion logic.",
+      "D": "Replacing Auto Scaling with manual instance management eliminates the automatic scaling capability, increases operational overhead significantly, and does not address the session disruption problem if instances are still manually removed while hosting active sessions."
+    },
+    "learningObjective": "Use Auto Scaling instance scale-in protection to prevent termination of instances hosting active sessions.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": ["Auto Scaling", "scale-in protection", "NLB", "TCP", "gaming", "persistent connections"]
+  },
+  {
+    "id": "saa-030-14",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an application that processes confidential documents. The documents are stored in an Amazon S3 bucket encrypted with AWS KMS (SSE-KMS). The application runs on Amazon EC2 instances with an IAM instance profile. A recent security audit found that any EC2 instance in the account with the appropriate IAM permissions can access the S3 bucket and decrypt the documents. The security team wants to restrict access so that only the specific application EC2 instances can decrypt the documents, even if other instances have the s3:GetObject permission granted by their IAM roles. Which solution enforces this restriction?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Modify the S3 bucket policy to allow s3:GetObject only from the specific IAM role ARN associated with the application instances. Deny access from all other principals.",
+      "B": "Modify the KMS key policy to allow the kms:Decrypt action only for the IAM role associated with the application EC2 instances. Remove kms:Decrypt permissions from all other roles.",
+      "C": "Create a VPC endpoint for S3 and modify the S3 bucket policy to allow access only from the VPC endpoint. Remove direct S3 access through the internet gateway.",
+      "D": "Move the documents to an S3 bucket with S3-managed encryption (SSE-S3) and restrict access using an S3 bucket policy with a condition limiting access to the application instances' VPC."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because when objects are encrypted with SSE-KMS, accessing the data requires both the s3:GetObject permission AND the kms:Decrypt permission on the KMS key. By restricting the kms:Decrypt action in the KMS key policy to only the IAM role used by the application EC2 instances, other instances cannot decrypt the objects even if they have s3:GetObject permission. The KMS key policy acts as a second layer of authorization that is independent of S3 permissions, ensuring that only authorized principals can access the plaintext data.",
+    "whyOthersAreWrong": {
+      "A": "While restricting the S3 bucket policy limits s3:GetObject access, the question states that the concern is about instances that already have s3:GetObject permission through their own IAM roles. IAM policies and bucket policies are evaluated together, and an explicit allow in an IAM policy combined with no explicit deny in the bucket policy could still grant access. The KMS key policy approach in B provides a more reliable second layer of control.",
+      "C": "A VPC endpoint restricts access to instances within a specific VPC, but all EC2 instances in the same VPC (not just the application instances) would still be able to access the bucket. This does not provide the instance-role-level granularity required.",
+      "D": "Switching from SSE-KMS to SSE-S3 removes the KMS key policy control layer, making it harder to enforce fine-grained decryption restrictions. SSE-S3 does not allow customer control over the encryption key policy, reducing the ability to restrict which principals can decrypt the data."
+    },
+    "learningObjective": "Use KMS key policies as a secondary access control mechanism to restrict decryption of S3 objects to specific IAM principals.",
+    "topic": "AWS KMS",
+    "tags": ["KMS", "S3", "SSE-KMS", "encryption", "key policy", "access control", "security"]
+  },
+  {
+    "id": "saa-030-15",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a legacy .NET application on Windows Server EC2 instances that writes application logs to the local D: drive. The operations team needs to centralize these logs for monitoring and alerting. The team also needs to create CloudWatch alarms based on specific error patterns in the logs. The company wants to avoid modifying the legacy application code and minimize infrastructure changes. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Install the Amazon CloudWatch agent on each EC2 instance. Configure the agent to collect logs from the D: drive and send them to Amazon CloudWatch Logs. Create CloudWatch Logs metric filters to detect error patterns and configure CloudWatch alarms on the resulting metrics.",
+      "B": "Create an Amazon S3 bucket for log storage. Configure a scheduled task on each EC2 instance to upload log files to S3 using the AWS CLI. Use Amazon Athena to query the logs for error patterns.",
+      "C": "Attach an Amazon EFS file system to all EC2 instances and configure the application to write logs to the shared EFS mount point. Use a Lambda function to scan the EFS file system for error patterns.",
+      "D": "Deploy Amazon OpenSearch Service. Install Filebeat on each EC2 instance to ship logs to OpenSearch. Create visualizations and alerts in OpenSearch Dashboards."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because the CloudWatch agent natively supports Windows EC2 instances and can be configured to monitor specific log files on the D: drive without any application code changes. The agent streams logs to CloudWatch Logs in near real-time. CloudWatch Logs metric filters can parse log entries for specific error patterns and create custom metrics. CloudWatch alarms can then be configured on these metrics for automated alerting. This approach requires only agent installation and configuration, with no application or infrastructure changes.",
+    "whyOthersAreWrong": {
+      "B": "Uploading logs to S3 on a schedule introduces a delay between log generation and availability. Amazon Athena is designed for ad-hoc queries, not real-time monitoring and alerting. This approach does not provide the near real-time error detection and alerting capability required.",
+      "C": "Amazon EFS does not support Windows instances natively. Modifying the application to write to a different mount point violates the requirement to avoid application code changes. A Lambda function scanning EFS is not an efficient approach for real-time log monitoring.",
+      "D": "Amazon OpenSearch Service provides powerful log analytics but is significantly more complex and expensive to deploy and manage compared to CloudWatch Logs. This introduces unnecessary infrastructure (OpenSearch domain, Filebeat configuration) for what is fundamentally a log collection and alerting use case."
+    },
+    "learningObjective": "Implement centralized log collection and alerting from Windows EC2 instances using the CloudWatch agent and CloudWatch Logs metric filters.",
+    "topic": "Amazon CloudWatch",
+    "tags": ["CloudWatch", "CloudWatch Logs", "metric filters", "Windows", "EC2", "monitoring", "logging"]
+  },
+  {
+    "id": "saa-030-16",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer-facing API on Amazon API Gateway integrated with AWS Lambda functions. The API receives an average of 1,000 requests per second, with traffic spikes reaching 10,000 requests per second during promotional events. Each API call retrieves product information that changes approximately once per hour. The Lambda functions query an Amazon DynamoDB table for this data. During traffic spikes, the company experiences increased DynamoDB read costs and occasional throttling on the DynamoDB table. The company wants to reduce DynamoDB costs and eliminate throttling during spikes without over-provisioning the table. Which solution BEST addresses these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable DynamoDB Accelerator (DAX) for the product table. Modify the Lambda functions to read through the DAX cluster instead of directly from DynamoDB.",
+      "B": "Enable API Gateway caching on the API stage with a TTL of 3,600 seconds. Configure cache key parameters to match the product query parameters.",
+      "C": "Switch the DynamoDB table to on-demand capacity mode to automatically handle traffic spikes without provisioned throughput limits.",
+      "D": "Add a DynamoDB global secondary index (GSI) optimized for the product query access pattern to distribute read traffic more evenly across partitions."
+    },
+    "correctAnswers": ["B"],
+    "explanation": "B is correct because API Gateway caching intercepts requests at the API layer before they reach Lambda and DynamoDB. Since the product data changes only once per hour, a 3,600-second (1-hour) cache TTL means that the vast majority of requests during traffic spikes are served directly from the API Gateway cache without invoking Lambda or querying DynamoDB. This eliminates both the DynamoDB read costs and throttling during spikes. API Gateway caching requires no Lambda code changes and is the most cost-effective solution because it prevents the requests from reaching downstream services entirely.",
+    "whyOthersAreWrong": {
+      "A": "DAX provides microsecond read latency and reduces DynamoDB read load, but every API request still invokes a Lambda function, incurring Lambda compute costs. DAX also adds the cost of running DAX cluster nodes. API Gateway caching eliminates both Lambda invocations and DynamoDB reads for cached responses, making it more cost-effective for this use case.",
+      "C": "On-demand capacity mode handles traffic spikes by automatically scaling, but it charges a premium per read/write request compared to provisioned capacity. This eliminates throttling but increases costs rather than reducing them, especially during 10,000 requests-per-second spikes.",
+      "D": "A global secondary index distributes reads for different access patterns but does not reduce the total number of read requests hitting DynamoDB. If the same product queries are repeated during spikes, a GSI does not provide caching benefits and adds GSI read costs."
+    },
+    "learningObjective": "Select the most cost-effective caching strategy for API workloads with infrequently changing data and high traffic variability.",
+    "topic": "Amazon API Gateway",
+    "tags": ["API Gateway", "caching", "DynamoDB", "Lambda", "cost optimization", "throttling"]
+  },
+  {
+    "id": "saa-030-17",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building a document processing pipeline. Users upload PDF documents to an Amazon S3 bucket. The documents need to be converted to text, analyzed for personally identifiable information (PII), and then stored with PII redacted. The pipeline must process documents within 5 minutes of upload. The volume of uploads varies from 10 to 500 documents per hour. Each document is 1-10 MB in size. The company wants to build this pipeline using serverless services to minimize operational overhead. Which architecture meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure S3 event notifications to invoke a Lambda function. The function uses Amazon Textract to extract text, Amazon Comprehend to detect PII, performs redaction in the function code, and stores the result in a destination S3 bucket.",
+      "B": "Configure S3 event notifications to send messages to an Amazon SQS queue. An EC2 Auto Scaling group polls the queue, uses Apache Tika for text extraction, a custom PII detection model for analysis, and stores results in Amazon EFS.",
+      "C": "Use Amazon EventBridge to detect S3 upload events and trigger an AWS Step Functions workflow. The workflow orchestrates Lambda functions that call Amazon Textract for text extraction and Amazon Comprehend for PII detection, then stores the redacted result in a destination S3 bucket.",
+      "D": "Configure S3 event notifications to trigger an AWS Glue ETL job for each upload. The Glue job extracts text, detects PII using built-in transforms, and writes the redacted output to a destination S3 bucket."
+    },
+    "correctAnswers": ["C"],
+    "explanation": "C is correct because AWS Step Functions provides visual workflow orchestration for the multi-step document processing pipeline (text extraction, PII detection, redaction, storage). Each step is handled by a Lambda function calling the appropriate AWS AI service. Step Functions handles retries, error handling, and state management between steps. Amazon Textract provides accurate PDF text extraction, and Amazon Comprehend provides native PII detection. EventBridge provides reliable event routing from S3. This fully serverless architecture scales automatically with document volume and processes documents within the 5-minute requirement.",
+    "whyOthersAreWrong": {
+      "A": "While a single Lambda function could handle the entire pipeline, combining Textract (asynchronous for multi-page PDFs), Comprehend, and redaction in a single function increases complexity and risk of timeout for large documents. Step Functions in C provides better separation of concerns, error handling, and visibility into each processing stage.",
+      "B": "EC2 Auto Scaling groups with custom text extraction and PII detection models are not serverless, adding significant operational overhead for instance management, scaling configuration, and model maintenance. Amazon EFS is unnecessary when S3 is a better fit for document storage.",
+      "D": "AWS Glue ETL jobs have a minimum billing of 1 DPU-minute and a cold start time that can be significant. Triggering a Glue job per document is inefficient and expensive for small files (1-10 MB). Glue is designed for large-scale batch ETL, not event-driven, per-document processing."
+    },
+    "learningObjective": "Design a serverless document processing pipeline using AWS Step Functions to orchestrate AI services for text extraction and PII detection.",
+    "topic": "AWS Step Functions",
+    "tags": ["Step Functions", "Lambda", "Textract", "Comprehend", "PII", "serverless", "S3", "document processing"]
+  },
+  {
+    "id": "saa-030-18",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company hosts a stateful web application on Amazon EC2 instances behind an Application Load Balancer. Users authenticate through the application and maintain sessions. The company has implemented sticky sessions (session affinity) on the ALB to ensure users are routed to the same instance. However, when an instance becomes unhealthy and is replaced by Auto Scaling, the users connected to that instance lose their session data and must re-authenticate. The company wants to eliminate session data loss during instance replacements while improving the application's ability to scale horizontally. Which solution addresses these requirements with the LEAST application code changes?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store session data in Amazon ElastiCache for Redis. Configure the application to read and write session data to ElastiCache instead of local instance memory. Remove sticky sessions from the ALB.",
+      "B": "Store session data in Amazon DynamoDB with a TTL attribute for automatic expiration. Configure the application to use DynamoDB for session management. Remove sticky sessions from the ALB.",
+      "C": "Enable cross-zone load balancing and increase the number of instances in the Auto Scaling group to reduce the impact of individual instance failures.",
+      "D": "Configure the Auto Scaling group to use instance warm-up periods and lifecycle hooks to transfer session data from the old instance to the new instance before the old instance is terminated."
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A is correct because Amazon ElastiCache for Redis provides an in-memory data store with sub-millisecond latency that is ideal for session management. By externalizing session data to ElastiCache, any instance can serve any user's request, enabling true horizontal scaling and eliminating session data loss when instances are replaced. Redis supports data persistence, replication, and automatic failover (with Multi-AZ enabled), ensuring session data durability. Removing sticky sessions allows the ALB to distribute traffic evenly across instances. The application code change is straightforward: redirect session reads/writes to the ElastiCache endpoint, which most web frameworks support natively.",
+    "whyOthersAreWrong": {
+      "B": "DynamoDB can store session data but introduces higher latency compared to ElastiCache for Redis (single-digit milliseconds vs. sub-millisecond). For session management where every page request requires a session lookup, the additional latency can impact user experience at scale. ElastiCache is the recommended service for session stores due to its in-memory performance.",
+      "C": "Adding more instances reduces the percentage of users affected by a single instance failure but does not prevent session data loss. Users connected to the failed instance still lose their sessions. This does not solve the fundamental problem of sessions stored in local instance memory.",
+      "D": "Transferring session data between instances using lifecycle hooks is complex to implement, may fail if the old instance is unreachable, and adds delay to the scaling process. This approach does not support unplanned instance failures where the old instance may be immediately unavailable."
+    },
+    "learningObjective": "Externalize application session state to Amazon ElastiCache to enable stateless horizontal scaling and eliminate session loss during instance replacements.",
+    "topic": "Amazon ElastiCache",
+    "tags": ["ElastiCache", "Redis", "session management", "ALB", "Auto Scaling", "stateless", "high availability"]
+  },
+  {
+    "id": "saa-030-19",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating a legacy monolithic application from on-premises to AWS. The application consists of a Java web tier, a business logic layer, and a MySQL database. The application currently handles 200 concurrent users during business hours. During migration, the company wants to minimize changes to the application architecture while establishing a foundation for future modernization. The database must support automatic failover for high availability. The company also wants to reduce the operational burden of patching operating systems. Which combination of services should the solutions architect recommend for the initial migration? (Choose THREE.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "AWS Elastic Beanstalk for deploying and managing the Java web application",
+      "B": "Amazon RDS MySQL with Multi-AZ deployment for the database",
+      "C": "Amazon EKS with Fargate for running the Java application in containers",
+      "D": "Amazon Aurora Serverless v2 for the database",
+      "E": "AWS App Runner for deploying the Java application"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "A is correct because AWS Elastic Beanstalk supports Java applications natively and handles deployment, capacity provisioning, load balancing, and OS patching automatically. This minimizes the operational burden of OS patching while requiring minimal changes to the existing monolithic Java application. It provides a straightforward lift-and-shift path. B is correct because Amazon RDS MySQL is a direct replacement for the on-premises MySQL database, requiring minimal or no application code changes for database connectivity. Multi-AZ deployment provides automatic failover with a synchronous standby replica, meeting the high availability requirement. RDS handles database patching, backups, and maintenance automatically.",
+    "whyOthersAreWrong": {
+      "C": "Amazon EKS with Fargate requires containerizing the monolithic application, creating Kubernetes deployment manifests, and managing Kubernetes resources. This represents a significant architecture change during initial migration, contradicting the requirement to minimize changes. EKS is more appropriate for a future modernization phase.",
+      "D": "Aurora Serverless v2 is a MySQL-compatible option but may require testing and validation for compatibility with the legacy application's specific MySQL features and queries. The standard RDS MySQL in option B provides direct MySQL compatibility with the least risk of migration issues.",
+      "E": "AWS App Runner is designed for containerized web applications and APIs. Deploying a monolithic Java application on App Runner requires containerization, which is an additional change beyond the minimum required for initial migration."
+    },
+    "learningObjective": "Select the appropriate AWS services for a lift-and-shift migration of a monolithic Java application that minimizes changes while reducing operational overhead.",
+    "topic": "AWS Elastic Beanstalk",
+    "tags": ["Elastic Beanstalk", "RDS", "MySQL", "migration", "Multi-AZ", "Java", "lift-and-shift"]
+  },
+  {
+    "id": "saa-030-20",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company uses AWS CloudFormation to manage infrastructure across multiple AWS accounts and Regions. The company recently experienced an incident where a junior engineer accidentally deleted a production CloudFormation stack, which terminated all associated resources including RDS databases and EC2 instances. The company wants to implement safeguards to prevent similar incidents. The solution must protect both the CloudFormation stacks and the critical resources within them, while still allowing authorized engineers to perform intentional updates and deletions through an approval process. Which combination of actions should the solutions architect recommend? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Enable termination protection on all production CloudFormation stacks to prevent accidental stack deletion.",
+      "B": "Add DeletionPolicy: Retain to critical resources such as RDS instances and S3 buckets in the CloudFormation templates.",
+      "C": "Create an SCP in AWS Organizations that denies the cloudformation:DeleteStack action for all principals across all accounts.",
+      "D": "Configure all CloudFormation stacks to use change sets exclusively. Require manual approval of change sets through an IAM policy condition.",
+      "E": "Enable CloudFormation drift detection to run automatically every hour and alert on any resource changes."
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "A is correct because termination protection prevents a CloudFormation stack from being accidentally deleted. An engineer must explicitly disable termination protection before they can delete the stack, providing an intentional two-step process that prevents accidental deletion while still allowing authorized deletions when needed. B is correct because DeletionPolicy: Retain ensures that even if a stack is deleted (either accidentally or intentionally), critical resources such as RDS databases and S3 buckets are retained rather than terminated. This provides a safety net that protects the most important resources from permanent data loss. Together, these two measures provide defense in depth: termination protection prevents accidental stack deletion, and DeletionPolicy: Retain protects critical resources even if deletion occurs.",
+    "whyOthersAreWrong": {
+      "C": "Denying cloudformation:DeleteStack for all principals across all accounts completely prevents stack deletion, including intentional, authorized deletions. This is too restrictive and would block legitimate operations such as environment cleanup, stack replacement, and lifecycle management.",
+      "D": "CloudFormation change sets provide a preview of changes before execution, but they do not prevent stack deletion. Change sets are used for stack updates, not for preventing delete operations. This does not address the core problem of accidental stack deletion.",
+      "E": "Drift detection identifies when resource configurations have changed outside of CloudFormation management, but it does not prevent stack or resource deletion. It is a detective control, not a preventive one, and would not have prevented the described incident."
+    },
+    "learningObjective": "Implement CloudFormation stack protection mechanisms including termination protection and DeletionPolicy to prevent accidental resource loss.",
+    "topic": "AWS CloudFormation",
+    "tags": ["CloudFormation", "termination protection", "DeletionPolicy", "stack management", "operational safety", "IaC"]
+  }
+]
