@@ -1,0 +1,597 @@
+[
+  {
+    "id": "saa-881",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a stateful web application on a single EC2 instance. Management wants to eliminate the single point of failure and ensure the application can survive the failure of an entire Availability Zone with minimal downtime, while keeping architectural changes simple. What should the Solutions Architect recommend?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the instance size (vertical scaling) within the same AZ",
+      "B": "Deploy an Auto Scaling group spanning at least two Availability Zones behind an Application Load Balancer, and externalize session state to ElastiCache or DynamoDB",
+      "C": "Take a daily AMI snapshot and manually relaunch the instance if it fails",
+      "D": "Move the application to a single larger instance in a different AZ AWS SAA-C03 Practice Exam Page 6"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Multi-AZ Auto Scaling behind an ALB provides automatic replacement of failed instances and automatic failover across AZs, while externalizing session state (to ElastiCache/DynamoDB) removes the statefulness that would otherwise break horizontal scaling and failover. Option A doesn't address AZ failure at all. Option C introduces significant downtime (RTO of hours) and is fully manual. Option D still leaves a single point of failure, just relocated.",
+    "whyOthersAreWrong": {
+      "A": "Doesn't address AZ failure at all.",
+      "C": "Introduces significant downtime (RTO of hours) and is fully manual.",
+      "D": "Still leaves a single point of failure, just relocate."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2",
+      "Elastic Load Balancing",
+      "DynamoDB",
+      "RDS",
+      "High Availability"
+    ]
+  },
+  {
+    "id": "saa-882",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an Amazon RDS MySQL database supporting a critical production workload. They need automatic failover to a standby with minimal manual intervention in the event of an AZ outage or instance failure, without requiring application-level read/write splitting logic. What should be configured?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "RDS Read Replica in a different AZ",
+      "B": "RDS Multi-AZ deployment (synchronous standby)",
+      "C": "Manual snapshots taken every hour",
+      "D": "Aurora Global Database in a single region"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". RDS Multi-AZ maintains a synchronously replicated standby in a different AZ and automatically fails over the DNS endpoint to the standby during an instance or AZ failure, typically within 60-120 seconds, with no application changes needed since the endpoint stays the same. A Read Replica (A) is asynchronous and does not fail over automatically-manual promotion is required. Manual snapshots (C) have a high RTO/RPO and require manual restore. Aurora Global Database (D) is designed for cross-region DR, not simply for same-region AZ failover, and is unnecessary complexity/cost for this requirement.",
+    "whyOthersAreWrong": {
+      "A": "Asynchronous and does not fail over automatically-manual promotion is require.",
+      "C": "Have a high RTO/RPO and require manual restor.",
+      "D": "Option D (Aurora Global Database in a single region) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
+    "topic": "Amazon RDS",
+    "tags": [
+      "RDS",
+      "Aurora",
+      "Route 53",
+      "High Availability",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-883",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's Recovery Time Objective (RTO) is 15 minutes and Recovery Point Objective (RPO) is near-zero for a critical application currently running in a single AWS Region. They want a cost-conscious DR strategy in a second region. Which DR strategy BEST fits these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Backup and Restore",
+      "B": "Pilot Light",
+      "C": "Warm Standby with a scaled-down but fully functional copy of the environment continuously running, using Aurora Global Database for near-zero RPO replication",
+      "D": "Multi-Site Active-Active across both regions at full production capacity at all times"
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": ". Warm Standby keeps a scaled-down but fully functional version of the full system running in the DR region at all times, allowing a fast scale-up to full capacity (meeting a 15-minute RTO), while Aurora Global Database provides typically sub-second cross-region replication lag (satisfying near-zero RPO) far more cost-effectively than running full active-active capacity. Backup and Restore (A) has an RTO measured in hours, failing the requirement. Pilot Light (B) only keeps core data services running and requires provisioning compute at failover time, generally yielding a higher RTO than warm standby. Multi-Site Active-Active (D) would meet the RTO/RPO but at significantly higher cost than necessary, violating the cost-conscious requirement.",
+    "whyOthersAreWrong": {
+      "A": "An RTO measured in hours, failing the requirement.",
+      "B": "Second cross-region replication lag (satisfying near-zero RPO) far more cost-effectively than running full activ.",
+      "D": "Down but fully functional version of the full system running in the DR region at all times, allowing a fast scal."
+    },
+    "learningObjective": "Select the most cost-effective architecture using Amazon Aurora to satisfy workload requirements.",
+    "topic": "Amazon Aurora",
+    "tags": [
+      "Aurora",
+      "High Availability",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-884",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An e-commerce application experiences unpredictable traffic spikes during flash sales. The current architecture uses a single large EC2 instance that becomes a bottleneck. Which architecture change provides the BEST combination of elasticity and fault tolerance?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Manually resize the instance before each anticipated sale",
+      "B": "Deploy the application behind an Application Load Balancer with an Auto Scaling group configured with target tracking scaling policies based on request count or CPU utilization, across multiple AZs",
+      "C": "Move to a single, larger instance type permanently to handle peak load",
+      "D": "Use Reserved Instances sized for peak traffic year-round"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". An ALB with a multi-AZ Auto Scaling group and target tracking scaling policies automatically adds/removes capacity in response to real-time demand and distributes load across AZs for fault tolerance, handling unpredictable spikes without manual intervention and without over-provisioning during normal periods. Manual resizing (A) can't react to unpredictable spikes in real time. A single larger instance (C) is still a single point of failure and wastes money during low-traffic periods. Peak-sized Reserved Instances (D) guarantee capacity but are extremely costly since that capacity sits idle most of the time and still doesn't provide multi-AZ fault tolerance by itself. AWS SAA-C03 Practice Exam Page 22",
+    "whyOthersAreWrong": {
+      "A": "Can't react to unpredictable spikes in real tim.",
+      "C": "Still a single point of failure and wastes money during low-traffic periods.",
+      "D": "Guarantee capacity but are extremely costly since that capacity sits idle most of the time and still doesn't provide multi-AZ fault tolerance by itself. AWS SA."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2",
+      "Elastic Load Balancing",
+      "RDS",
+      "High Availability",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-885",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to decouple a fleet of order-processing EC2 instances from a downstream inventory service so that a temporary outage or slowdown in the inventory service does not cause order processing requests to be lost or fail. (Choose TWO)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Introduce an Amazon SQS queue between the order-processing tier and the inventory service, with the inventory service polling and processing messages at its own pace",
+      "B": "Call the inventory service synchronously with a very long HTTP timeout",
+      "C": "Configure a Dead-Letter Queue (DLQ) to capture messages that repeatedly fail processing for later analysis",
+      "D": "Increase the inventory service's EC2 instance size to reduce the chance of failure",
+      "E": "Store failed requests only in application logs for manual reprocessing AWS SAA-C03 Practice Exam Page 7"
+    },
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": ". Inserting an SQS queue decouples producer and consumer: order-processing can enqueue messages and continue even if the inventory service is down or slow, and the inventory service consumes at its own pace, with the queue durably retaining messages (up to 14 days). Adding a DLQ ensures that messages which repeatedly fail (via maxReceiveCount) are captured for investigation rather than being lost or endlessly retried. A long synchronous timeout (B) still creates tight coupling and blocks the caller. Bigger instances (D) reduce but don't eliminate the coupling/failure risk. Manual log-based reprocessing (E) is not a durable, automated recovery mechanism.",
+    "whyOthersAreWrong": {
+      "B": "Still creates tight coupling and blocks the caller.",
+      "D": "Option D (Increase the inventory service's EC2 instance size to reduce the chance of failure) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
+      "E": "Not a durable, automated recovery mechanism."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
+    "topic": "Amazon SQS",
+    "tags": [
+      "SQS",
+      "EC2"
+    ]
+  },
+  {
+    "id": "saa-886",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A global application uses Route 53 for DNS and needs to route users to the AWS region with the lowest network latency, while automatically failing over to a healthy region if the primary region becomes unavailable. Which Route 53 routing policy combination is MOST appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Simple routing policy only",
+      "B": "Latency-based routing policy combined with Route 53 health checks",
+      "C": "Weighted routing policy with equal weights",
+      "D": "Geolocation routing policy only, with no health checks"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Latency-based routing directs users to the region offering the lowest measured latency, and when combined with Route 53 health checks, unhealthy endpoints are automatically removed from consideration so traffic fails over to the next-best healthy region. Simple routing (A) doesn't consider latency or health at all. Weighted routing with equal weights (C) just splits traffic evenly regardless of latency or health. Geolocation without health checks (D) routes strictly by user location and won't reroute automatically during an outage.",
+    "whyOthersAreWrong": {
+      "A": "Doesn't consider latency or health at all.",
+      "C": "Just splits traffic evenly regardless of latency or health.",
+      "D": "Routes strictly by user location and won't reroute automatically during an outag."
+    },
+    "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
+    "topic": "Amazon Route 53",
+    "tags": [
+      "Route 53",
+      "IAM",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-887",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company stores critical business documents in Amazon S3 and needs protection against accidental deletion by an application bug, while still allowing legitimate object updates and eventual deletion by authorized administrators after review. Which S3 feature should be enabled?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "S3 Object Lock in Compliance mode with an indefinite retention period",
+      "B": "S3 Versioning, so accidental deletes create a delete marker and prior versions remain recoverable",
+      "C": "S3 Transfer Acceleration",
+      "D": "S3 Requester Pays"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". S3 Versioning preserves every version of an object; a DELETE request simply adds a delete marker rather than permanently erasing data, so administrators can restore the previous version by removing the delete marker-this balances recoverability with still allowing eventual, deliberate deletion. Object Lock in Compliance mode (A) would prevent even authorized deletion until retention expires, which is more restrictive than required here. Transfer Acceleration (C) speeds up uploads over long distances and is unrelated to data protection. Requester Pays (D) shifts transfer costs to the requester and has nothing to do with deletion protection.",
+    "whyOthersAreWrong": {
+      "A": "Prevent even authorized deletion until retention expires, which is more restrictive than required her.",
+      "C": "Speeds up uploads over long distances and is unrelated to data protection.",
+      "D": "Shifts transfer costs to the requester and has nothing to do with deletion protection."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
+    "topic": "Amazon S3",
+    "tags": [
+      "S3",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-888",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A batch processing workload reads jobs from an SQS queue and writes results to DynamoDB using a fleet of EC2 instances in an Auto Scaling group. During testing, some jobs are processed more than once. What is the MOST likely cause and appropriate fix?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "SQS guarantees exactly-once delivery by default, so the application code must have a bug unrelated to SQS",
+      "B": "Standard SQS queues provide at-least-once delivery; the consumer should process messages idempotently (e.g., using a unique job ID with a DynamoDB conditional write) or use a FIFO queue if strict ordering/dedup is required",
+      "C": "The Auto Scaling group is launching too many instances and should be limited to one instance",
+      "D": "DynamoDB does not support conditional writes, so duplicates cannot be prevented"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Standard SQS queues provide at-least-once delivery, meaning a message can occasionally be delivered more than once (e.g., after a visibility timeout expires before deletion). The correct architectural fix is to design idempotent consumers, such as using a conditional PutItem in DynamoDB keyed on a unique job/message ID so a duplicate delivery is a no-op, or switching to a FIFO queue with deduplication for workloads that require it. Reducing to one instance (C) hurts scalability and doesn't fully solve the at-least-once semantics. DynamoDB does support conditional writes (ConditionExpression), making D factually incorrect.",
+    "whyOthersAreWrong": {
+      "A": "Option A (SQS guarantees exactly-once delivery by default, so the application code must have a bug unrelated to SQS) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
+      "C": "Hurts scalability and doesn't fully solve the at-least-once semantics. DynamoDB does support conditional writes (ConditionExpression), making D factually incorrect.",
+      "D": "Option D (DynamoDB does not support conditional writes, so duplicates cannot be prevented) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
+    "topic": "Amazon SQS",
+    "tags": [
+      "SQS",
+      "DynamoDB",
+      "EC2"
+    ]
+  },
+  {
+    "id": "saa-889",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to migrate a monolithic on-premises application's file storage to AWS, requiring POSIX-compliant shared file access from multiple EC2 instances across multiple AZs simultaneously, with automatic scaling of storage capacity. Which storage service should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon EBS Multi-Attach",
+      "B": "Amazon EFS (Elastic File System)",
+      "C": "Amazon S3",
+      "D": "Instance Store AWS SAA-C03 Practice Exam Page 8"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Amazon EFS is a fully managed, POSIX-compliant, elastic NFS file system that can be mounted concurrently by many EC2 instances across multiple AZs, automatically scaling storage capacity up and down with usage. EBS Multi-Attach (A) allows multiple instances to attach the same volume, but only within a single AZ and requires a cluster-aware file system-it doesn't natively provide POSIX shared access across AZs the way EFS does. S3 (C) is object storage, not a POSIX file system, and isn't suitable for traditional file-system semantics required by many legacy applications. Instance Store (D) is ephemeral, local to a single instance, and data is lost on stop/termination. AWS SAA-C03 Practice Exam Page 23",
+    "whyOthersAreWrong": {
+      "A": "Allows multiple instances to attach the same volume, but only within a single AZ and requires a cluster-aware file system-it doesn't natively provide POSIX shared access across AZs the way EFS does.",
+      "C": "Object storage, not a POSIX file system, and isn't suitable for traditional fil.",
+      "D": "Ephemeral, local to a single instance, and data is lost on stop/termination. AWS SA."
+    },
+    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon EFS.",
+    "topic": "Amazon EFS",
+    "tags": [
+      "EFS",
+      "S3",
+      "EC2"
+    ]
+  },
+  {
+    "id": "saa-890",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a critical Aurora MySQL database and wants to offload read-heavy reporting queries from the primary writer instance without impacting write performance, while also improving read availability. What should be implemented?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the primary instance size only",
+      "B": "Create one or more Aurora Replicas and direct reporting queries to the reader endpoint",
+      "C": "Take nightly snapshots and run reports against the snapshot restore",
+      "D": "Move reporting queries to run directly against the writer instance during off-peak hours only"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Aurora Replicas share the same underlying distributed storage volume as the writer (near-zero replication lag) and can serve read traffic via the cluster's reader endpoint, offloading read load from the primary without impacting write throughput, while also providing additional read availability and automatic failover targets. Increasing the primary's size (A) doesn't isolate read and write workloads. Restoring nightly snapshots (C) is operationally heavy and gives stale, point-in-time data rather than near-real-time reporting. Running reports on the writer during off-peak hours (D) still risks contention and doesn't scale as query volume grows.",
+    "whyOthersAreWrong": {
+      "A": "Doesn't isolate read and write workloads.",
+      "C": "Operationally heavy and gives stale, point-in-time data rather than near-real-time reporting.",
+      "D": "Still risks contention and doesn't scale as query volume grows."
+    },
+    "learningObjective": "Optimize workload throughput and latency using Amazon Aurora.",
+    "topic": "Amazon Aurora",
+    "tags": [
+      "Aurora",
+      "RDS",
+      "High Availability"
+    ]
+  },
+  {
+    "id": "saa-891",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A three-tier application's Auto Scaling group is configured to launch instances across 3 Availability Zones. During a load test, the Architect notices that when one AZ has degraded capacity, new instances still attempt to launch there and fail, delaying recovery. What is the recommended fix?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Reduce the Auto Scaling group to a single AZ to simplify capacity management",
+      "B": "Configure the Auto Scaling group with an appropriate allocation strategy or enable Capacity Rebalancing so it automatically shifts new launches away from degraded/at-risk AZs or capacity",
+      "C": "Manually monitor AZ health and update the launch template each time",
+      "D": "Disable health checks to prevent unnecessary instance replacement"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Auto Scaling groups support Capacity Rebalancing and allocation strategies (particularly relevant with Spot/mixed instances policies) that proactively respond to capacity notifications and shift launches away from constrained AZs, improving resilience without manual intervention. Reducing to a single AZ (A) removes fault tolerance entirely. Manual monitoring (C) doesn't scale operationally and introduces delay. Disabling health checks (D) would leave unhealthy instances in service, worsening availability, not improving it.",
+    "whyOthersAreWrong": {
+      "A": "Removes fault tolerance entirely.",
+      "C": "Doesn't scale operationally and introduces delay.",
+      "D": "Leave unhealthy instances in service, worsening availability, not improving it."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2"
+    ]
+  },
+  {
+    "id": "saa-892",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company needs to back up its on-premises VMware workloads directly to AWS to reduce reliance on local tape backup infrastructure, retaining backups for long-term compliance with automated lifecycle transitions to lower-cost storage. Which AWS service is purpose-built for this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS DataSync",
+      "B": "AWS Backup with AWS Storage Gateway (Volume Gateway) or direct integration for VMware workloads",
+      "C": "Amazon S3 Transfer Acceleration",
+      "D": "AWS Direct Connect alone"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". AWS Backup provides centralized, policy-based backup management, including support for backing up on-premises VMware workloads and applying lifecycle policies to transition backups to lower-cost storage tiers (such as S3 Glacier) for long-term retention, replacing tape-based processes. AWS DataSync (A) is optimized for online data transfer/migration between on-premises storage and AWS, not backup lifecycle management. S3 Transfer Acceleration (C) speeds up uploads over distance but has no backup/lifecycle capability. Direct Connect (D) alone is just network connectivity, not a backup solution.",
+    "whyOthersAreWrong": {
+      "A": "Optimized for online data transfer/migration between on-premises storage and AWS, not backup lifecycle management.",
+      "C": "Speeds up uploads over distance but has no backup/lifecycle capability.",
+      "D": "Alone is just network connectivity, not a backup solution."
+    },
+    "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
+    "topic": "Amazon S3",
+    "tags": [
+      "S3",
+      "Direct Connect",
+      "IAM",
+      "High Availability",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-893",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application relies on a third-party payment API that occasionally experiences transient failures lasting a few seconds. Repeated immediate retries during these periods are overwhelming the third-party API and causing cascading failures. What pattern should be implemented in the application?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Retry immediately and indefinitely on every failure",
+      "B": "Implement exponential backoff with jitter for retries, and consider a circuit breaker to stop calling the API temporarily after repeated failures",
+      "C": "Remove all retry logic entirely",
+      "D": "Increase the number of concurrent threads calling the API to compensate for failures AWS SAA-C03 Practice Exam Page 9"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Exponential backoff with jitter spreads out retry attempts over increasing intervals with randomization, reducing the thundering-herd effect on a struggling downstream service, while a circuit breaker pattern stops sending requests altogether for a cool-down period after repeated failures, giving the downstream service time to recover. Immediate indefinite retries (A) is exactly the anti-pattern causing the cascading failure. Removing retries entirely (C) sacrifices resilience for transient issues that would otherwise self-resolve. Increasing concurrency (D) would make the overload worse, not better.",
+    "whyOthersAreWrong": {
+      "A": "Exactly the anti-pattern causing the cascading failur.",
+      "C": "Sacrifices resilience for transient issues that would otherwise self-resolv.",
+      "D": "Make the overload worse, not better."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Architecture.",
+    "topic": "AWS Architecture",
+    "tags": [
+      "Architecture",
+      "Best Practices"
+    ]
+  },
+  {
+    "id": "saa-894",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to ensure that if the primary Amazon Aurora MySQL cluster in us-east-1 becomes unavailable due to a regional disruption, they can promote a replica in eu-west-1 to become the new primary with an RPO typically under 1 second and minimal manual database re-configuration. What should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Cross-region manual snapshot copy on a daily schedule",
+      "B": "Aurora Global Database with a secondary region and managed planned/unplanned failover",
+      "C": "A standard cross-region Read Replica for a non-Aurora RDS engine",
+      "D": "S3 Cross-Region Replication of the database files"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Aurora Global Database is purpose-built for cross-region DR: it replicates data to up to five secondary regions with typical replication lag under 1 second, and supports managed failover (via API/console) to promote a secondary region to the new primary in typically under a minute for planned failover, with minimal reconfiguration. Daily snapshot copies (A) yield an RPO of up to 24 hours, far worse than required. A cross-region read replica on non-Aurora RDS (C) is asynchronous with higher and less predictable lag, and promotion is fully manual. S3 CRR (D) applies to S3 objects, not to a running relational database's live data files, and is not a viable database DR mechanism. AWS SAA-C03 Practice Exam Page 24",
+    "whyOthersAreWrong": {
+      "A": "Yield an RPO of up to 24 hours, far worse than require.",
+      "C": "Asynchronous with higher and less predictable lag, and promotion is fully manual.",
+      "D": "Option D (S3 Cross-Region Replication of the database files) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+    },
+    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon Aurora.",
+    "topic": "Amazon Aurora",
+    "tags": [
+      "Aurora",
+      "RDS",
+      "S3",
+      "High Availability"
+    ]
+  },
+  {
+    "id": "saa-895",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a legacy application that stores session state in local instance memory, preventing horizontal scaling behind a load balancer. Which change enables the application to scale horizontally while maintaining a good user experience?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable ALB sticky sessions (session affinity) only, with no other changes",
+      "B": "Externalize session state to Amazon ElastiCache (Redis or Memcached) so any instance can serve any request",
+      "C": "Increase the instance size to hold more sessions in memory",
+      "D": "Reduce the Auto Scaling group to a fixed size of 1"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Externalizing session state to a shared, low-latency store like ElastiCache decouples session data from any single instance, allowing true stateless horizontal scaling where any instance can handle any request-this is the architecturally correct fix. ALB sticky sessions (A) can help short-term but still tie a user to one instance, undermining even load distribution and causing issues if that instance fails or is scaled in. Increasing instance size (C) is vertical scaling and doesn't solve the underlying statefulness problem or provide fault tolerance. Fixing the ASG at size 1 (D) eliminates scalability and resilience entirely.",
+    "whyOthersAreWrong": {
+      "A": "Can help short-term but still tie a user to one instance, undermining even load distribution and causing issues if that instance fails or is scaled in.",
+      "C": "Vertical scaling and doesn't solve the underlying statefulness problem or provide fault toleranc.",
+      "D": "Eliminates scalability and resilience entirely."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Elastic Load Balancing.",
+    "topic": "AWS Elastic Load Balancing",
+    "tags": [
+      "Elastic Load Balancing",
+      "EC2",
+      "CloudFront",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-896",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to increase the resilience of a critical DynamoDB table that supports a global user base, protecting against a full regional outage while providing low-latency, multi-region read/write access. (Choose TWO)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Enable DynamoDB Global Tables to replicate the table across multiple AWS Regions with multi-active read/write support",
+      "B": "Enable Point-in-Time Recovery (PITR) as an additional safeguard against accidental writes/deletes",
+      "C": "Enable DynamoDB Accelerator (DAX) to protect against regional outages",
+      "D": "Rely only on a single-region table with daily manual exports to S3",
+      "E": "Use DynamoDB Streams alone to replicate data manually to another region using custom Lambda code as the primary resilience strategy"
+    },
+    "correctAnswers": [
+      "A",
+      "B"
+    ],
+    "explanation": ". DynamoDB Global Tables provide fully managed, multi-region, multi-active replication so applications can read and write in the nearest region with low latency, and the table remains available even if one region has an outage. PITR provides continuous backups allowing restoration to any point in the last 35 days, which is a complementary safeguard against operational/application errors (not a replacement for multi-region resilience, but a valid additional protection). DAX (C) is an in-memory caching layer for read performance, not a cross-region resilience mechanism. A single-region table with daily exports (D) has a poor RPO/RTO for a regional outage. Custom Streams-based replication (E) is undifferentiated heavy lifting that Global Tables already solves natively and reliably.",
+    "whyOthersAreWrong": {
+      "C": "An in-memory caching layer for read performance, not a cross-region resilience mechanism.",
+      "D": "A poor RPO/RTO for a regional outag.",
+      "E": "PITR provides continuous backups allowing restoration to any point in the last 35 days, which is a complementary safeguard against operational/application errors (not a replacement for multi-region resilience, but a valid additional protection)."
+    },
+    "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
+    "topic": "Amazon DynamoDB",
+    "tags": [
+      "DynamoDB",
+      "S3",
+      "Lambda",
+      "High Availability",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-897",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a fleet of EC2 instances behind an ALB in an Auto Scaling group. They want the ASG to automatically replace instances that are running but failing to respond correctly to application-level health checks (not just EC2 status checks). What should be configured?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "EC2 status check-based health checks only",
+      "B": "ALB target group health checks (HTTP/HTTPS) integrated with the Auto Scaling group's health check type set to ELB",
+      "C": "CloudWatch billing alarms",
+      "D": "Manually terminate unhealthy instances when noticed AWS SAA-C03 Practice Exam Page 10 Domain 3: Design High-Performing Architectures"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". Configuring the Auto Scaling group's health check type as ELB causes it to use the associated target group's HTTP/HTTPS health check results (application-level, e.g., checking a /health endpoint) rather than just the instance's EC2 status checks, so an instance that is running but returning errors gets marked unhealthy and automatically replaced. Default EC2 status checks (A) only detect infrastructure-level failures (e.g., hardware or hypervisor issues), not application-level failures. CloudWatch billing alarms (C) are unrelated to instance health. Manual termination (D) doesn't scale and introduces delay, defeating the purpose of automated self-healing. Domain 3: Design High-Performing Architectures",
+    "whyOthersAreWrong": {
+      "A": "Only detect infrastructur.",
+      "C": "Unrelated to instance health.",
+      "D": "Option D (Manually terminate unhealthy instances when noticed AWS SAA-C03 Practice Exam Page 10 Domain 3: Design High-Performing Architectures) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2",
+      "Elastic Load Balancing",
+      "CloudWatch",
+      "High Availability"
+    ]
+  },
+  {
+    "id": "saa-898",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company serves large video files to a global audience and notices high latency for users far from the origin S3 bucket's region. What is the MOST effective way to reduce latency for these global users?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the S3 bucket's provisioned throughput",
+      "B": "Deploy Amazon CloudFront in front of the S3 origin to cache and serve content from edge locations near users",
+      "C": "Move the S3 bucket to every AWS region",
+      "D": "Enable S3 Versioning"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". CloudFront caches content at edge locations distributed globally, so subsequent requests are served from the location closest to the user rather than traveling back to the origin region, dramatically reducing latency for global audiences. S3 doesn't have a 'provisioned throughput' setting to increase in this sense (A). Duplicating the bucket in every region (C) is operationally complex, expensive, and doesn't solve routing/latency by itself without a CDN or global routing layer. Versioning (D) is unrelated to performance/latency. AWS SAA-C03 Practice Exam Page 25",
+    "whyOthersAreWrong": {
+      "A": "Option A (Increase the S3 bucket's provisioned throughput) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
+      "C": "Operationally complex, expensive, and doesn't solve routing/latency by itself without a CDN or global routing layer.",
+      "D": "Unrelated to performance/latency. AWS SA."
+    },
+    "learningObjective": "Optimize workload throughput and latency using Amazon S3.",
+    "topic": "Amazon S3",
+    "tags": [
+      "S3",
+      "CloudFront",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-899",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An application performs many repeated, identical read queries against an Amazon RDS MySQL database, causing high CPU utilization on the database instance. The data changes infrequently. What is the MOST effective way to improve performance and reduce database load?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Vertically scale the RDS instance to the largest available size",
+      "B": "Introduce an Amazon ElastiCache (Redis or Memcached) caching layer in front of the database for frequently read, infrequently changed data",
+      "C": "Convert the database to Multi-AZ",
+      "D": "Add more read replicas and round-robin all read traffic to them"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". A caching layer like ElastiCache is specifically designed to serve frequently accessed, slow-changing data from memory with sub-millisecond latency, dramatically cutting redundant database load for identical repeated queries-this directly targets the described access pattern. Vertical scaling (A) increases cost and only delays hitting the ceiling again; it doesn't address the root inefficiency of repeated identical queries. Multi-AZ (C) improves availability, not read performance (the standby isn't used for reads). Adding more read replicas (D) helps distribute load but is more costly and higher-latency than an in-memory cache for data that rarely changes, and doesn't reduce the fundamentally redundant nature of the queries.",
+    "whyOthersAreWrong": {
+      "A": "Increases cost and only delays hitting the ceiling again; it doesn't address the root inefficiency of repeated identical queries.",
+      "C": "Improves availability, not read performance (the standby isn't used for reads).",
+      "D": "Helps distribute load but is more costly and higher-latency than an in-memory cache for data that rarely changes, and doesn't reduce the fundamentally redundant nature of the queries."
+    },
+    "learningObjective": "Optimize workload throughput and latency using Amazon RDS.",
+    "topic": "Amazon RDS",
+    "tags": [
+      "RDS",
+      "High Availability",
+      "Cost Optimization",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-900",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building a serverless image-processing pipeline: an image uploaded to S3 should trigger a resize operation and store the result in another S3 bucket, scaling automatically with zero infrastructure management. Which architecture is MOST appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "An EC2 instance polling the S3 bucket every minute for new objects",
+      "B": "An S3 event notification triggering an AWS Lambda function that processes the image and writes the result to the destination bucket",
+      "C": "A cron job on an EC2 instance running a batch script nightly",
+      "D": "Amazon EMR cluster running continuously to detect new files"
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": ". S3 event notifications can directly invoke a Lambda function on object creation, providing a fully serverless, auto-scaling, pay-per-invocation pipeline with no infrastructure to manage-ideal for event-driven image processing. Polling with EC2 (A) wastes resources and adds latency, plus requires managing servers. A nightly cron job (C) introduces unacceptable processing delay for what should be near-real-time and still requires server management. A continuously running EMR cluster (D) is significantly over-provisioned and costly for a lightweight, event-driven task like image resizing.",
+    "whyOthersAreWrong": {
+      "A": "Wastes resources and adds latency, plus requires managing servers.",
+      "C": "Introduces unacceptable processing delay for what should be near-real-time and still requires server management.",
+      "D": "Significantly over-provisioned and costly for a lightweight, event-driven task like image resizing."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
+    "topic": "Amazon S3",
+    "tags": [
+      "S3",
+      "Lambda",
+      "EC2",
+      "Cost Optimization",
+      "Networking"
+    ]
+  }
+]
