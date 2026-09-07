@@ -232,7 +232,7 @@
     ],
     "explanation": "This is precisely what VPC sharing via AWS Resource Access Manager is designed for. The owning Networking account retains exclusive control over VPC-level constructs - route tables, NACLs, gateways, CIDR - while participant accounts can create and fully manage their own resources such as EC2, RDS, and Lambda ENIs inside the shared subnets using their own account's IAM, with no ability to touch networking configuration they do not own. This satisfies every stated requirement simultaneously: centralized network control, per-team IAM and resource autonomy, and a single shared VPC rather than 15 separate ones.",
     "whyOthersAreWrong": {
-      "A": "Because each application team's VPC lives inside their own account, that team's account inherently has full IAM capability to modify their own VPC's route tables and NACLs - an internal policy asking them not to is not a structural control and can be violated, accidentally or otherwise. This also multiplies operational complexity with 15 separate peering connections and does not give the platform team the centralized enforcement the requirement calls for.",
+      "A": "This option is incorrect because each application team's VPC lives inside their own account, that team's account inherently has full IAM capability to modify their own VPC's route tables and NACLs - an internal policy asking them not to is not a structural control and can be violated, accidentally or otherwise. This also multiplies operational complexity with 15 separate peering connections and does not give the platform team the centralized enforcement the requirement calls for.",
       "B": "Isolation entirely - it mixes 15 teams' billing, blast radius, and resource inventories into a single account, itself a significant deviation from AWS multi-account best practices, and does not satisfy full IAM control within their own accounts, since no separate accounts would be involved in the actual deployments.",
       "C": "Transit Gateway governs routing between separate VPCs that connect to it - its route tables do not, and cannot, restrict what an account can do to a VPC it owns. In this model each application team still has its own separate VPC rather than shared subnets in one central VPC, and that team's account retains full native ability to edit its own VPC's route table and NACLs regardless of any Transit Gateway configuration, failing the core requirement."
     },
@@ -322,9 +322,9 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "SCPs are the only control plane mechanism that provides an organization-wide, non-bypassable guardrail — IAM policies and permissions boundaries can never grant more than what an SCP allows, so 'overriding' a region-deny SCP with AdministratorAccess is architecturally impossible since Deny in an SCP always wins regardless of IAM Allow. The correct pattern is a single Deny SCP using aws:RequestedRegion with a NotAction/condition exclusion for the specific role ARN (using StringNotLike on aws:PrincipalArn), combined with a Deny on organizations:LeaveOrganization.",
+    "explanation": "SCPs are the only control plane mechanism that provides an organization-wide, non-bypassable guardrail \u2014 IAM policies and permissions boundaries can never grant more than what an SCP allows, so 'overriding' a region-deny SCP with AdministratorAccess is architecturally impossible since Deny in an SCP always wins regardless of IAM Allow. The correct pattern is a single Deny SCP using aws:RequestedRegion with a NotAction/condition exclusion for the specific role ARN (using StringNotLike on aws:PrincipalArn), combined with a Deny on organizations:LeaveOrganization.",
     "whyOthersAreWrong": {
-      "C": "Config + remediation is reactive/eventually-consistent, not preventative, so a non-compliant call would still succeed before remediation runs — unacceptable for a hard boundary.",
+      "C": "Config + remediation is reactive/eventually-consistent, not preventative, so a non-compliant call would still succeed before remediation runs \u2014 unacceptable for a hard boundary.",
       "D": "This approach is a fragile, high-latency, home-grown control with race conditions and no protection during the window before Lambda executes.",
       "E": "This setting only controls federated access paths and does nothing to stop programmatic access via long-lived IAM users/roles or direct API calls outside Identity Center, so it isn't a complete boundary. Only A yields a single, centrally managed, always-enforced guardrail (this is exactly why SCPs are described as the 'maximum available permissions' layer in AWS's account governance model).",
       "B": "This approach (Create an IAM permissions boundary on every user in every account that restricts the aws:RequestedRegion condition, and grant the Incident Response role AdministratorAccess to override it.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
@@ -354,11 +354,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Cross-account access to KMS-encrypted S3 objects requires two independent grants: the S3 bucket policy (or an IAM policy on the partner's role plus a bucket policy) must allow s3:GetObject, AND the KMS key policy must separately allow kms:Decrypt (and typically kms:DescribeKey) for the partner's principal, because S3 and KMS evaluate permissions independently — having only the S3 permission results in an 'access denied' at decrypt time.",
+    "explanation": "Cross-account access to KMS-encrypted S3 objects requires two independent grants: the S3 bucket policy (or an IAM policy on the partner's role plus a bucket policy) must allow s3:GetObject, AND the KMS key policy must separately allow kms:Decrypt (and typically kms:DescribeKey) for the partner's principal, because S3 and KMS evaluate permissions independently \u2014 having only the S3 permission results in an 'access denied' at decrypt time.",
     "whyOthersAreWrong": {
-      "A": "Violates least privilege and cross-account best practice by minting long-lived IAM users instead of using role assumption (sts:AssumeRole) or resource-based policies.",
-      "C": "Is both a security anti-pattern (never make encrypted/sensitive buckets public) and factually wrong — CloudFront can front KMS-encrypted origins via OAC without making the bucket public.",
-      "D": "Introduces an unencrypted copy of sensitive data, replicates the wrong problem (CRR doesn't decrypt by default and objects encrypted with a KMS key cannot be replicated unless the destination key is also permitted), and is operationally far heavier than a policy change for a permission requirement. B is the standard, auditable, revocable cross-account pattern."
+      "A": "This option violates least privilege and cross-account best practice by minting long-lived IAM users instead of using role assumption (sts:AssumeRole) or resource-based policies.",
+      "C": "This option is both a security anti-pattern (never make encrypted/sensitive buckets public) and factually wrong \u2014 CloudFront can front KMS-encrypted origins via OAC without making the bucket public.",
+      "D": "This approach introduces an unencrypted copy of sensitive data, replicates the wrong problem (CRR doesn't decrypt by default and objects encrypted with a KMS key cannot be replicated unless the destination key is also permitted), and is operationally far heavier than a policy change for a permission requirement. B is the standard, auditable, revocable cross-account pattern."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
     "topic": "AWS IAM",
@@ -385,10 +385,10 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Blue/Green Deployments are purpose-built for exactly this scenario: Aurora provisions a full replica environment (Green) running the target engine version, keeps it in sync via logical replication, lets you validate compatibility against production traffic patterns without touching Blue, and performs the switchover using Route 53-managed CNAME swaps with sub-minute downtime that fits a 5-minute window — critically, Blue remains fully intact and untouched, so rollback means simply reverting DNS/connection routing back to Blue, no restore required.",
+    "explanation": "Blue/Green Deployments are purpose-built for exactly this scenario: Aurora provisions a full replica environment (Green) running the target engine version, keeps it in sync via logical replication, lets you validate compatibility against production traffic patterns without touching Blue, and performs the switchover using Route 53-managed CNAME swaps with sub-minute downtime that fits a 5-minute window \u2014 critically, Blue remains fully intact and untouched, so rollback means simply reverting DNS/connection routing back to Blue, no restore required.",
     "whyOthersAreWrong": {
-      "A": "In-place upgrade offers no live rollback path — restoring a snapshot means data loss for everything written after the snapshot and extended downtime well beyond 5 minutes.",
-      "C": "Is manual, error-prone, and cannot achieve a 5-minute cutover at OLTP write volumes since the restore is a point-in-time copy, not a continuously replicated one, so it also loses in-flight writes.",
+      "A": "In-place upgrade offers no live rollback path \u2014 restoring a snapshot means data loss for everything written after the snapshot and extended downtime well beyond 5 minutes.",
+      "C": "This option is manual, error-prone, and cannot achieve a 5-minute cutover at OLTP write volumes since the restore is a point-in-time copy, not a continuously replicated one, so it also loses in-flight writes.",
       "D": "This approach is not a supported Aurora cross-major-version replication path in the way described (you cannot mix 8.0 and 8.4 in the same replication topology as a simple read replica promotion) and lacks a safe rollback since the source keeps diverging. B is the AWS-recommended pattern precisely because it decouples upgrade risk from rollback risk."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
@@ -403,7 +403,7 @@
   {
     "id": "saa-1234",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An ECS Fargate service running a Node.js API sees CPU utilization spike unpredictably during flash-sale events, causing 503s from the ALB before Auto Scaling reacts. Requests per target and average CPU-based target tracking are both already configured but scale-out still lags demand by 3–4 minutes. Which two changes would most directly reduce this reaction lag while keeping the architecture serverless?",
+    "question": "An ECS Fargate service running a Node.js API sees CPU utilization spike unpredictably during flash-sale events, causing 503s from the ALB before Auto Scaling reacts. Requests per target and average CPU-based target tracking are both already configured but scale-out still lags demand by 3\u20134 minutes. Which two changes would most directly reduce this reaction lag while keeping the architecture serverless?",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
@@ -417,11 +417,11 @@
       "A",
       "B"
     ],
-    "explanation": "The core problem is reaction latency in the scaling loop, not raw compute capacity. Step scaling with tighter alarm evaluation reacts faster and in bigger increments than the default target-tracking cooldown behavior, directly cutting the detection-to-action gap. Scheduled scaling sidesteps the reaction-lag problem entirely for known events by pre-warming capacity before the metric even breaches a threshold — this is the standard AWS pattern for predictable traffic spikes like flash sales.",
+    "explanation": "The core problem is reaction latency in the scaling loop, not raw compute capacity. Step scaling with tighter alarm evaluation reacts faster and in bigger increments than the default target-tracking cooldown behavior, directly cutting the detection-to-action gap. Scheduled scaling sidesteps the reaction-lag problem entirely for known events by pre-warming capacity before the metric even breaches a threshold \u2014 this is the standard AWS pattern for predictable traffic spikes like flash sales.",
     "whyOthersAreWrong": {
       "C": "This approach is a red herring: EC2 launch type does not inherently reduce placement latency versus Fargate for a properly sized service, and swapping launch types is a heavy architectural change unrelated to the actual bottleneck (alarm/cooldown timing), plus it adds EC2 fleet management overhead the requirement explicitly avoids ('keeping the architecture serverless').",
       "D": "Masks symptoms by holding connections open longer, which increases resource pressure per task and risks cascading timeouts rather than fixing capacity shortfall.",
-      "E": "Helps new task startup time modestly but does nothing about the 3–4 minute alarm-detection delay, which is the dominant contributor to the lag described."
+      "E": "Helps new task startup time modestly but does nothing about the 3\u20134 minute alarm-detection delay, which is the dominant contributor to the lag described."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon CloudWatch.",
     "topic": "Amazon CloudWatch",
@@ -448,11 +448,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "RDS instance costs are addressed by RDS Reserved Instances, not Compute Savings Plans — Compute Savings Plans apply to EC2, Fargate, and Lambda compute usage, not to the RDS database engine's hourly instance charge, which is billed separately and has its own RI mechanism. Given 18 months of stable, unchanging usage, committing to a 1- or 3-year RDS RI captures the deepest discount (up to ~60%+ vs on-demand) with no architectural risk since the workload profile is proven stable. For the interruptible Fargate batch workload, Fargate Spot offers up to 70% savings over on-demand Fargate pricing specifically because the workload tolerates interruption — this is the textbook Spot use case.",
+    "explanation": "RDS instance costs are addressed by RDS Reserved Instances, not Compute Savings Plans \u2014 Compute Savings Plans apply to EC2, Fargate, and Lambda compute usage, not to the RDS database engine's hourly instance charge, which is billed separately and has its own RI mechanism. Given 18 months of stable, unchanging usage, committing to a 1- or 3-year RDS RI captures the deepest discount (up to ~60%+ vs on-demand) with no architectural risk since the workload profile is proven stable. For the interruptible Fargate batch workload, Fargate Spot offers up to 70% savings over on-demand Fargate pricing specifically because the workload tolerates interruption \u2014 this is the textbook Spot use case.",
     "whyOthersAreWrong": {
       "A": "Wastes savings potential on RDS (no RI applied) and doesn't exploit the batch workload's interruption tolerance.",
       "C": "Leaves both categories of savings on the table entirely.",
-      "D": "Is invalid for the RDS portion (Compute Savings Plans do not cover RDS) and, even for Fargate, ignores that Savings Plans require a 1- or 3-year commitment which is a poor fit for an 'unpredictable' interruption-tolerant workload where Spot's per-use discount with no commitment is strictly better."
+      "D": "This option is invalid for the RDS portion (Compute Savings Plans do not cover RDS) and, even for Fargate, ignores that Savings Plans require a 1- or 3-year commitment which is a poor fit for an 'unpredictable' interruption-tolerant workload where Spot's per-use discount with no commitment is strictly better."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -479,10 +479,10 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "DynamoDB distributes data and throughput capacity across partitions based on the partition key's hash; a key with only 6 distinct values can never spread traffic across more than a small number of physical partitions no matter how much total capacity is provisioned, so throttling on individual partitions is expected even when aggregate table-level WCU looks sufficient. The only real fix is a schema/key redesign — combining device_type with a higher-cardinality attribute like device_id (composite/synthetic partition key) or adding a random or calculated suffix ('write sharding') to spread items across many more partitions.",
+    "explanation": "DynamoDB distributes data and throughput capacity across partitions based on the partition key's hash; a key with only 6 distinct values can never spread traffic across more than a small number of physical partitions no matter how much total capacity is provisioned, so throttling on individual partitions is expected even when aggregate table-level WCU looks sufficient. The only real fix is a schema/key redesign \u2014 combining device_type with a higher-cardinality attribute like device_id (composite/synthetic partition key) or adding a random or calculated suffix ('write sharding') to spread items across many more partitions.",
     "whyOthersAreWrong": {
-      "A": "Is irrelevant: Global Tables solve multi-region replication and latency, not intra-region hot-partition throttling, and would replicate the same skewed key design to every region.",
-      "C": "DAX accelerates and caches reads, not writes — it has no effect on write throttling.",
+      "A": "This option is irrelevant: Global Tables solve multi-region replication and latency, not intra-region hot-partition throttling, and would replicate the same skewed key design to every region.",
+      "C": "DAX accelerates and caches reads, not writes \u2014 it has no effect on write throttling.",
       "D": "This approach is a common misconception: on-demand mode still relies on DynamoDB's adaptive capacity and partition allocation, and while adaptive capacity helps absorb moderate imbalance, an extreme 6-value cardinality will still throttle under sufficient load because a single partition has a hard per-partition throughput ceiling (3,000 RCU / 1,000 WCU) that no billing mode change can bypass."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
@@ -494,7 +494,7 @@
   {
     "id": "saa-1237",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A regulated healthcare company must ensure that CloudTrail logs from all 60 accounts in its AWS Organization are tamper-evident, centrally stored, and cannot be disabled or deleted by account owners — even those with administrator access in their own account. Which two design elements are required to meet this bar?",
+    "question": "A regulated healthcare company must ensure that CloudTrail logs from all 60 accounts in its AWS Organization are tamper-evident, centrally stored, and cannot be disabled or deleted by account owners \u2014 even those with administrator access in their own account. Which two design elements are required to meet this bar?",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
@@ -508,11 +508,11 @@
       "A",
       "B"
     ],
-    "explanation": "An organization trail is the mechanism that guarantees every member account is covered centrally and, critically, member account administrators cannot disable or modify it — only the management account (or a delegated CloudTrail admin) can, and the SCP layer additionally blocks even root-level attempts to tamper with the destination bucket or stop logging, satisfying 'cannot be disabled ... even by administrators.' Log file validation provides the tamper-evidence requirement: each log file is hashed and chained into periodic digest files signed and stored separately, so any modification or deletion of a delivered log is cryptographically detectable during audit/forensics.",
+    "explanation": "An organization trail is the mechanism that guarantees every member account is covered centrally and, critically, member account administrators cannot disable or modify it \u2014 only the management account (or a delegated CloudTrail admin) can, and the SCP layer additionally blocks even root-level attempts to tamper with the destination bucket or stop logging, satisfying 'cannot be disabled ... even by administrators.' Log file validation provides the tamper-evidence requirement: each log file is hashed and chained into periodic digest files signed and stored separately, so any modification or deletion of a delivered log is cryptographically detectable during audit/forensics.",
     "whyOthersAreWrong": {
-      "C": "Reintroduces exactly the risk being mitigated — a self-managed per-account trail can be disabled by that account's own administrator, and a custom Lambda forwarder is an unmanaged, deletable, single point of failure with no tamper-evidence.",
-      "D": "Is factually wrong on both counts: CloudWatch Logs log groups absolutely can be deleted by an account administrator with logs:DeleteLogGroup permission, and using CloudWatch Logs alone provides no organization-wide centralization or immutability guarantee.",
-      "E": "Is false — SSE-S3 encryption at rest has nothing to do with delete permissions; encryption and access control (bucket policy/IAM) are entirely independent controls, and encryption alone never prevents deletion."
+      "C": "Reintroduces exactly the risk being mitigated \u2014 a self-managed per-account trail can be disabled by that account's own administrator, and a custom Lambda forwarder is an unmanaged, deletable, single point of failure with no tamper-evidence.",
+      "D": "This option is factually incorrect. on both counts: CloudWatch Logs log groups absolutely can be deleted by an account administrator with logs:DeleteLogGroup permission, and using CloudWatch Logs alone provides no organization-wide centralization or immutability guarantee.",
+      "E": "This option is false \u2014 SSE-S3 encryption at rest has nothing to do with delete permissions; encryption and access control (bucket policy/IAM) are entirely independent controls, and encryption alone never prevents deletion."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -532,18 +532,18 @@
     "answerInstruction": "Choose the correct answer.",
     "options": {
       "A": "Backup and Restore: take automated daily snapshots and copy them cross-region; restore a new cluster in the DR region on failure.",
-      "B": "Pilot Light: maintain an Aurora Global Database with a secondary cluster in the DR region for continuous replication (typically sub-second to low-second lag), keep minimal compute (e.g., scaled-down ASG/ECS desired count of 0–1) pre-provisioned, and scale up compute and promote the secondary on failover.",
+      "B": "Pilot Light: maintain an Aurora Global Database with a secondary cluster in the DR region for continuous replication (typically sub-second to low-second lag), keep minimal compute (e.g., scaled-down ASG/ECS desired count of 0\u20131) pre-provisioned, and scale up compute and promote the secondary on failover.",
       "C": "Multi-Site Active/Active: run full production-scale compute and an Aurora writer in both regions simultaneously with Route 53 weighted routing.",
       "D": "Warm Standby with RDS Multi-AZ within a single region only, since Multi-AZ already provides cross-region resilience."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Aurora Global Database replicates data to a secondary region with typical latency well under a second (Aurora storage-layer replication, not logical binlog replication), which comfortably satisfies an RPO under 1 minute at a fraction of the cost of full active/active compute. Combining that with a Pilot Light pattern — database continuously replicated, but application/compute capacity kept at minimal scale (or zero) until needed and rapidly scaled out on failover — can realistically meet a 15-minute RTO (Aurora Global Database managed planned/unplanned failover typically completes in under a minute, and application-tier scale-out via ASG/ECS from a pre-baked AMI or task definition is fast) while avoiding the cost of running full duplicate production capacity 24/7.",
+    "explanation": "Aurora Global Database replicates data to a secondary region with typical latency well under a second (Aurora storage-layer replication, not logical binlog replication), which comfortably satisfies an RPO under 1 minute at a fraction of the cost of full active/active compute. Combining that with a Pilot Light pattern \u2014 database continuously replicated, but application/compute capacity kept at minimal scale (or zero) until needed and rapidly scaled out on failover \u2014 can realistically meet a 15-minute RTO (Aurora Global Database managed planned/unplanned failover typically completes in under a minute, and application-tier scale-out via ASG/ECS from a pre-baked AMI or task definition is fast) while avoiding the cost of running full duplicate production capacity 24/7.",
     "whyOthersAreWrong": {
       "A": "Backup and Restore cannot meet either target: daily snapshots imply an RPO of up to 24 hours, and restoring a multi-TB cluster from snapshot plus rebuilding compute takes well over 15 minutes.",
-      "C": "Multi-Site Active/Active would meet the targets but is the most expensive pattern, running full duplicate compute and a second Aurora writer continuously — the requirement explicitly asks to minimize cost, so it is over-engineered for the stated targets.",
-      "D": "Is factually incorrect: RDS/Aurora Multi-AZ protects against an AZ-level failure within a single region, not a full regional outage, so it does not address the disaster scenario described at all."
+      "C": "Multi-Site Active/Active would meet the targets but is the most expensive pattern, running full duplicate compute and a second Aurora writer continuously \u2014 the requirement explicitly asks to minimize cost, so it is over-engineered for the stated targets.",
+      "D": "This option is factually incorrect. RDS/Aurora Multi-AZ protects against an AZ-level failure within a single region, not a full regional outage, so it does not address the disaster scenario described at all."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon RDS to satisfy workload requirements.",
     "topic": "Amazon RDS",
@@ -572,7 +572,7 @@
     ],
     "explanation": "Global Accelerator is purpose-built for this exact scenario: it anycasts a small set of static IPs from edge locations worldwide, so a player's traffic enters the AWS network at the nearest edge location and then travels over AWS's private backbone (rather than the public internet) to the closest healthy regional endpoint, and it explicitly supports UDP (and TCP) at the network layer, which is essential for real-time multiplayer protocols. CloudFront is an HTTP/HTTPS (and now some limited additional protocols) content delivery service designed for caching and web content, not general-purpose low-latency UDP game traffic routing to NLBs.",
     "whyOthersAreWrong": {
-      "C": "Route 53 latency-based routing only changes DNS resolution based on measured latency between resolver location and region — it does not accelerate the actual data path over AWS's backbone, still traverses the public internet after DNS resolution, doesn't provide static anycast IPs, and DNS caching/TTL behavior can route players to a suboptimal or unhealthy region until TTL expiry. Direct Connect is for private, dedicated connectivity from a specific on-premises location into AWS — it is irrelevant for arbitrary global end-users connecting over the public internet.",
+      "C": "Route 53 latency-based routing only changes DNS resolution based on measured latency between resolver location and region \u2014 it does not accelerate the actual data path over AWS's backbone, still traverses the public internet after DNS resolution, doesn't provide static anycast IPs, and DNS caching/TTL behavior can route players to a suboptimal or unhealthy region until TTL expiry. Direct Connect is for private, dedicated connectivity from a specific on-premises location into AWS \u2014 it is irrelevant for arbitrary global end-users connecting over the public internet.",
       "A": "This approach (Amazon CloudFront, since it is AWS's global content delivery and edge network.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
       "D": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication."
     },
@@ -603,11 +603,11 @@
       "B",
       "E"
     ],
-    "explanation": "Gateway VPC Endpoints for S3 and DynamoDB are free to use (no hourly charge, no per-GB data processing charge) and route traffic for those two services entirely within the AWS network via route table entries, completely bypassing the NAT Gateway and its associated data processing fees — this is the single highest-leverage, zero-risk fix for exactly the cost driver described. Validating the assumption first via Cost Explorer/Flow Logs reflects sound cost-optimization practice (measure before you optimize) and is a legitimate complementary action, and confirming S3/DynamoDB dominate NAT traffic justifies prioritizing Gateway Endpoints specifically.",
+    "explanation": "Gateway VPC Endpoints for S3 and DynamoDB are free to use (no hourly charge, no per-GB data processing charge) and route traffic for those two services entirely within the AWS network via route table entries, completely bypassing the NAT Gateway and its associated data processing fees \u2014 this is the single highest-leverage, zero-risk fix for exactly the cost driver described. Validating the assumption first via Cost Explorer/Flow Logs reflects sound cost-optimization practice (measure before you optimize) and is a legitimate complementary action, and confirming S3/DynamoDB dominate NAT traffic justifies prioritizing Gateway Endpoints specifically.",
     "whyOthersAreWrong": {
-      "A": "Trades a managed, highly available service for operational burden (patching, scaling, HA design, security hardening) and NAT instances still incur EC2 and data transfer costs — it is not free, and it reintroduces a single point of failure unless a complex HA setup is built.",
+      "A": "Trades a managed, highly available service for operational burden (patching, scaling, HA design, security hardening) and NAT instances still incur EC2 and data transfer costs \u2014 it is not free, and it reintroduces a single point of failure unless a complex HA setup is built.",
       "C": "Removes internet egress capability entirely for the private subnets, which breaks any traffic to non-S3/DynamoDB destinations (external APIs, patching, etc.) and is a functionality regression, not a targeted fix.",
-      "D": "Is unnecessary and more expensive for this specific problem: Interface Endpoints (PrivateLink) carry their own hourly and per-GB charges (usually cheaper than NAT but not free), and S3/DynamoDB already have free Gateway Endpoints — using paid Interface Endpoints for services that have free Gateway Endpoints available is wasteful."
+      "D": "This option is unnecessary and more expensive for this specific problem: Interface Endpoints (PrivateLink) carry their own hourly and per-GB charges (usually cheaper than NAT but not free), and S3/DynamoDB already have free Gateway Endpoints \u2014 using paid Interface Endpoints for services that have free Gateway Endpoints available is wasteful."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon VPC to satisfy workload requirements.",
     "topic": "Amazon VPC",

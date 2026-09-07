@@ -15,11 +15,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Transit Gateway provides hub-and-spoke connectivity: each VPC only needs a single attachment to its Regional Transit Gateway, and Transit Gateway inter-Region peering connects the two hubs, giving all 6 VPCs any-to-any private connectivity through just a handful of attachments/peering connections rather than a growing mesh — this is the AWS-recommended pattern for exactly this scaling scenario.",
+    "explanation": "Transit Gateway provides hub-and-spoke connectivity: each VPC only needs a single attachment to its Regional Transit Gateway, and Transit Gateway inter-Region peering connects the two hubs, giving all 6 VPCs any-to-any private connectivity through just a handful of attachments/peering connections rather than a growing mesh \u2014 this is the AWS-recommended pattern for exactly this scaling scenario.",
     "whyOthersAreWrong": {
       "A": "A full mesh of VPC Peering connections requires n(n-1)/2 connections (15 for 6 VPCs) and grows quadratically as VPCs are added; VPC Peering is also non-transitive, so this approach does not scale well and is the opposite of minimizing connections to maintain.",
       "C": "Direct Connect provides private connectivity between on-premises networks and AWS; it is not the appropriate service for connecting VPCs to each other within or across AWS Regions.",
-      "D": "Routing inter-VPC traffic over the public internet via NAT Gateways abandons private IP connectivity entirely, increases cost (NAT Gateway data processing charges) and latency, and introduces unnecessary exposure — the opposite of the described requirement for private connectivity.",
+      "D": "Routing inter-VPC traffic over the public internet via NAT Gateways abandons private IP connectivity entirely, increases cost (NAT Gateway data processing charges) and latency, and introduces unnecessary exposure \u2014 the opposite of the described requirement for private connectivity.",
       "E": "PrivateLink is designed for exposing specific individual services (typically one-directional producer/consumer service access), not for general any-to-any network-level connectivity across many VPCs; using it for this purpose would require an impractical number of individually configured endpoint services."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
@@ -48,7 +48,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Continuously replicates new object versions (and can be configured to replicate existing objects via batch replication) to the destination bucket in the second Region — satisfying both the cross-region data residency requirement and preserving version history in both locations.",
+    "explanation": "Continuously replicates new object versions (and can be configured to replicate existing objects via batch replication) to the destination bucket in the second Region \u2014 satisfying both the cross-region data residency requirement and preserving version history in both locations.",
     "whyOthersAreWrong": {
       "A": "Versioning alone (without replication) only protects against accidental overwrite/deletion within the same bucket and Region; it does nothing to satisfy the requirement for a copy of the data to also exist in a different Region.",
       "C": "DataSync can move data between locations but a 'one-time copy' does not provide ongoing replication of new objects/versions, and it does not preserve S3 version history metadata in the same integrated way that CRR does for continuously changing data.",
@@ -95,7 +95,7 @@
   {
     "id": "saa-1324",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company with 50 AWS accounts under AWS Organizations wants to enforce a consistent backup policy — daily backups retained for 35 days — across all Amazon EBS volumes, RDS databases, and EFS file systems in every account, centrally managed and reported from the management account, without requiring each account team to configure backups individually. Which service should be used?",
+    "question": "A company with 50 AWS accounts under AWS Organizations wants to enforce a consistent backup policy \u2014 daily backups retained for 35 days \u2014 across all Amazon EBS volumes, RDS databases, and EFS file systems in every account, centrally managed and reported from the management account, without requiring each account team to configure backups individually. Which service should be used?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -262,10 +262,10 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "DynamoDB Global Tables provide a fully managed, multi-active (multi-master) replication topology where each participating Region's table can accept both reads and writes locally, with changes asynchronously propagated to all other Regions, and each Region continues serving reads and writes independently even if replication to other Regions is temporarily disrupted — matching every stated requirement.",
+    "explanation": "DynamoDB Global Tables provide a fully managed, multi-active (multi-master) replication topology where each participating Region's table can accept both reads and writes locally, with changes asynchronously propagated to all other Regions, and each Region continues serving reads and writes independently even if replication to other Regions is temporarily disrupted \u2014 matching every stated requirement.",
     "whyOthersAreWrong": {
       "A": "A single-Region DynamoDB table means every write, from any global user, must travel back to the US Region, which does not provide low-latency local writes in Europe and Asia, and DAX only accelerates reads, not the fundamental cross-region write latency problem.",
-      "C": "Fails the requirement for local write acceptance in every Region and continued availability during connectivity disruption to other Regions.",
+      "C": "This option fails the requirement for local write acceptance in every Region and continued availability during connectivity disruption to other Regions.",
       "D": "Independent Multi-AZ deployments per Region with manual nightly synchronization would have very poor consistency (up to 24 hours of staleness), massive operational overhead, and does not provide real-time multi-active replication.",
       "E": "ElastiCache for Redis is an in-memory cache/data store best suited as a caching layer, not typically positioned as the durable system of record for a globally distributed multi-active application database in this manner."
     },
@@ -356,7 +356,7 @@
       "B": "Use Aurora's Backtrack feature to rewind the entire cluster to a specific point in time just before the erroneous UPDATE statement executed, without needing to restore from a snapshot or create a new cluster.",
       "C": "Promote an existing Aurora Replica to become the new primary, since replicas are unaffected by writes made to the primary instance.",
       "D": "Enable Multi-AZ on the cluster after the fact, which will automatically roll back the erroneous transaction from the standby.",
-      "E": "Use Aurora Global Database to fail over to the secondary Region, which will not have received the erroneous update yet. (Questions 38–53)"
+      "E": "Use Aurora Global Database to fail over to the secondary Region, which will not have received the erroneous update yet. (Questions 38\u201353)"
     },
     "correctAnswers": [
       "B"
@@ -366,7 +366,7 @@
       "A": "Restoring from a 14-hour-old snapshot would lose 14 hours of legitimate transactions across the entire database, causing far more data loss than necessary; Backtrack can rewind to just seconds/minutes before the error with much less data loss.",
       "C": "Aurora Replicas replicate from the primary using the storage layer and would also reflect the erroneous UPDATE almost immediately after it was committed on the primary, since they are not isolated from writes made to the shared cluster storage volume in the way described.",
       "D": "Multi-AZ standby instances also share the same underlying replicated storage/data changes as the primary in Aurora's architecture context (or synchronously replicate in RDS Multi-AZ) and would reflect the erroneous update as well; enabling Multi-AZ after the fact does not retroactively undo an already-committed transaction.",
-      "E": "Aurora Global Database secondary Regions replicate from the primary with typical sub-second lag; 12 minutes after the erroneous statement, the secondary Region would almost certainly have already received and applied the erroneous update as well, so failing over would not avoid the corruption. (Questions 38–53)."
+      "E": "Aurora Global Database secondary Regions replicate from the primary with typical sub-second lag; 12 minutes after the erroneous statement, the secondary Region would almost certainly have already received and applied the erroneous update as well, so failing over would not avoid the corruption. (Questions 38\u201353)."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Aurora.",
     "topic": "Amazon Aurora",
@@ -394,7 +394,7 @@
     ],
     "explanation": "RDS Proxy is designed precisely for this Lambda-to-RDS/Aurora pattern: it maintains a warm, pooled set of actual database connections and multiplexes many concurrent Lambda invocations through them, dramatically reducing the number of real connections opened against Aurora regardless of how high Lambda concurrency spikes, directly resolving the 'too many connections' errors.",
     "whyOthersAreWrong": {
-      "A": "While a larger instance class does raise the maximum connection limit somewhat, the underlying problem is architectural: thousands of short-lived Lambda-driven connections will continue to exhaust even a much higher limit during future spikes, and the scenario states CPU/memory are already low, indicating the bottleneck is connection count, not instance capacity — this is a costly non-solution to the actual problem.",
+      "A": "While a larger instance class does raise the maximum connection limit somewhat, the underlying problem is architectural: thousands of short-lived Lambda-driven connections will continue to exhaust even a much higher limit during future spikes, and the scenario states CPU/memory are already low, indicating the bottleneck is connection count, not instance capacity \u2014 this is a costly non-solution to the actual problem.",
       "C": "Increasing Lambda concurrency further would make the connection exhaustion problem worse, not better, since even more simultaneous functions would attempt to open direct database connections.",
       "D": "Lambda memory allocation affects CPU/network performance allotted to the function; it has no relationship to or effect on a database's connection pooling or maximum connection limits.",
       "E": "Aurora Replicas each have their own separate connection limits for read traffic; they do not increase or pool connections for the primary/writer instance, and this doesn't solve a general connection exhaustion problem tied to Lambda's execution model."
@@ -487,7 +487,7 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "DAX is a DynamoDB-specific, fully managed, write-through, in-memory cache that sits in front of DynamoDB tables; because its client is largely API-compatible with the standard DynamoDB SDK, it typically requires minimal application code changes, and it reduces read latency for cached/hot items from single-digit milliseconds down to microseconds — directly matching every stated requirement.",
+    "explanation": "DAX is a DynamoDB-specific, fully managed, write-through, in-memory cache that sits in front of DynamoDB tables; because its client is largely API-compatible with the standard DynamoDB SDK, it typically requires minimal application code changes, and it reduces read latency for cached/hot items from single-digit milliseconds down to microseconds \u2014 directly matching every stated requirement.",
     "whyOthersAreWrong": {
       "B": "Increasing provisioned RCUs raises the throughput ceiling for DynamoDB requests but does not fundamentally change DynamoDB's underlying single-digit-millisecond latency characteristic; it does not achieve microsecond-level latency.",
       "C": "This is an extremely complex, custom-built, and high-latency (S3 read/write operations are not microsecond-fast) approach that would require significant re-architecture, directly violating the requirement to minimize code changes.",
@@ -520,7 +520,7 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "S3 Transfer Acceleration is specifically designed to speed up uploads over long distances by routing traffic through the nearest CloudFront edge location and then over Amazon's optimized private backbone network to the destination bucket, and combining it with multipart upload (uploading large files as parallel parts) further improves throughput and resilience for very large files — directly addressing the described problem while keeping a single central bucket.",
+    "explanation": "S3 Transfer Acceleration is specifically designed to speed up uploads over long distances by routing traffic through the nearest CloudFront edge location and then over Amazon's optimized private backbone network to the destination bucket, and combining it with multipart upload (uploading large files as parallel parts) further improves throughput and resilience for very large files \u2014 directly addressing the described problem while keeping a single central bucket.",
     "whyOthersAreWrong": {
       "B": "This reintroduces the exact complexity the company wants to avoid (maintaining separate regional buckets) and manual nightly consolidation adds significant latency and operational overhead compared to accelerating direct uploads to the central bucket.",
       "C": "Routing uploads through a Site-to-Site VPN does not inherently reduce latency to a distant Region compared to a direct connection, and VPN tunnels typically add encryption/encapsulation overhead rather than accelerating throughput the way Transfer Acceleration's edge-routing and backbone optimization does.",
@@ -584,7 +584,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Global Accelerator is specifically designed for this scenario: it provisions static anycast IP addresses that remain constant regardless of backend changes, uses the AWS global network to route users to the closest/optimal healthy endpoint, continuously monitors endpoint health for automatic failover, and explicitly supports both TCP and UDP protocols — matching every requirement listed.",
+    "explanation": "Global Accelerator is specifically designed for this scenario: it provisions static anycast IP addresses that remain constant regardless of backend changes, uses the AWS global network to route users to the closest/optimal healthy endpoint, continuously monitors endpoint health for automatic failover, and explicitly supports both TCP and UDP protocols \u2014 matching every requirement listed.",
     "whyOthersAreWrong": {
       "A": "CloudFront is an HTTP/HTTPS (and WebSocket) content delivery network optimized for web content caching; it does not support arbitrary UDP-based game traffic, making it unsuitable for this specific use case.",
       "C": "Route 53 latency-based routing directs DNS resolution based on latency but returns standard DNS records (IP addresses of the actual endpoints, which can change), not fixed anycast IPs, and DNS-based routing is also subject to caching/TTL propagation delays unlike Global Accelerator's IP-level routing.",
@@ -612,12 +612,12 @@
       "B": "ECS Service Auto Scaling with a scheduled scaling policy that increases desired count at fixed times of day regardless of actual traffic.",
       "C": "Manually adjust the ECS service's desired count based on operations team observation of the ALB's request metrics in the console throughout the day.",
       "D": "EC2 Auto Scaling group target tracking based on average CPU utilization of the underlying Fargate infrastructure, since Fargate tasks run on customer-managed EC2 instances.",
-      "E": "AWS Auto Scaling Plans configured to scale the ALB itself based on request count, since the ALB — not the ECS service — should be scaled to handle more requests."
+      "E": "AWS Auto Scaling Plans configured to scale the ALB itself based on request count, since the ALB \u2014 not the ECS service \u2014 should be scaled to handle more requests."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Metric specifically designed to scale the number of tasks so that each task handles approximately the specified target number of requests per minute — this directly matches the described requirement with a simple, built-in metric-driven policy rather than custom alarms.",
+    "explanation": "Metric specifically designed to scale the number of tasks so that each task handles approximately the specified target number of requests per minute \u2014 this directly matches the described requirement with a simple, built-in metric-driven policy rather than custom alarms.",
     "whyOthersAreWrong": {
       "B": "Scheduled scaling reacts to fixed times, not actual real-time traffic patterns, which does not match the requirement to scale dynamically based on request load, and would perform poorly on days with atypical traffic.",
       "C": "Manual adjustment based on human observation is slow, error-prone, and does not scale operationally; it is not an appropriate automated solution.",

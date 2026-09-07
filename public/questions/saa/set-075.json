@@ -17,7 +17,7 @@
     "explanation": "Aurora Serverless v2 with a low minimum ACU and a higher maximum ACU is well suited here: it automatically scales compute down during nights and weekends when load is minimal, scales up automatically for business-hours peaks, and importantly remains continuously available with no pause or cold start, satisfying the requirement that occasional off-hours jobs succeed without connection failures.",
     "whyOthersAreWrong": {
       "B": "A 1-year RI locks in a fixed size 24/7, providing no cost reduction during the roughly 70 percent of the week the database sits idle.",
-      "C": ", while Serverless v1 does support pausing to zero, that behavior conflicts with the stated always-available requirement, since a paused v1 database must resume from a cold start, risking failure or added latency for those brief off-hours jobs.",
+      "C": "While Aurora Serverless v1 supports pausing compute capacity to zero, resuming from a paused state incurs significant cold-start latency, conflicting with the requirement for always-available responsive performance.",
       "D": "A fully manual daily shutdown and startup runbook is operationally burdensome, error-prone, and specifically breaks the requirement that the database remain available for unpredictable off-hours jobs."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon Aurora to satisfy workload requirements.",
@@ -138,7 +138,7 @@
     ],
     "explanation": "While same-AZ data transfer is indeed free, the architecturally sound answer acknowledges the real trade-off: some degree of AZ affinity for frequently-communicating services can reduce cross-AZ costs, but this must be weighed against, not simply override, the resilience benefits of spreading tasks across multiple AZs, so a nuanced, selective approach is the well-architected answer.",
     "whyOthersAreWrong": {
-      "A": ", while it would minimize the specific data transfer charge, forcing everything into a single AZ eliminates Multi-AZ fault tolerance entirely, meaning a single AZ failure takes down the whole application.",
+      "A": "While consolidating resources into a single Availability Zone eliminates inter-AZ data transfer charges, it completely removes Multi-AZ high availability, leaving the application vulnerable to a single data center outage.",
       "B": "S3 Transfer Acceleration is specifically for accelerating uploads to S3 from distant clients and has no relevance to ECS-to-ECS service communication costs.",
       "C": "Public internet data transfer is generally more expensive than private cross-AZ transfer within a VPC and removes the security benefits of keeping inter-service traffic private."
     },
@@ -171,7 +171,7 @@
     "whyOthersAreWrong": {
       "B": "The scenario explicitly states the workload can tolerate individual node interruptions, meaning guaranteed non-interruption is not the actual priority, so paying full On-Demand price to avoid interruptions the workload can already tolerate is not cost-optimal.",
       "C": "Reserved Instances require a long-term commitment ideal for steady-state, predictable workloads, offering smaller discounts than Spot can provide for this interruption-tolerant use case.",
-      "D": ", since Dedicated Hosts are priced for physical server dedication, often for licensing or compliance reasons, and are generally one of the more expensive EC2 purchasing options, not the lowest cost."
+      "D": "Dedicated Hosts are priced for physical server dedication and host-bound software licensing, making them one of the most expensive EC2 purchasing options rather than a cost-effective solution."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -201,7 +201,7 @@
     "whyOthersAreWrong": {
       "C": "Glacier Deep Archive's standard retrieval takes up to about 12 hours, not within an hour, failing the \"within minutes\" requirement despite its lowest-in-class storage cost.",
       "D": "S3 One Zone-IA stores data in a single Availability Zone only, directly violating the multi-AZ durability requirement.",
-      "E": ", while S3 Standard would technically satisfy speed and durability, it is by far the most expensive applicable option for data accessed maybe once or twice, if ever, over nearly 2 years, failing the cost-minimization goal."
+      "E": "While S3 Standard provides fast retrieval and multi-AZ durability, it is by far the most expensive storage class for data that is rarely or never accessed over a 2-year retention period."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
     "topic": "Amazon S3",
@@ -231,7 +231,7 @@
     "whyOthersAreWrong": {
       "A": "On-demand mode is priced at a premium specifically for handling unpredictable or spiky traffic without capacity planning, and is not always the cheapest option.",
       "C": "C is a suboptimal choice, since even a generally stable workload benefits from Auto Scaling as a low-cost safety net for occasional unexpected spikes, and disabling it entirely removes that protection without providing additional savings over reasonable min, max, and target bounds around the stable baseline.",
-      "D": ", since it is an unsupported generalization; whether RDS or DynamoDB is cheaper depends heavily on the specific workload's data model fit and access patterns, and this ignores DynamoDB's own available cost-optimization levers that directly address the scenario without a disruptive migration."
+      "D": "This option relies on an unsupported generalization; migrating to RDS requires schema conversions and ignores native DynamoDB cost-reduction features such as provisioned capacity with reserved capacity commitments."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon RDS to satisfy workload requirements.",
     "topic": "Amazon RDS",
@@ -304,7 +304,7 @@
   {
     "id": "saa-1491",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A financial services company runs AWS Organizations with roughly 40 member accounts under a Network account, an Egress account, and multiple workload accounts, all connected via AWS Transit Gateway. Regulatory requirements mandate that ALL outbound internet traffic from any workload VPC must pass through a centralized, stateful deep packet inspection layer before leaving AWS. The design must minimize the number of NAT Gateways and inspection appliances deployed while supporting future growth to 200+ accounts. Which design meets these requirements with the LEAST operational overhead?",
+    "question": "A financial services company runs AWS Organizations with roughly 40 member accounts under a Network account, an Egress account, and multiple workload accounts, all connected via AWS Transit Gateway. Regulatory requirements mandate that ALL outbound internet traffic from any workload VPC must pass through a centralized, stateful deep packet inspection layer before leaving AWS. The design must minimize the number of NAT Gateways and inspection appliances deployed while supporting future growth to 200+ accounts. Which design meets these requirements with the LEAST operational overhead?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -335,7 +335,7 @@
   {
     "id": "saa-1492",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A company uses AWS Organizations with a dedicated Log Archive account. Security requires: (1) API activity from all current and future member accounts must be captured automatically without per-account configuration, (2) log files must be encrypted at rest with a customer managed KMS key, (3) member accounts must never be able to modify or delete the trail configuration, and (4) the Log Archive account must be the only place where the log content can actually be decrypted and read. Which combination of actions satisfies these requirements?",
+    "question": "A company uses AWS Organizations with a dedicated Log Archive account. Security requires: (1) API activity from all current and future member accounts must be captured automatically without per-account configuration, (2) log files must be encrypted at rest with a customer managed KMS key, (3) member accounts must never be able to modify or delete the trail configuration, and (4) the Log Archive account must be the only place where the log content can actually be decrypted and read. Which combination of actions satisfies these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -347,7 +347,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "An AWS Organizations CloudTrail trail, created once in the management account with \"apply trail to all accounts in my organization\" enabled, automatically captures activity from every existing member account and any account that joins later — satisfying the \"no per-account configuration\" requirement. Delivering to a bucket in the Log Archive account, encrypted with a customer managed KMS key whose key policy grants decrypt only to Log Archive principals, satisfies both the CMK requirement and the \"only readable in the Log Archive account\" requirement. Because member accounts have no IAM permission that can override an SCP, a deny-based SCP on cloudtrail:StopLogging/DeleteTrail reliably prevents tampering — IAM allow policies in a member account can never override an Organizations SCP deny.",
+    "explanation": "An AWS Organizations CloudTrail trail, created once in the management account with \"apply trail to all accounts in my organization\" enabled, automatically captures activity from every existing member account and any account that joins later \u2014 satisfying the \"no per-account configuration\" requirement. Delivering to a bucket in the Log Archive account, encrypted with a customer managed KMS key whose key policy grants decrypt only to Log Archive principals, satisfies both the CMK requirement and the \"only readable in the Log Archive account\" requirement. Because member accounts have no IAM permission that can override an SCP, a deny-based SCP on cloudtrail:StopLogging/DeleteTrail reliably prevents tampering \u2014 IAM allow policies in a member account can never override an Organizations SCP deny.",
     "whyOthersAreWrong": {
       "A": "Service Control Policies (SCPs) act as permission guardrails that restrict the maximum permissions available in an account; they do not grant permissions or configure resource-level behaviors directly.",
       "C": "This approach (In the Log Archive account, create a CloudTrail trail with \"collect events from all accounts\" enabled, delivering to an S3 bucket owned by the management account and encrypted with the AWS managed CloudTrail KMS key.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
@@ -366,7 +366,7 @@
   {
     "id": "saa-1493",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A global manufacturing company has a primary data center connecting to AWS via a single 10 Gbps AWS Direct Connect connection at one Direct Connect location, terminating on a private VIF into a single VPC in us-east-1. The company is now deploying workloads into eu-west-1 and ap-southeast-2 as well, all needing private, non-internet connectivity from the same on-premises data center. Leadership requires: (1) resiliency that survives a single connection or device failure, (2) the ability to reach VPCs in all three regions from the single on-premises location without provisioning a separate physical cross-connect per region, and (3) an encrypted backup path that activates automatically if all Direct Connect connections fail. What should the Solutions Architect implement?",
+    "question": "A global manufacturing company has a primary data center connecting to AWS via a single 10 Gbps AWS Direct Connect connection at one Direct Connect location, terminating on a private VIF into a single VPC in us-east-1. The company is now deploying workloads into eu-west-1 and ap-southeast-2 as well, all needing private, non-internet connectivity from the same on-premises data center. Leadership requires: (1) resiliency that survives a single connection or device failure, (2) the ability to reach VPCs in all three regions from the single on-premises location without provisioning a separate physical cross-connect per region, and (3) an encrypted backup path that activates automatically if all Direct Connect connections fail. What should the Solutions Architect implement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -378,7 +378,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Provisioning two Direct Connect connections at two different Direct Connect locations (different physical devices, different facilities) removes the single point of failure that a single connection — or even two connections at the same location/router — would still have. A Direct Connect Gateway lets those connections reach Virtual Private Gateways or a Transit Gateway in multiple AWS Regions from one logical gateway, so the company does not need a separate physical cross-connect for eu-west-1 and ap-southeast-2. Layering a Site-to-Site VPN with BGP as a backup path means that if all Direct Connect paths fail, routes are automatically withdrawn and traffic fails over to the encrypted VPN path with no manual intervention.",
+    "explanation": "Provisioning two Direct Connect connections at two different Direct Connect locations (different physical devices, different facilities) removes the single point of failure that a single connection \u2014 or even two connections at the same location/router \u2014 would still have. A Direct Connect Gateway lets those connections reach Virtual Private Gateways or a Transit Gateway in multiple AWS Regions from one logical gateway, so the company does not need a separate physical cross-connect for eu-west-1 and ap-southeast-2. Layering a Site-to-Site VPN with BGP as a backup path means that if all Direct Connect paths fail, routes are automatically withdrawn and traffic fails over to the encrypted VPN path with no manual intervention.",
     "whyOthersAreWrong": {
       "A": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
       "C": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
@@ -397,7 +397,7 @@
   {
     "id": "saa-1494",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answers. A company runs a critical ECS Fargate service behind an Application Load Balancer. They want to adopt blue/green deployments so a new task set is fully validated before receiving production traffic, with automatic rollback if error rates spike after cutover, and zero manual intervention during normal deployments. Which TWO actions are required to implement this correctly?",
+    "question": "A company runs a critical ECS Fargate service behind an Application Load Balancer. They want to adopt blue/green deployments so a new task set is fully validated before receiving production traffic, with automatic rollback if error rates spike after cutover, and zero manual intervention during normal deployments. Which TWO actions are required to implement this correctly?",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
@@ -411,7 +411,7 @@
       "A",
       "B"
     ],
-    "explanation": "ECS blue/green deployments require the ECS service's deploymentController to be set to CODE_DEPLOY, backed by a CodeDeploy application and deployment group (compute platform ECS) that references the two ALB listeners (production and optional test) and the two target groups CodeDeploy will shift traffic between (option A). To get automatic rollback — rather than requiring someone to notice a problem and roll back manually — one or more CloudWatch alarms must be attached directly to that CodeDeploy deployment group; if the alarm goes into ALARM state during or shortly after the traffic shift, CodeDeploy automatically halts and rolls back the deployment (option B).",
+    "explanation": "ECS blue/green deployments require the ECS service's deploymentController to be set to CODE_DEPLOY, backed by a CodeDeploy application and deployment group (compute platform ECS) that references the two ALB listeners (production and optional test) and the two target groups CodeDeploy will shift traffic between (option A). To get automatic rollback \u2014 rather than requiring someone to notice a problem and roll back manually \u2014 one or more CloudWatch alarms must be attached directly to that CodeDeploy deployment group; if the alarm goes into ALARM state during or shortly after the traffic shift, CodeDeploy automatically halts and rolls back the deployment (option B).",
     "whyOthersAreWrong": {
       "C": "This approach (Change the ECS service's scheduling strategy from REPLICA to DAEMON so that exactly one task runs per container instance during the deployment.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
       "D": "This approach (Create an Application Auto Scaling target tracking policy on the ECS service based on ALBRequestCountPerTarget to trigger the blue/green deployment automatically.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
@@ -444,7 +444,7 @@
       "C",
       "A"
     ],
-    "explanation": "Nd E Why This Is Correct Pulling an image from Amazon ECR without internet access requires more than the obvious ecr.dkr endpoint. The ecr.api interface endpoint handles ECR control-plane/API calls such as authentication token retrieval. The ecr.dkr interface endpoint handles the Docker Registry v2 API calls used to retrieve image manifests and initiate layer pulls. Critically, ECR stores the actual image layer data in Amazon S3, and the Docker client fetches those layers via presigned S3 URLs — so an S3 gateway endpoint is also required, or layer downloads will fail or hang even though the ecr.dkr endpoint is reachable. Finally, the logs interface endpoint is required for the awslogs log driver to deliver container stdout/stderr to CloudWatch Logs without a route to the internet.",
+    "explanation": "Nd E Why This Is Correct Pulling an image from Amazon ECR without internet access requires more than the obvious ecr.dkr endpoint. The ecr.api interface endpoint handles ECR control-plane/API calls such as authentication token retrieval. The ecr.dkr interface endpoint handles the Docker Registry v2 API calls used to retrieve image manifests and initiate layer pulls. Critically, ECR stores the actual image layer data in Amazon S3, and the Docker client fetches those layers via presigned S3 URLs \u2014 so an S3 gateway endpoint is also required, or layer downloads will fail or hang even though the ecr.dkr endpoint is reachable. Finally, the logs interface endpoint is required for the awslogs log driver to deliver container stdout/stderr to CloudWatch Logs without a route to the internet.",
     "whyOthersAreWrong": {
       "D": "Interface VPC Endpoints incur hourly charges and data processing fees, whereas Gateway VPC Endpoints for S3 and DynamoDB are completely free of charge.",
       "E": "Interface VPC Endpoints incur hourly charges and data processing fees, whereas Gateway VPC Endpoints for S3 and DynamoDB are completely free of charge."
@@ -462,7 +462,7 @@
   {
     "id": "saa-1496",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A retail company runs an Aurora MySQL cluster in us-east-1 as its primary transactional database. They need: (1) a DR region (us-west-2) with an RPO of only a few seconds and an RTO under one minute in the event of a full regional outage, (2) the ability to run heavy nightly BI/reporting queries that scan large portions of the data without consuming CPU capacity on the primary writer instance, and (3) confidence that the disaster-recovery replication lag SLA in us-west-2 will not be put at risk by unrelated analytical workload spikes. Which architecture BEST meets these requirements?",
+    "question": "A retail company runs an Aurora MySQL cluster in us-east-1 as its primary transactional database. They need a disaster recovery strategy that provides an RTO of under 2 minutes and an RPO of under 1 second to us-west-2. In addition, they need to run heavy read-only reporting queries without impacting primary write performance or DR replication lag. What is the best architecture?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -474,11 +474,11 @@
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Aurora Global Database uses dedicated, storage-based replication that typically achieves sub-second cross-region lag and supports a managed failover/promotion of the secondary cluster in roughly a minute — this is what satisfies the aggressive RPO/RTO requirement and is why both options A and C start from a Global Database. The differentiator is where the reporting workload runs. Loading the us-west-2 secondary (option A) with unrelated, heavy nightly analytical query concurrency risks CPU/I-O contention on the very replica the company depends on to keep replication lag low for real disaster recovery — directly threatening requirement 3. Option C keeps the Global Database secondary dedicated and lightly loaded purely for DR, and instead adds a separate, purpose-sized Aurora Replica to the PRIMARY cluster in us-east-1. Because all Aurora Replicas within a cluster share the same underlying cluster storage volume as the writer, this reporting replica serves reads with minimal lag and consumes no CPU on the writer instance itself, and a dedicated custom endpoint isolates that reporting traffic from both OLTP reads and the DR replication path.",
+    "explanation": "Amazon Aurora Global Database provides dedicated storage-level replication with typical cross-region latency under 1 second and managed promotion under 1 minute, directly satisfying the aggressive RTO and RPO objectives. To protect DR replication lag and prevent resource contention on the secondary cluster, heavy reporting workloads should run against a dedicated Aurora read replica and custom endpoint in the primary region, sharing the primary cluster storage volume without burdening the writer or secondary DR cluster.",
     "whyOthersAreWrong": {
-      "A": "This approach (Create an Aurora Global Database with the primary cluster in us-east-1 and a secondary cluster in us-west-2; run the BI/reporting queries directly against the secondary cluster's reader instance in us-west-2.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Create a standard Aurora MySQL cross-region read replica in us-west-2 using binlog-based replication, and run reporting queries against a separate large reader instance added to the primary cluster in us-east-1.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Enable Aurora Multi-Master so that us-east-1 and us-west-2 can both accept writes, and run reporting queries against the us-west-2 writer instance.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Running heavy reporting queries directly against the secondary cluster reader in us-west-2 risks CPU and I/O contention on the replica dedicated to DR failover and replication.",
+      "B": "Standard Aurora cross-region read replicas use binlog replication, which introduces significantly higher latency and risks violating the 1-second RPO requirement.",
+      "D": "Aurora Multi-Master is limited to single-region deployments and does not provide cross-region disaster recovery or reporting isolation."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon Aurora.",
     "topic": "Amazon Aurora",
@@ -491,7 +491,7 @@
   {
     "id": "saa-1497",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. An Aurora MySQL provisioned cluster's writer instance (currently a db.r6g.4xlarge) consistently hits 90-95% CPU utilization during flash-sale traffic spikes that last 20-40 minutes a few times per week, causing elevated write latency and occasional timeouts; between spikes, utilization drops to roughly 15%. The team wants writer capacity to automatically and rapidly scale up during spikes and back down afterward, without application downtime, connection drops, or manual instance-class changes, while minimizing cost during idle periods. Read replica count is not the bottleneck. What should the Solutions Architect recommend?",
+    "question": "An Aurora MySQL provisioned cluster's writer instance (currently a db.r6g.4xlarge) consistently hits 90-95% CPU utilization during flash-sale traffic spikes that last 20-40 minutes a few times per week, causing elevated write latency and occasional timeouts; between spikes, utilization drops to roughly 15%. The team wants writer capacity to automatically and rapidly scale up during spikes and back down afterward, without application downtime, connection drops, or manual instance-class changes, while minimizing cost during idle periods. Read replica count is not the bottleneck. What should the Solutions Architect recommend?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -503,7 +503,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Aurora Serverless v2 adjusts the writer's capacity in Aurora Capacity Units (ACUs) up and down automatically, within seconds, in direct response to load — without changing the instance's connection endpoint and without dropping active connections. This exactly matches an unpredictable, spiky write-heavy workload that needs to scale rapidly and then scale back down to minimize cost during long idle periods, with zero manual intervention.",
+    "explanation": "Aurora Serverless v2 adjusts the writer's capacity in Aurora Capacity Units (ACUs) up and down automatically, within seconds, in direct response to load \u2014 without changing the instance's connection endpoint and without dropping active connections. This exactly matches an unpredictable, spiky write-heavy workload that needs to scale rapidly and then scale back down to minimize cost during long idle periods, with zero manual intervention.",
     "whyOthersAreWrong": {
       "A": "This approach (Enable Aurora Auto Scaling on the cluster to automatically add Aurora Replicas during the spike and remove them afterward.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
       "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
@@ -522,7 +522,7 @@
   {
     "id": "saa-1498",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A mobile gaming company has players across North America, Europe, and Asia. They need a leaderboard/player-profile store providing single-digit-millisecond reads and writes from the region nearest each player, must remain available for writes even if one AWS Region becomes fully unavailable, and can tolerate eventual consistency with automatic last-writer-wins conflict resolution when the same player record is updated in two regions nearly simultaneously. Which solution meets these requirements with the LEAST operational overhead?",
+    "question": "A mobile gaming company has players across North America, Europe, and Asia. They need a leaderboard/player-profile store providing single-digit-millisecond reads and writes from the region nearest each player, must remain available for writes even if one AWS Region becomes fully unavailable, and can tolerate eventual consistency with automatic last-writer-wins conflict resolution when the same player record is updated in two regions nearly simultaneously. Which solution meets these requirements with the LEAST operational overhead?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -534,7 +534,7 @@
     "correctAnswers": [
       "C"
     ],
-    "explanation": "DynamoDB Global Tables provide native, multi-region, multi-active replication: applications in each region read from and write to their own local regional table with single-digit-millisecond latency, DynamoDB handles cross-region propagation automatically, and built-in last-writer-wins conflict resolution handles near-simultaneous updates to the same item. Because every region can accept writes independently, the loss of any single region does not block writes elsewhere — all with no custom replication code to build or operate.",
+    "explanation": "DynamoDB Global Tables provide native, multi-region, multi-active replication: applications in each region read from and write to their own local regional table with single-digit-millisecond latency, DynamoDB handles cross-region propagation automatically, and built-in last-writer-wins conflict resolution handles near-simultaneous updates to the same item. Because every region can accept writes independently, the loss of any single region does not block writes elsewhere \u2014 all with no custom replication code to build or operate.",
     "whyOthersAreWrong": {
       "A": "This approach (Deploy a single Aurora MySQL Global Database with the primary in us-east-1 and secondary clusters in eu-west-1 and ap-northeast-1; enable write forwarding so the secondary regions can forward writes to the primary.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
       "B": "This approach (Deploy DynamoDB tables in each region and use DynamoDB Streams with a custom Lambda function to asynchronously replicate changes between the three regional tables.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
@@ -553,7 +553,7 @@
   {
     "id": "saa-1499",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A serverless order-processing API uses API Gateway and Lambda, writing to an RDS for MySQL instance. During traffic bursts, concurrent Lambda executions spike to several thousand, and the RDS instance begins rejecting connections with \"Too many connections\" errors, causing failed orders. The Lambda functions run inside the VPC and open a new connection per invocation. The team wants a fix that requires minimal to no application code changes and avoids resizing the database instance class purely to raise the connection limit. What should the Solutions Architect implement?",
+    "question": "A serverless order-processing API uses API Gateway and Lambda, writing to an RDS for MySQL instance. During traffic bursts, concurrent Lambda executions spike to several thousand, and the RDS instance begins rejecting connections with \"Too many connections\" errors, causing failed orders. The Lambda functions run inside the VPC and open a new connection per invocation. The team wants a fix that requires minimal to no application code changes and avoids resizing the database instance class purely to raise the connection limit. What should the Solutions Architect implement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -583,7 +583,7 @@
   {
     "id": "saa-1500",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Correct answer. A company's order-management system must be recoverable in another AWS Region with an RTO of 15 minutes or less and an RPO of 5 minutes or less in the event of a full regional failure. The application tier is stateless behind an ALB and Auto Scaling group; the data tier is RDS PostgreSQL. Budget constraints rule out running full production-scale infrastructure in the DR region 24/7, but leadership will accept a modest always-on footprint in the DR region in order to meet the aggressive RTO. Which DR strategy is the BEST fit?",
+    "question": "A company's order-management system must be recoverable in another AWS Region with an RTO of 15 minutes or less and an RPO of 5 minutes or less in the event of a full regional failure. The application tier is stateless behind an ALB and Auto Scaling group; the data tier is RDS PostgreSQL. Budget constraints rule out running full production-scale infrastructure in the DR region 24/7, but leadership will accept a modest always-on footprint in the DR region in order to meet the aggressive RTO. Which DR strategy is the BEST fit?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -595,7 +595,7 @@
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Warm standby continuously runs a smaller, but fully functional, copy of the entire stack (application tier and data tier) in the DR region, so recovery is primarily a matter of scaling up already-running infrastructure and promoting the database — comfortably achievable within a 15-minute RTO and a 5-minute-or-less RPO using an active RDS read replica. This matches leadership's explicit willingness to accept \"a modest always-on footprint\" specifically to hit an aggressive RTO, without paying for full-scale active/active capacity.",
+    "explanation": "Warm standby continuously runs a smaller, but fully functional, copy of the entire stack (application tier and data tier) in the DR region, so recovery is primarily a matter of scaling up already-running infrastructure and promoting the database \u2014 comfortably achievable within a 15-minute RTO and a 5-minute-or-less RPO using an active RDS read replica. This matches leadership's explicit willingness to accept \"a modest always-on footprint\" specifically to hit an aggressive RTO, without paying for full-scale active/active capacity.",
     "whyOthersAreWrong": {
       "A": "This approach (Backup and restore: take daily RDS snapshots and AMI backups, replicate them to the DR region with AWS Backup, and launch new infrastructure from scratch only when a disaster is declared.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
       "B": "This approach (Pilot light: keep only a minimal RDS replica running in the DR region (data tier only) with no application-tier compute running, and launch the Auto Scaling group and ALB from infrastructure as code when a disaster is declared.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
