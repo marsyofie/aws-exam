@@ -14,11 +14,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 1: Design Secure Architectures A company uses AWS Organizations with a management account and 40 member accounts. The security team must guarantee that no IAM principal in any member account — including account administrators — can ever disable AWS CloudTrail or delete its log files, regardless of the IAM permissions later granted to that principal. Apply a Service Control Policy (SCP) at the OU level that denies cloudtrail:StopLogging, cloudtrail:DeleteTrail, and related actions SCPs are organization-wide guardrails that set the maximum available permissions for every principal in the affected accounts, including account admins (the management account itself is exempt). A single SCP at the OU level enforces the restriction centrally and cannot be overridden by IAM policies within member accounts. Options A and C require touching every principal individually and can be bypassed by anyone who can create a new role/policy. Option D is reactive (detects and remediates after the fact) rather than preventive.",
+    "explanation": "Apply a Service Control Policy (SCP) at the OU level that denies cloudtrail:StopLogging, cloudtrail:DeleteTrail, and related actions SCPs are organization-wide guardrails that set the maximum available permissions for every principal in the affected accounts, including account admins (the management account itself is exempt). A single SCP at the OU level enforces the restriction centrally and cannot be overridden by IAM policies within member accounts. Options A and C require touching every principal individually and can be bypassed by anyone who can create a new role/policy.",
     "whyOthersAreWrong": {
-      "A": "Option A (Attach a restrictive IAM permissions boundary to every IAM role in every account) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Add a deny statement to each individual IAM policy) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Reactive (detects and remediates after the fact) rather than preventiv."
+      "D": "Is reactive (detects and remediates after the fact) rather than preventive.",
+      "A": "This approach (Attach a restrictive IAM permissions boundary to every IAM role in every account) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Add a deny statement to each individual IAM policy) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -26,7 +26,6 @@
       "IAM",
       "Organizations",
       "CloudTrail",
-      "Config",
       "Security"
     ]
   },
@@ -45,19 +44,19 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 1: Design Secure Architectures A company's application connects to RDS for MySQL using database credentials. Compliance requires these credentials be rotated regularly, and the team wants to avoid writing and maintaining custom rotation Lambda functions. Store the credentials in AWS Secrets Manager and enable its built-in rotation, which has native support for RDS Secrets Manager provides pre-built, native rotation Lambda templates for RDS (MySQL, PostgreSQL, Oracle, SQL Server, MariaDB), so enabling rotation requires configuration rather than custom code, and it automatically updates the secret and coordinates the password change with the database. Option A provides no rotation capability. Option C (Parameter Store SecureString) can store secrets but has no built-in automatic rotation workflow. Option D hardcodes credentials into immutable images, the opposite of rotation.",
+    "explanation": "Store the credentials in AWS Secrets Manager and enable its built-in rotation, which has native support for RDS Secrets Manager provides pre-built, native rotation Lambda templates for RDS (MySQL, PostgreSQL, Oracle, SQL Server, MariaDB), so enabling rotation requires configuration rather than custom code, and it automatically updates the secret and coordinates the password change with the database.",
     "whyOthersAreWrong": {
-      "A": "No rotation capability.",
-      "C": "(Parameter Store SecureString) can store secrets but has no built-in automatic rotation workflow.",
+      "A": "Provides no rotation capability.",
+      "C": "Parameter Store SecureString can store secrets but has no built-in automatic rotation workflow.",
       "D": "Hardcodes credentials into immutable images, the opposite of rotation."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon RDS.",
     "topic": "Amazon RDS",
     "tags": [
       "RDS",
-      "Lambda",
-      "Secrets Manager",
+      "EC2",
       "Systems Manager",
+      "S3",
       "Security"
     ]
   },
@@ -76,18 +75,17 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 2: Design Resilient Architectures A company replicates on-premises backup data into AWS. The copies must survive the loss of an entire AWS Region, be retained for 7 years for compliance, and shift to the lowest-cost storage tier once data is rarely accessed (after about 90 days), while tolerating a retrieval time of up to 12 hours for that older data. Store in S3 with Cross-Region Replication to a second Region, and a lifecycle policy transitioning objects to S3 Glacier Deep Archive after 90 days Cross-Region Replication protects against the loss of an entire Region, and a lifecycle policy transitioning to Glacier Deep Archive after 90 days minimizes storage cost for long-term, rarely accessed compliance data — Deep Archive's retrieval window (standard retrieval within about 12 hours) fits the stated tolerance. Option A never reduces cost for cold data and has no Regional resilience. Option C protects volumes, not long-term archival compliance data, and is Region-bound by default. Option D provides no AWS-native durability, resilience, or lifecycle automation.",
+    "explanation": "Store in S3 with Cross-Region Replication to a second Region, and a lifecycle policy transitioning objects to S3 Glacier Deep Archive after 90 days Cross-Region Replication protects against the loss of an entire Region, and a lifecycle policy transitioning to Glacier Deep Archive after 90 days minimizes storage cost for long-term, rarely accessed compliance data — Deep Archive's retrieval window (standard retrieval within about 12 hours) fits the stated tolerance.",
     "whyOthersAreWrong": {
-      "A": "Store in S3 with Cross-Region Replication to a second Region, and a lifecycle policy transitioning objects to S3 Glacier Deep Archive after 90 days Cross-Region Replication protects against the loss of an entire Region, and a lifecycle policy transitioning to Glacier Deep Archive after 90 days minimizes storage cost for long-term, rarely accessed compliance data — Deep Archive's retrieval window (standard retrieval within about 12 hours) fits the stated toleranc.",
+      "A": "Never reduces cost for cold data and has no Regional resilience.",
       "C": "Protects volumes, not long-term archival compliance data, and is Region-bound by default.",
-      "D": "No AWS-native durability, resilience, or lifecycle automation."
+      "D": "Provides no AWS-native durability, resilience, or lifecycle automation."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
     "topic": "Amazon S3",
     "tags": [
       "S3",
       "IAM",
-      "High Availability",
       "Cost Optimization"
     ]
   },
@@ -106,19 +104,18 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 4: Design Cost-Optimized Architectures A company's API has sporadic and unpredictable traffic, sometimes receiving zero requests for hours at a time. The team wants to pay only for actual compute time consumed, with no charge while idle. AWS Lambda behind Amazon API Gateway Lambda's pricing model charges only for actual invocation time (rounded to the nearest millisecond) and the number of requests, with zero compute charge while no requests are arriving — a direct fit for sporadic, idle-heavy traffic. Options A, C, and D all keep compute capacity running (and billing) continuously, regardless of whether any requests arrive, which wastes spend during idle periods.",
+    "explanation": "AWS Lambda behind Amazon API Gateway Lambda's pricing model charges only for actual invocation time (rounded to the nearest millisecond) and the number of requests, with zero compute charge while no requests are arriving — a direct fit for sporadic, idle-heavy traffic. Options A, C, and D all keep compute capacity running (and billing) continuously, regardless of whether any requests arrive, which wastes spend during idle periods.",
     "whyOthersAreWrong": {
-      "A": "Option A (An EC2 On-Demand instance running continuously) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Options A, C, and D all keep compute capacity running (and billing) continuously, regardless of whether any requests arrive, which wastes spend during idle periods.",
-      "D": "Option D (ECS tasks running continuously on EC2) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (An EC2 On-Demand instance running continuously) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Reserved EC2 Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (ECS tasks running continuously on EC2) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
     "tags": [
       "EC2",
       "Lambda",
-      "ECS",
-      "Cost Optimization"
+      "ECS"
     ]
   },
   {
@@ -136,11 +133,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 3: Design High-Performing Architectures A company hosts a static website's assets in an S3 bucket in us-east-1. Users worldwide report high latency loading these assets. The company wants to reduce latency globally with edge caching, without duplicating the bucket into every Region. Put an Amazon CloudFront distribution in front of the S3 origin CloudFront caches content at edge locations around the world, so repeat requests for the same objects are served from a nearby edge cache instead of round-tripping to us-east-1, directly reducing latency for a global audience with no need to duplicate the origin bucket. Option A adds significant operational overhead (sync, consistency, cost) for something CloudFront already solves. Option C doesn't change where the object is served from — S3 (the origin) is still a single Region. Option D accelerates uploads over the AWS backbone; it does not cache or reduce latency for repeated downloads.",
+    "explanation": "Put an Amazon CloudFront distribution in front of the S3 origin CloudFront caches content at edge locations around the world, so repeat requests for the same objects are served from a nearby edge cache instead of round-tripping to us-east-1, directly reducing latency for a global audience with no need to duplicate the origin bucket.",
     "whyOthersAreWrong": {
       "A": "Adds significant operational overhead (sync, consistency, cost) for something CloudFront already solves.",
       "C": "Doesn't change where the object is served from — S3 (the origin) is still a single Region.",
-      "D": "Tripping to us-east-1, directly reducing latency for a global audience with no need to duplicate the origin bucket."
+      "D": "Accelerates uploads over the AWS backbone; it does not cache or reduce latency for repeated downloads."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon S3.",
     "topic": "Amazon S3",
@@ -148,7 +145,6 @@
       "S3",
       "CloudFront",
       "Route 53",
-      "Cost Optimization",
       "Networking"
     ]
   },
@@ -167,11 +163,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 2: Design Resilient Architectures A company needs DNS to automatically fail traffic over from its primary Region to a disaster-recovery Region if the primary endpoint becomes unhealthy, with minimal manual intervention. Route 53 failover routing policy with health checks on the primary endpoint Failover routing works with Route 53 health checks: DNS answers point to the primary record while it's healthy, and automatically switch to the secondary record when the health check detects the primary is failing — exactly the automated failover behavior required. Simple routing (A) has no health-check-driven failover. Weighted routing (C) splits traffic by fixed percentage regardless of health. Geolocation routing (D) routes based on the requester's location, not endpoint health.",
+    "explanation": "Route 53 failover routing policy with health checks on the primary endpoint Failover routing works with Route 53 health checks: DNS answers point to the primary record while it's healthy, and automatically switch to the secondary record when the health check detects the primary is failing — exactly the automated failover behavior required. Simple routing has no health-check-driven failover. Weighted routing splits traffic by fixed percentage regardless of health. Geolocation routing routes based on the requester's location, not endpoint health.",
     "whyOthersAreWrong": {
-      "A": "No health-check-driven failover.",
-      "C": "Splits traffic by fixed percentage regardless of health.",
-      "D": "Option D (Route 53 geolocation routing policy) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Route 53 simple routing policy) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Route 53 weighted routing policy split 50/50) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Route 53.",
     "topic": "Amazon Route 53",
@@ -184,9 +180,9 @@
   {
     "id": "saa-1207",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "Which two statements about AWS KMS customer managed keys (CMKs) are TRUE? (Choose two.) (Choose 2.)",
-    "answerType": "single",
-    "answerInstruction": "Choose the correct answer.",
+    "question": "Which two statements about AWS KMS customer managed keys (CMKs) are TRUE? (Choose two.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
     "options": {
       "A": "Automatic key rotation can be enabled so AWS periodically rotates the underlying key material",
       "B": "A CMK's key policy is a primary access control mechanism — access is denied unless the key policy (directly or via IAM) allows it",
@@ -195,14 +191,14 @@
       "E": "CMK key material can be exported in plaintext via the KMS console at any time"
     },
     "correctAnswers": [
-      "A"
+      "A",
+      "B"
     ],
-    "explanation": "Domain 1: Design Secure Architectures Which two statements about AWS KMS customer managed keys (CMKs) are TRUE? (Choose two.) Automatic key rotation can be enabled so AWS periodically rotates the underlying key material B. A CMK's key policy is a primary access control mechanism — access is denied unless the key policy (directly or via IAM) allows it Automatic rotation is a supported feature for symmetric customer managed keys, and the key policy is central to KMS access control — by default nothing has access to a CMK except what the key policy explicitly grants (optionally delegating to IAM policies). Option C is false: KMS enforces a mandatory waiting period (7–30 days) before permanently deleting a key, and deletion can be cancelled during that window. Option D is false: AWS managed keys are scoped to a single account/service and cannot be shared cross-account (only customer managed keys can be shared via key policy + IAM). Option E is false: KMS key material for AWS-generated keys can never be exported in plaintext.",
+    "explanation": "Automatic annual key rotation can be enabled for customer managed keys, and a CMK's key policy is the primary access control mechanism that governs permissions directly or delegates to IAM policies.",
     "whyOthersAreWrong": {
-      "B": "A CMK's key policy is a primary access control mechanism — access is denied unless the key policy (directly or via IAM) allows it Automatic rotation is a supported feature for symmetric customer managed keys, and the key policy is central to KMS access control — by default nothing has access to a CMK except what the key policy explicitly grants (optionally delegating to IAM policies).",
-      "C": "Option C (Deleting a CMK takes effect immediately with no way to cancel it) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (AWS managed keys (aws/service) can be freely shared and used across other AWS accounts) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "E": "KMS enforces a mandatory waiting period (7–30 days) before permanently deleting a key, and deletion can be cancelled during that window."
+      "C": "Is false: KMS enforces a mandatory waiting period (7–30 days) before permanently deleting a key, and deletion can be cancelled during that window.",
+      "D": "Is false: AWS managed keys are scoped to a single account/service and cannot be shared cross-account (only customer managed keys can be shared via key policy + IAM).",
+      "E": "Is false: KMS key material for AWS-generated keys can never be exported in plaintext."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -227,18 +223,16 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 2: Design Resilient Architectures A two-AZ application occasionally experiences a full outage of one AZ, which also takes down outbound internet connectivity for private-subnet instances in that AZ because they route through a NAT Gateway located in the other AZ's public subnet. Deploy one NAT Gateway per AZ, each in that AZ's public subnet, with each AZ's private subnet route table pointing to its own AZ's NAT Gateway A NAT Gateway is itself an AZ-scoped resource; a single shared NAT Gateway is a single point of failure for every other AZ's outbound traffic. Deploying one NAT Gateway per AZ, with each AZ's private route table pointing only to its own local NAT Gateway, isolates the blast radius so an AZ failure only affects that AZ's own outbound traffic. Option C removes the security benefit of private subnets. Option D (a single NAT instance) is both a single point of failure and requires self-managed HA, which is strictly worse than managed, redundant NAT Gateways.",
+    "explanation": "Deploy one NAT Gateway per AZ, each in that AZ's public subnet, with each AZ's private subnet route table pointing to its own AZ's NAT Gateway A NAT Gateway is itself an AZ-scoped resource; a single shared NAT Gateway is a single point of failure for every other AZ's outbound traffic. Deploying one NAT Gateway per AZ, with each AZ's private route table pointing only to its own local NAT Gateway, isolates the blast radius so an AZ failure only affects that AZ's own outbound traffic.",
     "whyOthersAreWrong": {
-      "A": "Option A (Continue using a single, shared NAT Gateway across both AZs) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Deploying one NAT Gateway per AZ, with each AZ's private route table pointing only to its own local NAT Gateway, isolates the blast radius so an AZ failure only affects that AZ's own outbound traffi.",
-      "D": "(a single NAT instance) is both a single point of failure and requires self-managed HA, which is strictly worse than managed, redundant NAT Gateways."
+      "C": "Removes the security benefit of private subnets.",
+      "D": "A single NAT instance is both a single point of failure and requires self-managed HA, which is strictly worse than managed, redundant NAT Gateways.",
+      "A": "This approach (Continue using a single, shared NAT Gateway across both AZs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
-      "Security",
-      "High Availability",
       "Networking"
     ]
   },
@@ -257,16 +251,15 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 3: Design High-Performing Architectures A SaaS company serves dynamic, non-cacheable API responses from an Application Load Balancer in a single AWS Region to users spread across multiple continents, and wants to reduce their latency without deploying the application into additional Regions. Put AWS Global Accelerator in front of the ALB, routing users over the AWS global network backbone to the nearest healthy entry point Global Accelerator routes client traffic onto the AWS global network backbone from the nearest edge location, which reduces the number of internet hops/congestion points to reach the single-Region ALB, improving latency for dynamic, non-cacheable content without needing to replicate the application into more Regions. CloudFront caching (A) doesn't help non-cacheable dynamic responses (though Global Accelerator and CloudFront can be complementary for different content types). Route 53 simple routing (C) provides no performance optimization, just DNS resolution to a fixed target. S3 Transfer Acceleration (D) is unrelated to API traffic served from an ALB.",
+    "explanation": "Put AWS Global Accelerator in front of the ALB, routing users over the AWS global network backbone to the nearest healthy entry point Global Accelerator routes client traffic onto the AWS global network backbone from the nearest edge location, which reduces the number of internet hops/congestion points to reach the single-Region ALB, improving latency for dynamic, non-cacheable content without needing to replicate the application into more Regions. CloudFront caching doesn't help non-cacheable dynamic responses (though Global Accelerator and CloudFront can be complementary for different content types). Route 53 simple routing provides no performance optimization, just DNS resolution to a fixed target. S3 Transfer Acceleration is unrelated to API traffic served from an ALB.",
     "whyOthersAreWrong": {
-      "A": "Doesn't help non-cacheable dynamic responses (though Global Accelerator and CloudFront can be complementary for different content types).",
-      "C": "No performance optimization, just DNS resolution to a fixed target.",
-      "D": "Unrelated to API traffic served from an AL."
+      "A": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
+      "C": "This approach (Use Route 53 simple routing) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits."
     },
-    "learningObjective": "Optimize workload throughput and latency using AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Optimize workload throughput and latency using AWS CloudFront.",
+    "topic": "AWS CloudFront",
     "tags": [
-      "Elastic Load Balancing",
       "CloudFront",
       "Route 53",
       "S3",
@@ -288,11 +281,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 1: Design Secure Architectures A company wants to restrict which EC2 instance types developers can launch, and only allow launches into a specific VPC, using IAM alone. Write an IAM policy that uses the ec2:InstanceType and ec2:Vpc condition keys to scope the ec2:RunInstances action IAM policies support fine-grained condition keys on the ec2:RunInstances action, including ec2:InstanceType and ec2:Vpc, letting you restrict exactly which instance types can be launched and into which VPC. SCPs (A) set maximum boundaries across an OU/account and are typically used for organization-wide guardrails, not fine-grained per-developer restrictions — and by themselves an SCP still requires an allowing IAM policy underneath. EC2 does not support resource-based policies (C). A permissions boundary without conditions (D) would not achieve the specific restriction.",
+    "explanation": "Write an IAM policy that uses the ec2:InstanceType and ec2:Vpc condition keys to scope the ec2:RunInstances action IAM policies support fine-grained condition keys on the ec2:RunInstances action, including ec2:InstanceType and ec2:Vpc, letting you restrict exactly which instance types can be launched and into which VPC. SCPs set maximum boundaries across an OU/account and are typically used for organization-wide guardrails, not fine-grained per-developer restrictions — and by themselves an SCP still requires an allowing IAM policy underneath.",
     "whyOthersAreWrong": {
-      "A": "Set maximum boundaries across an OU/account and are typically used for organization-wide guardrails, not fin.",
-      "C": "Option C (Attach a resource-based policy to each EC2 instance) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Not achieve the specific restriction."
+      "C": "EC2 does not support resource-based policies . A permissions boundary without conditions would not achieve the specific restriction.",
+      "A": "Service Control Policies (SCPs) act as permission guardrails that restrict the maximum permissions available in an account; they do not grant permissions or configure resource-level behaviors directly.",
+      "D": "This approach (Apply an IAM permissions boundary with no condition keys) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -319,20 +312,20 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 1: Design Secure Architectures A public-facing web application behind an Application Load Balancer is being probed with SQL injection and cross-site scripting payloads from a range of source IPs. The security team wants to block these malicious HTTP request patterns at the edge without modifying application code. Attach AWS WAF with AWS Managed Rule groups (e.g., SQLi and XSS rule sets) to the ALB AWS WAF inspects Layer 7 HTTP(S) request content — headers, query strings, and body — and AWS Managed Rules include pre-built rule groups specifically for SQL injection and XSS patterns. Security groups (A) and NACLs (C) operate at Layers 3/4 and cannot inspect HTTP payloads. Shield Advanced (D) protects against DDoS/network-layer attacks and does not provide payload-level request filtering.",
+    "explanation": "Attach AWS WAF with AWS Managed Rule groups (e.g., SQLi and XSS rule sets) to the ALB AWS WAF inspects Layer 7 HTTP(S) request content — headers, query strings, and body — and AWS Managed Rules include pre-built rule groups specifically for SQL injection and XSS patterns.",
     "whyOthersAreWrong": {
-      "A": "Option A (Add deny rules for the offending IPs in the EC2 instance security groups) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Facing web application behind an Application Load Balancer is being probed with SQL injection and cross-site scripting payloads from a range of source IPs. The security team wants to block these malicious HTTP request patterns at the edge without modifying application cod.",
-      "D": "Protects against DDoS/network-layer attacks and does not provide payloa."
+      "A": "Security groups and NACLs operate at Layers 3/4 and cannot inspect HTTP payloads.",
+      "C": "Security groups and NACLs operate at Layers 3/4 and cannot inspect HTTP payloads.",
+      "D": "Shield Advanced protects against DDoS/network-layer attacks and does not provide payload-level request filtering."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS WAF.",
     "topic": "AWS WAF",
     "tags": [
       "WAF",
-      "Elastic Load Balancing",
-      "Config",
       "VPC",
-      "Security"
+      "EC2",
+      "Security",
+      "Networking"
     ]
   },
   {
@@ -350,17 +343,17 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Domain 4: Design Cost-Optimized Architectures A company wants to right-size its EC2 fleet based on actual historical CPU, memory, and network utilization metrics, using AWS's machine-learning-based recommendations rather than manually estimating appropriate instance sizes. AWS Compute Optimizer Compute Optimizer analyzes historical utilization metrics using machine learning and provides specific rightsizing recommendations (instance family/size changes) for EC2, along with EBS, Lambda, and ECS on Fargate. AWS Budgets (B) alerts on spend thresholds, not utilization-based sizing. Cost Explorer forecasting (C) projects future cost/usage trends, not per-resource rightsizing recommendations. Option D is manual, doesn't scale across a large fleet, and lacks ML-driven, data-backed recommendations.",
+    "explanation": "AWS Compute Optimizer Compute Optimizer analyzes historical utilization metrics using machine learning and provides specific rightsizing recommendations (instance family/size changes) for EC2, along with EBS, Lambda, and ECS on Fargate. AWS Budgets alerts on spend thresholds, not utilization-based sizing. Cost Explorer forecasting projects future cost/usage trends, not per-resource rightsizing recommendations.",
     "whyOthersAreWrong": {
-      "B": "Alerts on spend thresholds, not utilization-based sizing.",
-      "C": "Projects future cost/usage trends, not per-resource rightsizing recommendations.",
-      "D": "Manual, doesn't scale across a large fleet, and lacks ML-driven, dat."
+      "D": "Is manual, doesn't scale across a large fleet, and lacks ML-driven, data-backed recommendations.",
+      "B": "This approach (AWS Budgets) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (AWS Cost Explorer forecasting alone) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
+    "topic": "Amazon ECS",
     "tags": [
-      "EC2",
       "ECS",
+      "EC2",
       "Lambda",
       "CloudWatch",
       "Cost Optimization"
@@ -381,18 +374,17 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 2: Design Resilient Architectures A batch order-processing pipeline should not tightly couple the producer service to the speed of the consumer, and no message should be lost if a consumer is temporarily unavailable. Insert an Amazon SQS standard queue between producers and consumers SQS decouples producers from consumers: producers enqueue messages regardless of consumer availability, and messages persist in the queue (with configurable retention up to 14 days) until successfully processed and deleted, so a temporarily down consumer causes no message loss. Option A creates tight coupling — a slow or unavailable consumer directly blocks the producer. Option C is not a valid, safe way to pass messages between compute instances. Option D is unrelated to this pipeline's data flow.",
+    "explanation": "Insert an Amazon SQS standard queue between producers and consumers SQS decouples producers from consumers: producers enqueue messages regardless of consumer availability, and messages persist in the queue (with configurable retention up to 14 days) until successfully processed and deleted, so a temporarily down consumer causes no message loss.",
     "whyOthersAreWrong": {
       "A": "Creates tight coupling — a slow or unavailable consumer directly blocks the producer.",
-      "C": "Not a valid, safe way to pass messages between compute instances.",
-      "D": "Unrelated to this pipeline's data flow."
+      "C": "This approach is not a valid, safe way to pass messages between compute instances.",
+      "D": "Is unrelated to this pipeline's data flow."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
-    "topic": "Amazon SQS",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
+    "topic": "Amazon DynamoDB",
     "tags": [
-      "SQS",
       "DynamoDB",
-      "High Availability"
+      "SQS"
     ]
   },
   {
@@ -410,10 +402,10 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Domain 1: Design Secure Architectures A company wants to let a partner organization, which has its own separate AWS account, write objects into one specific S3 bucket in the company's account — without creating individual IAM users for every partner employee. Create a cross-account IAM role in the company's account that principals in the partner's account can assume via sts:AssumeRole, paired with a bucket policy/role policy scoped to that bucket Cross-account IAM roles let the partner account's own IAM principals assume a role scoped to exactly the required bucket/actions via temporary STS credentials — no per-user provisioning or long-lived secrets are needed on either side, and access can be revoked centrally by removing the trust relationship. Option B exposes the bucket to anyone on the internet. Option C is a severe security anti-pattern. Option D creates ongoing user lifecycle management overhead across an account boundary.",
+    "explanation": "Create a cross-account IAM role in the company's account that principals in the partner's account can assume via sts:AssumeRole, paired with a bucket policy/role policy scoped to that bucket Cross-account IAM roles let the partner account's own IAM principals assume a role scoped to exactly the required bucket/actions via temporary STS credentials — no per-user provisioning or long-lived secrets are needed on either side, and access can be revoked centrally by removing the trust relationship.",
     "whyOthersAreWrong": {
       "B": "Exposes the bucket to anyone on the internet.",
-      "C": "A severe security anti-pattern.",
+      "C": "This approach is a severe security anti-pattern.",
       "D": "Creates ongoing user lifecycle management overhead across an account boundary."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
@@ -439,11 +431,11 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Domain 3: Design High-Performing Architectures A transactional database on EC2 requires the lowest latency and highest sustained IOPS block storage available, needing performance well beyond what General Purpose SSD volumes can deliver. io2 (Provisioned IOPS SSD) io2 Provisioned IOPS volumes are purpose-built for latency-sensitive, IOPS-intensive transactional workloads, supporting far higher IOPS ceilings and higher durability than gp3, with IOPS provisioned independently of volume size. gp3 (A) supports respectable baseline IOPS but has a materially lower maximum than io2. st1 and sc1 (C, D) are HDD-based volumes optimized for large sequential throughput workloads (e.g., big data, log processing), not low-latency random-access transactional I/O.",
+    "explanation": "Io2 (Provisioned IOPS SSD) io2 Provisioned IOPS volumes are purpose-built for latency-sensitive, IOPS-intensive transactional workloads, supporting far higher IOPS ceilings and higher durability than gp3, with IOPS provisioned independently of volume size. gp3 supports respectable baseline IOPS but has a materially lower maximum than io2. st1 and sc1 (C, D) are HDD-based volumes optimized for large sequential throughput workloads (e.g., big data, log processing), not low-latency random-access transactional I/O.",
     "whyOthersAreWrong": {
-      "A": "Supports respectable baseline IOPS but has a materially lower maximum than io2. st1 and sc1 (C, D) are HD.",
-      "C": "Option C (st1 (Throughput Optimized HDD)) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Based volumes optimized for large sequential throughput workloads (."
+      "A": "This approach (gp3) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (st1 (Throughput Optimized HDD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (sc1 (Cold HDD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon EC2.",
     "topic": "Amazon EC2",
@@ -456,7 +448,7 @@
   {
     "id": "saa-1216",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "(Choose TWO) A financial services company uses AWS Organizations with a Management account, a dedicated Security account, a Shared Services account, and 18 workload accounts organized under a Workloads OU. The security team wants org-wide threat detection for unusual API activity and unintended public S3 exposure, with all findings aggregated into a single dashboard managed by the Security account. New workload accounts are provisioned frequently through automation and must be protected from the moment they are created, without manual security team intervention. A recent internal audit also found that a workload account administrator had disabled GuardDuty in their account after receiving repeated, legitimate findings about a misconfigured application. The security team wants to structurally prevent this from happening again across all workload accounts, while still allowing a small, audited break-glass IAM role to disable security tooling only during approved maintenance windows.",
+    "question": "A financial services company uses AWS Organizations with a Management account, a dedicated Security account, a Shared Services account, and 18 workload accounts organized under a Workloads OU. The security team wants org-wide threat detection for unusual API activity and unintended public S3 exposure, with all findings aggregated into a single dashboard managed by the Security account. New workload accounts are provisioned frequently through automation and must be protected from the moment they are created, without manual security team intervention. A recent internal audit also found that a workload account administrator had disabled GuardDuty in their account after receiving repeated, legitimate findings about a misconfigured application. The security team wants to structurally prevent this from happening again across all workload accounts, while still allowing a small, audited break-glass IAM role to disable security tooling only during approved maintenance windows.",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
@@ -470,18 +462,18 @@
       "B",
       "D"
     ],
-    "explanation": "(Choose TWO) Option A - INCORRECT Granting AdministratorAccess to the Security account in every workload account massively expands blast radius and violates least privilege - the Security account could modify or delete any resource in any workload account, not just security tooling. It also does not structurally stop a workload admin from disabling GuardDuty locally, since that admin still has full rights in their own account. Option B - CORRECT GuardDuty and Security Hub delegated administrator (configured from the Organizations management account, pointing at the Security account) is the AWS-recommended pattern for centralized, org-wide security tooling. Auto-enable ensures new accounts inherit protection at creation with zero manual steps, and findings automatically aggregate to the delegated administrator account, giving the single dashboard requirement for free. Option C - INCORRECT A locally-scoped IAM deny policy lives inside the same account as the administrator it is trying to restrict. That same administrator (or anyone with iam:PutPolicy / iam:DeletePolicy / iam:DetachGroupPolicy) can simply modify or remove the deny policy. It provides no structural protection - it is the account's own admin managing a control on themselves, exactly what failed in the audit finding. Option D - CORRECT SCPs are evaluated at the Organizations level and act as a permissions boundary on every principal in the affected accounts, including that account's own administrators or root. A workload account admin cannot call guardduty:DeleteDetector even with full local IAM admin rights, because the SCP denial is enforced above IAM evaluation. Carving out an exception for a break-glass role satisfies the controlled-maintenance requirement while closing exactly the gap the audit exposed. Option E - INCORRECT This rebuilds, with custom Lambda code, functionality that Security Hub's native cross-account aggregation already provides as a managed capability. It adds ongoing engineering and operational burden (Lambda maintenance, per-account IAM, API throttling/pagination, bucket lifecycle/security) for no benefit over built-in delegated-administrator aggregation, and does not address auto-enrollment or tamper-resistance at all. Domain 2: Design Resilient Architectures",
+    "explanation": "SCPs are evaluated at the Organizations level and act as a permissions boundary on every principal in the affected accounts, including that account's own administrators or root. A workload account admin cannot call guardduty:DeleteDetector even with full local IAM admin rights, because the SCP denial is enforced above IAM evaluation. Carving out an exception for a break-glass role satisfies the controlled-maintenance requirement while closing exactly the gap the audit exposed.",
     "whyOthersAreWrong": {
-      "A": "- INCORRECT Granting AdministratorAccess to the Security account in every workload account massively expands blast radius and violates least privilege - the Security account could modify or delete any resource in any workload account, not just security tooling. It also does not structurally stop a workload admin from disabling GuardDuty locally, since that admin still has full rights in their own account.",
-      "C": "- INCORRECT A locally-scoped IAM deny policy lives inside the same account as the administrator it is trying to restrict. That same administrator (or anyone with iam:PutPolicy / iam:DeletePolicy / iam:DetachGroupPolicy) can simply modify or remove the deny policy. It provides no structural protection - it is the account's own admin managing a control on themselves, exactly what failed in the audit finding.",
-      "E": "Option E (Enable GuardDuty and Security Hub independently in each of the 18 accounts using an identical CloudFormation StackSet, and build a custom Lambda-based aggregator that polls each account's findings and writes them to a shared S3 bucket for the dashboard.) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "Granting AdministratorAccess to the Security account in every workload account massively expands blast radius and violates least privilege - the Security account could modify or delete any resource in any workload account, not just security tooling. It also does not structurally stop a workload admin from disabling GuardDuty locally, since that admin still has full rights in their own account.",
+      "C": "A locally-scoped IAM deny policy lives inside the same account as the administrator it is trying to restrict. That same administrator (or anyone with iam:PutPolicy / iam:DeletePolicy / iam:DetachGroupPolicy) can simply modify or remove the deny policy. It provides no structural protection - it is the account's own admin managing a control on themselves, exactly what failed in the audit finding.",
+      "E": "This rebuilds, with custom Lambda code, functionality that Security Hub's native cross-account aggregation already provides as a managed capability. It adds ongoing engineering and operational burden (Lambda maintenance, per-account IAM, API throttling/pagination, bucket lifecycle/security) for no benefit over built-in delegated-administrator aggregation, and does not address auto-enrollment or tamper-resistance at all."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
     "tags": [
       "IAM",
-      "Organizations",
       "S3",
+      "Organizations",
       "Lambda",
       "Security"
     ]
@@ -493,7 +485,7 @@
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Migrate all 80 eventual VPCs into a single VPC using subnet-per-team CIDR allocation, eliminating the need for inter-VPC connectivity entirely. AWS Certified Solutions Architect - Associate (SAA-C03) - Advanced Practice Exam Page 2 of 20",
+      "A": "Migrate all 80 eventual VPCs into a single VPC using subnet-per-team CIDR allocation, eliminating the need for inter-VPC connectivity entirely.",
       "B": "Establish VPC peering connections between every pair of VPCs that require connectivity, plus a separate peering connection from each VPC to a transit VPC hosting a Virtual Private Gateway for the Direct Connect connection.",
       "C": "Deploy AWS Transit Gateway in a dedicated networking account, attach all VPCs to it, associate the existing Direct Connect connection with the Transit Gateway through a Direct Connect Gateway, and use Transit Gateway route tables to control which attachments can route to which.",
       "D": "Create a VPC peering connection from every workload VPC to the Shared Services VPC only, and configure AWS PrivateLink interface endpoints for any workload-to-workload communication the data pipeline requires."
@@ -501,20 +493,20 @@
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Option A - INCORRECT Collapsing 80 independent teams' workloads into a single VPC destroys account and blast-radius isolation, makes IAM and billing separation far harder, and creates one very large failure and security domain - a severe anti-pattern for a multi-team, multi-account organization, regardless of whether it technically removes inter-VPC routing. Option B - INCORRECT VPC peering is not transitive, so full connectivity among N VPCs plus a transit hub requires close to N(N-1)/2 individual connections. At 80 VPCs this is operationally unmanageable - every new VPC potentially means dozens of new peering connections and scattered route table edits, the opposite of a single standardized change. It also gives no centralized routing control; each VPC owner manages their own route table entries. AWS Certified Solutions Architect - Associate (SAA-C03) - Advanced Practice Exam Page 11 of 20 Option C - CORRECT Transit Gateway is purpose-built for hub-and-spoke connectivity at this scale. Each VPC needs exactly one attachment regardless of how many other VPCs or on-premises networks it must reach, so onboarding becomes create one attachment. A Direct Connect Gateway association lets the single DX connection reach every attached VPC through the Transit Gateway instead of needing a per-VPC Virtual Private Gateway. Transit Gateway route tables give the network team centralized, declarative control over which attachments can reach which, satisfying the requirement without relying on individual VPC owners. Option D - INCORRECT PrivateLink is designed to expose a specific service behind a Network Load Balancer to other VPCs - excellent for service-to-service API access, but not a general-purpose VPC-to-VPC networking solution, and it cannot cleanly carry arbitrary data-pipeline traffic across varied ports/protocols the way routed connectivity can. This design also still requires per-VPC peering to Shared Services, which does not solve the onboarding-scale problem for that leg. Domain 3: Design High-Performing Architectures",
+    "explanation": "Transit Gateway is purpose-built for hub-and-spoke connectivity at this scale. Each VPC needs exactly one attachment regardless of how many other VPCs or on-premises networks it must reach, so onboarding becomes create one attachment. A Direct Connect Gateway association lets the single DX connection reach every attached VPC through the Transit Gateway instead of needing a per-VPC Virtual Private Gateway. Transit Gateway route tables give the network team centralized, declarative control over which attachments can reach which, satisfying the requirement without relying on individual VPC owners.",
     "whyOthersAreWrong": {
-      "A": "- INCORRECT Collapsing 80 independent teams' workloads into a single VPC destroys account and blast-radius isolation, makes IAM and billing separation far harder, and creates one very large failure and security domain - a severe anti-pattern for a multi-team, multi-account organization, regardless of whether it technically removes inter-VPC routing.",
-      "B": "- INCORRECT VPC peering is not transitive, so full connectivity among N VPCs plus a transit hub requires close to N(N-1)/2 individual connections. At 80 VPCs this is operationally unmanageable - every new VPC potentially means dozens of new peering connections and scattered route table edits, the opposite of a single standardized chang.",
-      "D": "Spoke connectivity at this scal."
+      "A": "Collapsing 80 independent teams' workloads into a single VPC destroys account and blast-radius isolation, makes IAM and billing separation far harder, and creates one very large failure and security domain - a severe anti-pattern for a multi-team, multi-account organization, regardless of whether it technically removes inter-VPC routing.",
+      "B": "VPC peering is not transitive, so full connectivity among N VPCs plus a transit hub requires close to N(N-1)/2 individual connections. At 80 VPCs this is operationally unmanageable - every new VPC potentially means dozens of new peering connections and scattered route table edits, the opposite of a single standardized change. It also gives no centralized routing control; each VPC owner manages their own route table entries.",
+      "D": "PrivateLink is designed to expose a specific service behind a Network Load Balancer to other VPCs - excellent for service-to-service API access, but not a general-purpose VPC-to-VPC networking solution, and it cannot cleanly carry arbitrary data-pipeline traffic across varied ports/protocols the way routed connectivity can. This design also still requires per-VPC peering to Shared Services, which does not solve the onboarding-scale problem for that leg."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
-      "Transit Gateway",
       "Direct Connect",
+      "Transit Gateway",
       "PrivateLink",
-      "Security"
+      "High Availability"
     ]
   },
   {
@@ -532,20 +524,18 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Option A - CORRECT The 502s happen because, under target tracking, scale-out only triggers once the metric crosses the target value - if that value sits close to what a task can actually sustain, existing tasks are already near saturation by the time new capacity is requested, and it takes about 90 seconds for that capacity to arrive. Lowering the target value creates headroom: scaling starts earlier, before saturation, so spare capacity is already absorbing the spike while new tasks warm up. The health check grace period separately stops ECS from prematurely deciding a still-warming task has failed and killing/replacing it - without it, slow-starting tasks can get caught in a replace loop that never lets the service actually gain capacity. Option B - INCORRECT Making the ALB health check pass faster does not make the application actually ready faster - it makes the ALB start sending live traffic to a task that is still loading caches and connection pools, which typically produces errors or slow responses from that specific task rather than preventing them. This treats the symptom (health check timing) instead of the real bottleneck (warm-up time), and can make user-facing errors worse. Option C - INCORRECT Fargate Spot affects cost and interruption behavior (tasks can be reclaimed with a two-minute warning), not how quickly AWS provisions and starts a task. It does nothing to shorten the 90-second application warm-up time, and adds interruption risk to a service already struggling with availability during spikes. Option D - INCORRECT Increasing idle timeout lets existing, already-saturated connections sit longer rather than failing fast, but it adds no capacity and does not address the root cause. In practice this can worsen user experience (long hangs instead of quick failures) and exhausts connection/thread resources on existing tasks faster under sustained load. Domain 3: Design High-Performing Architectures",
+    "explanation": "The 502s happen because, under target tracking, scale-out only triggers once the metric crosses the target value - if that value sits close to what a task can actually sustain, existing tasks are already near saturation by the time new capacity is requested, and it takes about 90 seconds for that capacity to arrive. Lowering the target value creates headroom: scaling starts earlier, before saturation, so spare capacity is already absorbing the spike while new tasks warm up. The health check grace period separately stops ECS from prematurely deciding a still-warming task has failed and killing/replacing it - without it, slow-starting tasks can get caught in a replace loop that never lets the service actually gain capacity.",
     "whyOthersAreWrong": {
-      "B": "- INCORRECT Making the ALB health check pass faster does not make the application actually ready faster - it makes the ALB start sending live traffic to a task that is still loading caches and connection pools, which typically produces errors or slow responses from that specific task rather than preventing them. This treats the symptom (health check timing) instead of the real bottleneck (warm-up time), and can make user-facing errors wors.",
-      "C": "- INCORRECT Fargate Spot affects cost and interruption behavior (tasks can be reclaimed with a two-minute warning), not how quickly AWS provisions and starts a task. It does nothing to shorten the 90-second application warm-up time, and adds interruption risk to a service already struggling with availability during spikes.",
-      "D": "- INCORRECT Increasing idle timeout lets existing, already-saturated connections sit longer rather than failing fast, but it adds no capacity and does not address the root caus."
+      "B": "Making the ALB health check pass faster does not make the application actually ready faster - it makes the ALB start sending live traffic to a task that is still loading caches and connection pools, which typically produces errors or slow responses from that specific task rather than preventing them. This treats the symptom (health check timing) instead of the real bottleneck (warm-up time), and can make user-facing errors worse.",
+      "C": "Fargate Spot affects cost and interruption behavior (tasks can be reclaimed with a two-minute warning), not how quickly AWS provisions and starts a task. It does nothing to shorten the 90-second application warm-up time, and adds interruption risk to a service already struggling with availability during spikes.",
+      "D": "Increasing idle timeout lets existing, already-saturated connections sit longer rather than failing fast, but it adds no capacity and does not address the root cause. In practice this can worsen user experience (long hangs instead of quick failures) and exhausts connection/thread resources on existing tasks faster under sustained load."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
+    "topic": "Amazon ECS",
     "tags": [
-      "Elastic Load Balancing",
       "ECS",
       "IAM",
-      "CloudWatch",
-      "Cost Optimization"
+      "CloudWatch"
     ]
   },
   {
@@ -558,16 +548,16 @@
       "A": "Deploy RDS Proxy in front of the cluster and connect both the OLTP application and the reporting tool to the proxy's default endpoint, since RDS Proxy automatically separates read and write traffic across all connections it receives.",
       "B": "Take a nightly snapshot of the cluster and restore it to a brand-new Aurora Serverless v2 cluster each morning, then point the reporting tool at the restored copy.",
       "C": "Create an Aurora custom endpoint restricted to a single, specific reader instance, and hardcode that instance's identifier into the reporting tool's configuration.",
-      "D": "Add a second Aurora Replica, then repoint only the reporting tool's connection string at the cluster's built-in reader endpoint, leaving the OLTP application connected to the writer endpoint as before. AWS Certified Solutions Architect - Associate (SAA-C03) - Advanced Practice Exam Page 3 of 20"
+      "D": "Add a second Aurora Replica, then repoint only the reporting tool's connection string at the cluster's built-in reader endpoint, leaving the OLTP application connected to the writer endpoint as before."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "AWS Certified Solutions Architect - Associate (SAA-C03) - Advanced Practice Exam Page 12 of 20 Option A - INCORRECT This is a common misunderstanding of RDS Proxy. A proxy's default endpoint routes all requests - reads and writes - to the cluster's writer instance; it does not inspect query content and automatically split SQL by type. Achieving read isolation through RDS Proxy requires deliberately creating a separate read-only proxy endpoint and pointing the reporting tool at that specific endpoint - at which point an extra managed component has been added to arrive at the isolation the native reader endpoint already gives directly. As described, with both apps on the default endpoint, this option would not isolate anything; reporting queries would still hit the writer. Option B - INCORRECT A nightly-refreshed snapshot introduces up to 24 hours of staleness, a fundamentally worse consistency guarantee than a live read replica, and adds real operational overhead - snapshot/restore automation, cluster teardown, and the cost of a second running cluster - to solve a problem the reader endpoint already solves natively. Option C - INCORRECT A custom endpoint pinned to one specific reader instance must be manually updated if that instance is replaced, resized, or removed - the opposite of keep working automatically if the number of reader instances changes. It also creates a single point of contention, with one reader absorbing all reporting load instead of load-balancing across replicas. Option D - CORRECT Aurora's built-in reader endpoint is designed exactly for this: it load-balances connections across all current Aurora Replicas via DNS, and automatically reflects replica additions or removals - nothing needs to be told which instance to use. Pointing only the reporting tool at it is a one-line configuration change, leaves the OLTP path untouched, and immediately takes reporting query load off the writer's connection and CPU budget. It satisfies least application change, automatic adaptation to replica count, and no explicit instance targeting all at once. Domain 4: Design Cost-Optimized Architectures",
+    "explanation": "Aurora's built-in reader endpoint is designed exactly for this: it load-balances connections across all current Aurora Replicas via DNS, and automatically reflects replica additions or removals - nothing needs to be told which instance to use. Pointing only the reporting tool at it is a one-line configuration change, leaves the OLTP path untouched, and immediately takes reporting query load off the writer's connection and CPU budget. It satisfies least application change, automatic adaptation to replica count, and no explicit instance targeting all at once.",
     "whyOthersAreWrong": {
-      "A": "C03) - Advanced Practice Exam Page 12 of 20.",
-      "B": "- INCORRECT A nightly-refreshed snapshot introduces up to 24 hours of staleness, a fundamentally worse consistency guarantee than a live read replica, and adds real operational overhead - snapshot/restore automation, cluster teardown, and the cost of a second running cluster - to solve a problem the reader endpoint already solves natively.",
-      "C": "- INCORRECT A custom endpoint pinned to one specific reader instance must be manually updated if that instance is replaced, resized, or removed - the opposite of keep working automatically if the number of reader instances changes. It also creates a single point of contention, with one reader absorbing all reporting load instead of loa."
+      "A": "This is a common misunderstanding of RDS Proxy. A proxy's default endpoint routes all requests - reads and writes - to the cluster's writer instance; it does not inspect query content and automatically split SQL by type. Achieving read isolation through RDS Proxy requires deliberately creating a separate read-only proxy endpoint and pointing the reporting tool at that specific endpoint - at which point an extra managed component has been added to arrive at the isolation the native reader endpoint already gives directly. As described, with both apps on the default endpoint, this option would not isolate anything; reporting queries would still hit the writer.",
+      "B": "A nightly-refreshed snapshot introduces up to 24 hours of staleness, a fundamentally worse consistency guarantee than a live read replica, and adds real operational overhead - snapshot/restore automation, cluster teardown, and the cost of a second running cluster - to solve a problem the reader endpoint already solves natively.",
+      "C": "A custom endpoint pinned to one specific reader instance must be manually updated if that instance is replaced, resized, or removed - the opposite of keep working automatically if the number of reader instances changes. It also creates a single point of contention, with one reader absorbing all reporting load instead of load-balancing across replicas."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon Aurora.",
     "topic": "Amazon Aurora",
@@ -576,13 +566,13 @@
       "RDS",
       "Lambda",
       "Route 53",
-      "Cost Optimization"
+      "Networking"
     ]
   },
   {
     "id": "saa-1220",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "(Choose TWO) A company runs two workloads on EC2. Workload 1 is a stateless web tier behind an ALB; traffic is predictable and heavy Monday-Friday 08:00-20:00 local time and near-zero on nights and weekends, and the application can tolerate any individual instance being interrupted with two minutes' notice as long as overall capacity is maintained by the Auto Scaling group. Workload 2 is a stateful legacy batch-processing application that has run continuously, 24/7, for three years with no planned changes, cannot tolerate interruption mid-job, and runs on a fixed, known instance family and size. The company wants to minimize total EC2 spend across both workloads without reducing availability for either.",
+    "question": "A company runs two workloads on EC2. Workload 1 is a stateless web tier behind an ALB; traffic is predictable and heavy Monday-Friday 08:00-20:00 local time and near-zero on nights and weekends, and the application can tolerate any individual instance being interrupted with two minutes' notice as long as overall capacity is maintained by the Auto Scaling group. Workload 2 is a stateful legacy batch-processing application that has run continuously, 24/7, for three years with no planned changes, cannot tolerate interruption mid-job, and runs on a fixed, known instance family and size. The company wants to minimize total EC2 spend across both workloads without reducing availability for either.",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
@@ -596,18 +586,17 @@
       "C",
       "D"
     ],
-    "explanation": "(Choose TWO) Option A - INCORRECT Reserved Instances are a billing commitment to pay for capacity whether or not it is used. Sizing an RI for peak weekday capacity but leaving it in place across nights and weekends, when the requirement is near-zero, means paying for capacity that mostly sits idle outside business hours - a poor match for a workload with this much variability, and a worse outcome than Spot plus scheduled scaling for a fleet that can tolerate interruption. Option B - INCORRECT A 1-year commitment provides a smaller discount than an equivalent 3-year commitment for a workload already confirmed to be long-running and stable - choosing the shorter term for lower risk gives up savings the company is well-positioned to capture, since nothing suggests Workload 2 is at risk of being decommissioned. A Savings Plan also retains more flexibility than a Standard RI, which is tied to a specific instance family and region. AWS Certified Solutions Architect - Associate (SAA-C03) - Advanced Practice Exam Page 13 of 20 Option C - CORRECT Workload 1 is explicitly interruption-tolerant (two-minute notice is fine) and horizontally scaled across many instances - exactly the profile Spot Instances are built for, offering deep discounts versus On-Demand. A mixed-instance policy spreads the fleet across multiple Spot capacity pools to reduce the chance of correlated interruptions. Layering scheduled scaling on top removes cost entirely during the near-zero-traffic window instead of merely discounting hours that still run, targeting both the per-hour rate and the total hours run. Option D - CORRECT Workload 2 is a known, steady, long-lived (three years and counting, no planned changes) 24/7 workload - the ideal candidate for the deepest available commitment-based discount. A Compute Savings Plan gives a strong discount versus On-Demand while remaining flexible across instance family, size, and even compute type if the underlying instances ever change; a 3-year term maximizes the discount for a workload that has already proven it is not going away. Option E - INCORRECT On-Demand, even scheduled to shut down nights and weekends, is still charged at the highest per-hour rate for every hour it does run. Since the workload explicitly tolerates interruption, Spot achieves a materially lower cost for the same running hours, leaving savings on the table for no availability benefit, since the ASG already maintains overall capacity even with Spot interruptions. Domain 4: Design Cost-Optimized Architectures / Domain 1: Design Secure Architectures",
+    "explanation": "Workload 2 is a known, steady, long-lived (three years and counting, no planned changes) 24/7 workload - the ideal candidate for the deepest available commitment-based discount. A Compute Savings Plan gives a strong discount versus On-Demand while remaining flexible across instance family, size, and even compute type if the underlying instances ever change; a 3-year term maximizes the discount for a workload that has already proven it is not going away.",
     "whyOthersAreWrong": {
-      "A": "- INCORRECT Reserved Instances are a billing commitment to pay for capacity whether or not it is use.",
-      "B": "- INCORRECT A 1-year commitment provides a smaller discount than an equivalent 3-year commitment for a workload already confirmed to be long-running and stable - choosing the shorter term for lower risk gives up savings the company is well-positioned to capture, since nothing suggests Workload 2 is at risk of being decommissione.",
-      "E": "- INCORRECT On-Demand, even scheduled to shut down nights and weekends, is still charged at the highest per-hour rate for every hour it does run. Since the workload explicitly tolerates interruption, Spot achieves a materially lower cost for the same running hours, leaving savings on the table for no availability benefit, since the ASG already maintains overall capacity even with Spot interruptions. Domain 4: Design Cost-Optimized Architectures / Domain 1: Design Secure Architectures."
+      "A": "Reserved Instances are a billing commitment to pay for capacity whether or not it is used. Sizing an RI for peak weekday capacity but leaving it in place across nights and weekends, when the requirement is near-zero, means paying for capacity that mostly sits idle outside business hours - a poor match for a workload with this much variability, and a worse outcome than Spot plus scheduled scaling for a fleet that can tolerate interruption.",
+      "B": "A 1-year commitment provides a smaller discount than an equivalent 3-year commitment for a workload already confirmed to be long-running and stable - choosing the shorter term for lower risk gives up savings the company is well-positioned to capture, since nothing suggests Workload 2 is at risk of being decommissioned. A Savings Plan also retains more flexibility than a Standard RI, which is tied to a specific instance family and region.",
+      "E": "On-Demand, even scheduled to shut down nights and weekends, is still charged at the highest per-hour rate for every hour it does run. Since the workload explicitly tolerates interruption, Spot achieves a materially lower cost for the same running hours, leaving savings on the table for no availability benefit, since the ASG already maintains overall capacity even with Spot interruptions."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
     "tags": [
       "EC2",
       "IAM",
-      "Elastic Load Balancing",
       "Cost Optimization"
     ]
   }

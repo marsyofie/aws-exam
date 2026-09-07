@@ -2,622 +2,614 @@
   {
     "id": "saa-1541",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Lambda for compute and Amazon RDS for PostgreSQL for the database tier. The application needs to process files stored in Amazon S3. The primary business requirement is strictly focused on maximizing high availability across Regions. Which combination of actions should the Solutions Architect take? (Select TWO.)",
-    "answerType": "multiple",
-    "answerInstruction": "Choose TWO answers.",
+    "question": "An enterprise development team implements Attribute-Based Access Control (ABAC) to simplify IAM policy management across dozens of internal engineering squads. Corporate security requires that developers in a department (e.g. `Billing`, `HR`, `Engineering`) can only start, stop, or terminate Amazon EC2 instances that have an AWS resource tag `Department` whose value matches the developer's own IAM principal tag `Department`. Which condition key in the IAM policy enforces this dynamic authorization?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Deploy the AWS Lambda workload across multiple Availability Zones.",
-      "B": "Configure Amazon RDS for PostgreSQL to use a single-AZ deployment to save costs.",
-      "C": "Enable automatic backups and point-in-time recovery for Amazon RDS for PostgreSQL.",
-      "D": "Store all temporary processing files in an unencrypted S3 bucket.",
-      "E": "Use Amazon ECS on EC2 deployed in a single Availability Zone."
+      "A": "Condition: `{\"StringEquals\": {\"aws:ResourceTag/Department\": \"${aws:PrincipalTag/Department}\"}}`",
+      "B": "Condition: `{\"StringEquals\": {\"ec2:InstanceType\": \"t3.micro\"}}`",
+      "C": "Condition: `{\"ArnEquals\": {\"aws:PrincipalArn\": \"arn:aws:iam::*:role/Developers\"}}`",
+      "D": "Condition: `{\"StringEquals\": {\"aws:RequestTag/Department\": \"Engineering\"}}`"
     },
     "correctAnswers": [
-      "A",
-      "C"
+      "A"
     ],
-    "explanation": "Explanation: Options A and C are correct. Deploying AWS Lambda across multiple AZs ensures high availability, and enabling backups for Amazon RDS for PostgreSQL ensures data durability. Option B compromises availability. Option D compromises security. Option E uses Amazon ECS on EC2 in a single AZ, creating a single point of failure.",
+    "explanation": "Attribute-Based Access Control (ABAC) in AWS allows you to define permissions based on tags attached to IAM principals (users or roles) and tags attached to AWS resources. Using the condition block `\"StringEquals\": {\"aws:ResourceTag/Department\": \"${aws:PrincipalTag/Department}\"}`, AWS dynamically evaluates whether the `Department` tag on the target EC2 instance matches the `Department` tag on the calling user/role during the API call. This eliminates the need to maintain separate IAM policies for every individual department: a single reusable policy dynamically governs access across all departments.",
     "whyOthersAreWrong": {
-      "B": "Compromises availability.",
-      "D": "Compromises security.",
-      "E": "Amazon ECS on EC2 in a single AZ, creating a single point of failur."
+      "B": "Filtering on instance type restricts the hardware size of instances, but does not enforce department-level ownership or ABAC isolation.",
+      "C": "Hardcoding IAM principal ARNs creates rigid, static policies that require manual updates whenever roles change, violating ABAC design principles.",
+      "D": "`aws:RequestTag` evaluates tags passed during resource creation (such as `RunInstances`), but cannot restrict actions on existing resources like `StopInstances`."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon RDS.",
-    "topic": "Amazon RDS",
+    "learningObjective": "Implement dynamic Attribute-Based Access Control (ABAC) using IAM policy tag conditions.",
+    "topic": "AWS IAM",
     "tags": [
-      "RDS",
-      "S3",
-      "Lambda",
-      "EC2",
-      "Security"
+      "IAM",
+      "ABAC",
+      "Security",
+      "Governance"
     ]
   },
   {
     "id": "saa-1542",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon EKS for compute and Amazon Aurora MySQL for the database tier. The application needs to process files stored in Amazon EBS. The primary business requirement is strictly focused on minimizing operational overhead. Which architectural choice BEST meets these requirements?",
+    "question": "A business intelligence team runs data warehousing queries against multi-terabyte datasets. Query activity is concentrated strictly during business hours (Monday through Friday, 8:00 AM to 5:00 PM), with zero query activity during nights and weekends. The company wants a serverless data warehouse solution that automatically provisions and scales query compute capacity based on workload demands, charges only for the compute capacity used while queries are actively running, and requires zero cluster maintenance. Which service meets these criteria?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon EKS and Amazon Aurora MySQL, leveraging managed scaling to meet the requirement of minimizing operational overhead.",
-      "B": "Switch the compute layer to AWS Elastic Beanstalk and manage the OS updates manually to achieve minimizing operational overhead.",
-      "C": "Use a multi-Region Active-Active deployment with AWS Elastic Beanstalk prioritizing maximizing custom OS level configurations instead.",
-      "D": "Replace Amazon EBS with local instance store volumes and write custom replication scripts."
+      "A": "Amazon Redshift Serverless",
+      "B": "Amazon Redshift Provisioned cluster with ra3.4xlarge nodes",
+      "C": "Amazon EMR with persistent EC2 Core nodes",
+      "D": "Amazon RDS for PostgreSQL with automated pause"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon EKS is a managed service that naturally aligns with minimizing operational overhead by reducing the need for manual intervention compared to AWS Elastic Beanstalk. Option B increases operational burden. Option C focuses on maximizing custom OS level configurations which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon Redshift Serverless makes it easy to run and scale analytics in seconds without having to set up, configure, manage, or tune data warehouse clusters. It automatically provisions and scales warehouse capacity (measured in Redshift Processing Units / RPUs) based on query complexity and concurrency, and automatically shuts down/pauses when idle. You pay only for the compute capacity consumed while queries are actively running (per RPU-hour on a per-second basis), resulting in massive cost savings for business-hours-only workloads. Provisioned Redshift clusters incur fixed hourly node costs 24/7 regardless of query activity.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on maximizing custom OS level configurations which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Amazon Redshift provisioned clusters run continuously 24/7, incurring thousands of dollars in idle compute charges during nights and weekends.",
+      "C": "Amazon EMR with persistent EC2 instances requires managing cluster nodes, software frameworks, and paying continuous server infrastructure fees.",
+      "D": "Amazon RDS for PostgreSQL does not provide native serverless auto-pausing for standard OLTP engines, nor is it optimized for complex multi-terabyte OLAP analytical queries."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon Aurora.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Optimize data warehouse costs and scaling using Amazon Redshift Serverless.",
+    "topic": "Amazon Redshift",
     "tags": [
-      "Aurora",
-      "EKS",
-      "Elastic Beanstalk",
-      "RDS"
+      "Redshift",
+      "Serverless",
+      "Analytics",
+      "Cost Optimization"
     ]
   },
   {
     "id": "saa-1543",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Step Functions for compute and Amazon Redshift for the database tier. The application needs to process files stored in AWS Storage Gateway. The primary business requirement is strictly focused on ensuring lowest possible latency. Which architectural choice BEST meets these requirements?",
+    "question": "A web startup has packaged a web application into a Docker container image stored in Amazon Elastic Container Registry (Amazon ECR). The startup team has zero experience with container orchestration platforms (like Kubernetes or ECS task definitions) and no dedicated DevOps engineers. They want a fully managed service where they can simply point to the ECR image repository, and the service will automatically build, deploy, assign an SSL/TLS domain name, and auto-scale container instances based on incoming web traffic. Which service should they choose?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using AWS Step Functions and Amazon Redshift, leveraging managed scaling to meet the requirement of ensuring lowest possible latency.",
-      "B": "Switch the compute layer to Amazon SQS + Lambda and manage the OS updates manually to achieve ensuring lowest possible latency.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon SQS + Lambda prioritizing using asynchronous decoupled processing instead.",
-      "D": "Replace AWS Storage Gateway with local instance store volumes and write custom replication scripts."
+      "A": "AWS App Runner",
+      "B": "Amazon Elastic Kubernetes Service (Amazon EKS)",
+      "C": "AWS Elastic Beanstalk with Multi-Container Docker",
+      "D": "Amazon EC2 instances with user data scripts"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because AWS Step Functions is a managed service that naturally aligns with ensuring lowest possible latency by reducing the need for manual intervention compared to Amazon SQS + Lambda. Option B increases operational burden. Option C focuses on using asynchronous decoupled processing which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "AWS App Runner is a fully managed service that makes it extremely easy for developers to quickly deploy containerized web applications and APIs at scale, with no prior infrastructure or container orchestration experience required. You simply connect App Runner to an Amazon ECR container image repository (or source code repo). App Runner automatically handles building, deploying, provisioning load balancers, terminating TLS/HTTPS certificates with custom domains, and automatically scaling container instances up and down in response to incoming HTTP request traffic. Amazon EKS and ECS require complex cluster and task management.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on using asynchronous decoupled processing which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Amazon EKS requires deep Kubernetes knowledge, pod specifications, ingress controller configurations, and continuous cluster operations.",
+      "C": "AWS Elastic Beanstalk with Multi-Container Docker requires configuring dockerrun definitions, EC2 underlying instances, and VPC networking.",
+      "D": "Managing raw EC2 instances with user data scripts requires configuring load balancers, auto-scaling groups, SSL renewal, and host OS patching."
     },
-    "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Deploy scalable containerized web applications with zero infrastructure management using AWS App Runner.",
+    "topic": "AWS App Runner",
     "tags": [
-      "Lambda",
-      "SQS",
-      "Step Functions",
-      "Redshift",
-      "Networking"
+      "App Runner",
+      "Containers",
+      "Serverless",
+      "ECR",
+      "Deployment"
     ]
   },
   {
     "id": "saa-1544",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon API Gateway for compute and Amazon ElastiCache for the database tier. The application needs to process files stored in Amazon FSx. The primary business requirement is strictly focused on maximizing security and isolation. Which architectural choice BEST meets these requirements?",
+    "question": "An IoT platform ingests temperature sensor readings into an Amazon DynamoDB table. The engineering team needs to filter the table's change stream specifically for readings where the temperature exceeds 80 degrees Celsius, enrich each record by calling an AWS Lambda function to look up asset owner details, and deliver the enriched records directly into an Amazon SQS queue. The team wants to achieve this integration with MINIMAL custom integration code. Which service fulfills this point-to-point integration?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon API Gateway and Amazon ElastiCache, leveraging managed scaling to meet the requirement of maximizing security and isolation.",
-      "B": "Switch the compute layer to Application Load Balancer and manage the OS updates manually to achieve maximizing security and isolation.",
-      "C": "Use a multi-Region Active-Active deployment with Application Load Balancer prioritizing using publicly accessible endpoints for ease of use instead.",
-      "D": "Replace Amazon FSx with local instance store volumes and write custom replication scripts."
+      "A": "Amazon EventBridge Pipes",
+      "B": "Amazon Simple Notification Service (SNS)",
+      "C": "AWS Step Functions Standard Workflow",
+      "D": "Amazon Kinesis Data Streams"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon API Gateway is a managed service that naturally aligns with maximizing security and isolation by reducing the need for manual intervention compared to Application Load Balancer. Option B increases operational burden. Option C focuses on using publicly accessible endpoints for ease of use which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon EventBridge Pipes provides a simple, consistent, and cost-effective way to create point-to-point integrations between event producers (sources like DynamoDB Streams, Kinesis, SQS) and event consumers (targets like SQS, SNS, Step Functions, EventBridge). Crucially, EventBridge Pipes includes built-in filtering (filtering JSON records directly on temperature > 80) and an optional enrichment step (calling an AWS Lambda function or API Destination to enrich records) before delivering to the target SQS queue—completely eliminating the need to write custom polling, filtering, and error-handling glue code.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on using publicly accessible endpoints for ease of use which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Amazon SNS is a pub/sub fanout topic service; it cannot directly poll DynamoDB streams or perform inline Lambda data enrichment.",
+      "C": "AWS Step Functions can orchestrate complex state workflows, but requires writing custom state machine JSON definitions and state transitions compared to native EventBridge Pipes.",
+      "D": "Amazon Kinesis Data Streams is an event ingestion streaming engine; it does not provide native point-to-point DynamoDB filtering and enrichment."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Build point-to-point event filtering and enrichment pipelines using Amazon EventBridge Pipes.",
+    "topic": "Amazon EventBridge",
     "tags": [
-      "Elastic Load Balancing",
-      "FSx",
-      "Security"
+      "EventBridge",
+      "DynamoDB",
+      "Lambda",
+      "SQS",
+      "Serverless"
     ]
   },
   {
     "id": "saa-1545",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon ECS on Fargate for compute and Amazon DynamoDB for the database tier. The application needs to process files stored in Amazon EFS. The primary business requirement is strictly focused on minimizing cost. Which combination of actions should the Solutions Architect take? (Select TWO.)",
-    "answerType": "multiple",
-    "answerInstruction": "Choose TWO answers.",
+    "question": "A business-critical application runs in three Availability Zones (AZ-1, AZ-2, and AZ-3) behind an Application Load Balancer. Due to an unexpected localized infrastructure event in AZ-1, backend instances in AZ-1 experience intermittent latency, but basic ping health checks are still intermittently passing. The operations team needs an immediate mechanism to shift 100% of application traffic completely away from AZ-1 to the remaining healthy AZs (AZ-2 and AZ-3) within seconds, without waiting for DNS TTL expirations or updating client DNS caches. Which AWS capability provides this fast evacuation?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Deploy the Amazon ECS on Fargate workload across multiple Availability Zones.",
-      "B": "Configure Amazon DynamoDB to use a single-AZ deployment to save costs.",
-      "C": "Enable automatic backups and point-in-time recovery for Amazon DynamoDB.",
-      "D": "Store all temporary processing files in an unencrypted S3 bucket.",
-      "E": "Use Amazon EC2 with ASG deployed in a single Availability Zone."
+      "A": "Amazon Route 53 Application Recovery Controller (ARC) zonal shift",
+      "B": "Update Route 53 weighted DNS records to 0 for AZ-1",
+      "C": "Delete the subnet associated with AZ-1 in the VPC configuration",
+      "D": "Terminate all EC2 instances in AZ-1 simultaneously"
     },
     "correctAnswers": [
-      "A",
-      "C"
+      "A"
     ],
-    "explanation": "Explanation: Options A and C are correct. Deploying Amazon ECS on Fargate across multiple AZs ensures high availability, and enabling backups for Amazon DynamoDB ensures data durability. Option B compromises availability. Option D compromises security. Option E uses Amazon EC2 with ASG in a single AZ, creating a single point of failure.",
+    "explanation": "Amazon Route 53 Application Recovery Controller (ARC) zonal shift is purpose-built to help applications recover quickly from Availability Zone impairments. With a single action (via AWS console or CLI), a zonal shift directs AWS Application Load Balancers and Network Load Balancers to shift traffic away from the impaired Availability Zone (AZ-1) and distribute all incoming requests exclusively across the healthy Availability Zones (AZ-2 and AZ-3). This takes effect immediately at the load balancer level without relying on client DNS updates or waiting for DNS TTLs to expire. Updating DNS weights suffers from client caching lag. Deleting active subnets is rejected by AWS.",
     "whyOthersAreWrong": {
-      "B": "Compromises availability.",
-      "D": "Compromises security.",
-      "E": "Amazon EC2 with ASG in a single AZ, creating a single point of failur."
+      "B": "DNS record updates are subject to client resolver caching and TTL delays, often taking 15-60 minutes to propagate to all users globally.",
+      "C": "Amazon VPC prevents deleting any subnet that currently contains active Elastic Network Interfaces (ENIs), such as load balancer nodes or instances.",
+      "D": "Terminating instances causes Auto Scaling to attempt launching replacements back into the impaired AZ unless AZ rebalancing is manually halted."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon ECS to satisfy workload requirements.",
-    "topic": "Amazon ECS",
+    "learningObjective": "Rapidly evacuate an impaired Availability Zone using Route 53 ARC zonal shift.",
+    "topic": "Amazon Route 53 ARC",
     "tags": [
-      "ECS",
-      "DynamoDB",
-      "S3",
-      "EC2",
-      "Security"
+      "Route 53",
+      "High Availability",
+      "Resilience",
+      "Disaster Recovery",
+      "ALB"
     ]
   },
   {
     "id": "saa-1546",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Lambda for compute and Amazon RDS for PostgreSQL for the database tier. The application needs to process files stored in Amazon S3. The primary business requirement is strictly focused on maximizing high availability across Regions. Which architectural choice BEST meets these requirements?",
+    "question": "An enterprise is migrating an on-premises VMware and NAS storage environment to AWS. The application ecosystem requires a shared file system that natively supports multiprotocol access (clients accessing the same underlying files concurrently via both NFS and SMB protocols), block storage over iSCSI, thin provisioning, data deduplication and compression, and snapshot replication back to on-premises NetApp storage arrays. Which AWS managed storage service provides these native capabilities?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using AWS Lambda and Amazon RDS for PostgreSQL, leveraging managed scaling to meet the requirement of maximizing high availability across Regions.",
-      "B": "Switch the compute layer to Amazon ECS on EC2 and manage the OS updates manually to achieve maximizing high availability across Regions.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon ECS on EC2 prioritizing reducing inter-Region data transfer costs instead.",
-      "D": "Replace Amazon S3 with local instance store volumes and write custom replication scripts."
+      "A": "Amazon FSx for NetApp ONTAP",
+      "B": "Amazon Elastic File System (Amazon EFS)",
+      "C": "Amazon FSx for Windows File Server",
+      "D": "Amazon FSx for OpenZFS"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because AWS Lambda is a managed service that naturally aligns with maximizing high availability across Regions by reducing the need for manual intervention compared to Amazon ECS on EC2. Option B increases operational burden. Option C focuses on reducing inter-Region data transfer costs which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon FSx for NetApp ONTAP is a fully managed AWS service that provides NetApp's popular ONTAP enterprise file system. It uniquely supports full multiprotocol access (concurrent NFS, SMB, and iSCSI access to the same shared data volume), advanced storage efficiency features (deduplication, compression, and compaction), thin provisioning, and native integration with NetApp tools like SnapMirror for hybrid replication between on-premises NetApp arrays and AWS. Amazon EFS supports only NFS. FSx for Windows supports only SMB. FSx for OpenZFS supports only NFS and lacks NetApp SnapMirror integration.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on reducing inter-Region data transfer costs which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Amazon EFS supports only the NFS protocol and lacks support for SMB, iSCSI block storage, and NetApp SnapMirror replication.",
+      "C": "Amazon FSx for Windows File Server supports SMB only and does not support NFS multiprotocol access or NetApp storage replication tools.",
+      "D": "Amazon FSx for OpenZFS supports NFS, but does not provide concurrent SMB/NFS multiprotocol file access or NetApp SnapMirror compatibility."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Select enterprise multiprotocol shared storage using Amazon FSx for NetApp ONTAP.",
+    "topic": "Amazon FSx",
     "tags": [
-      "EC2",
-      "Lambda",
-      "ECS",
-      "S3",
-      "High Availability"
+      "FSx",
+      "NetApp",
+      "Storage",
+      "Hybrid",
+      "Migration"
     ]
   },
   {
     "id": "saa-1547",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon EKS for compute and Amazon Aurora MySQL for the database tier. The application needs to process files stored in Amazon EBS. The primary business requirement is strictly focused on minimizing operational overhead. Which architectural choice BEST meets these requirements?",
+    "question": "A global cloud governance team oversees 350 Amazon S3 buckets distributed across 40 AWS accounts in AWS Organizations. The team needs organization-wide visibility into storage growth, cost optimization opportunities (such as identifying buckets with incomplete multipart uploads or non-current object versions lacking lifecycle rules), and security compliance metrics (identifying buckets with public read access or unencrypted objects) from a single centralized dashboard. Which S3 feature should be configured?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon EKS and Amazon Aurora MySQL, leveraging managed scaling to meet the requirement of minimizing operational overhead.",
-      "B": "Switch the compute layer to AWS Elastic Beanstalk and manage the OS updates manually to achieve minimizing operational overhead.",
-      "C": "Use a multi-Region Active-Active deployment with AWS Elastic Beanstalk prioritizing maximizing custom OS level configurations instead.",
-      "D": "Replace Amazon EBS with local instance store volumes and write custom replication scripts."
+      "A": "Amazon S3 Storage Lens with an organization-level dashboard",
+      "B": "AWS Trusted Advisor organization view",
+      "C": "Amazon CloudWatch Metrics Insights",
+      "D": "AWS Config conformance packs"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon EKS is a managed service that naturally aligns with minimizing operational overhead by reducing the need for manual intervention compared to AWS Elastic Beanstalk. Option B increases operational burden. Option C focuses on maximizing custom OS level configurations which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon S3 Storage Lens is a cloud storage analytics feature that delivers organization-wide visibility into object storage usage, activity trends, cost-optimization opportunities, and data protection metrics. When configured at the AWS Organizations root or OU level, S3 Storage Lens aggregates metrics across all member accounts and buckets into a single interactive dashboard. It provides actionable cost-optimization recommendations (flagging incomplete multipart uploads and un-lifecycle non-current versions) and security insights (evaluating encryption and public access settings). Trusted Advisor provides basic account checks but lacks deep granular S3 bucket analytics.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on maximizing custom OS level configurations which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "AWS Trusted Advisor provides high-level service check summaries, but does not provide granular per-bucket storage pattern analysis or multipart upload tracking.",
+      "C": "CloudWatch Metrics Insights queries numeric metric time-series, but cannot inspect S3 object metadata, lifecycle anomalies, or storage tier breakdowns.",
+      "D": "AWS Config evaluates compliance rules against resource configurations, but does not provide holistic S3 storage usage dashboards or cost optimization analytics."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon Aurora.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Gain organization-wide visibility into S3 cost and security metrics using Amazon S3 Storage Lens.",
+    "topic": "Amazon S3",
     "tags": [
-      "Aurora",
-      "EKS",
-      "Elastic Beanstalk",
-      "RDS"
+      "S3",
+      "Storage Lens",
+      "Cost Optimization",
+      "Governance",
+      "Organizations"
     ]
   },
   {
     "id": "saa-1548",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Step Functions for compute and Amazon Redshift for the database tier. The application needs to process files stored in AWS Storage Gateway. The primary business requirement is strictly focused on ensuring lowest possible latency. Which architectural choice BEST meets these requirements?",
+    "question": "An online airline booking web application is targeted by malicious automated web scrapers that execute high-frequency search queries to scrape flight seat pricing and availability. The scraping bots simulate real browser headers and rotate through thousands of distributed residential proxy IP addresses, evading simple IP rate-based rules. The company wants to automatically detect and block sophisticated malicious bot traffic at the Amazon CloudFront edge without affecting legitimate travelers. Which solution should be deployed?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using AWS Step Functions and Amazon Redshift, leveraging managed scaling to meet the requirement of ensuring lowest possible latency.",
-      "B": "Switch the compute layer to Amazon SQS + Lambda and manage the OS updates manually to achieve ensuring lowest possible latency.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon SQS + Lambda prioritizing using asynchronous decoupled processing instead.",
-      "D": "Replace AWS Storage Gateway with local instance store volumes and write custom replication scripts."
+      "A": "Attach AWS WAF to the CloudFront distribution and enable the AWS WAF Bot Control managed rule group.",
+      "B": "Deploy Amazon GuardDuty with S3 Protection.",
+      "C": "Configure an AWS Network Firewall in each Availability Zone.",
+      "D": "Write a custom Lambda@Edge function to block requests that contain user-agent headers matching known bots."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because AWS Step Functions is a managed service that naturally aligns with ensuring lowest possible latency by reducing the need for manual intervention compared to Amazon SQS + Lambda. Option B increases operational burden. Option C focuses on using asynchronous decoupled processing which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "AWS WAF Bot Control is an AWS Managed Rules rule group that provides automated visibility and control over pervasive and sophisticated bot traffic. It inspects browser telemetry, client session consistency, and machine learning behavioral patterns at the Amazon CloudFront edge to detect and block malicious bots (like scrapers, scalpers, and credential stuffers) even when bots rotate through residential IP proxies. GuardDuty monitors control-plane and account-level threats, not web scraping. Network Firewall operates at Layer 3/4 within VPCs. Simple user-agent matching in Lambda is trivial for attackers to forge and bypass.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on using asynchronous decoupled processing which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Amazon GuardDuty analyzes VPC flow logs and API calls for compromised instances; it does not inspect HTTP web requests for bot scraping signatures.",
+      "C": "AWS Network Firewall filters network traffic within VPCs; it cannot inspect CloudFront edge HTTP requests or analyze browser JavaScript challenges.",
+      "D": "Custom user-agent string checks are easily bypassed by sophisticated botnets that spoof legitimate Google Chrome and Safari user-agent strings."
     },
-    "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Detect and mitigate automated scraping bots using AWS WAF Bot Control.",
+    "topic": "AWS WAF",
     "tags": [
-      "Lambda",
-      "SQS",
-      "Step Functions",
-      "Redshift",
-      "Networking"
+      "WAF",
+      "Bot Control",
+      "Security",
+      "CloudFront"
     ]
   },
   {
     "id": "saa-1549",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon API Gateway for compute and Amazon ElastiCache for the database tier. The application needs to process files stored in Amazon FSx. The primary business requirement is strictly focused on maximizing security and isolation. Which combination of actions should the Solutions Architect take? (Select TWO.)",
-    "answerType": "multiple",
-    "answerInstruction": "Choose TWO answers.",
+    "question": "An e-commerce order management system publishes order state change events to a single Amazon SNS topic. Three downstream Amazon SQS queues subscribe to this SNS topic: an Express Shipping queue, a Fraud Analysis queue, and a Customer Analytics queue. The Express Shipping queue should only receive messages where the order's `shipping_tier` attribute equals `express`. The Fraud Analysis queue should only receive messages where `order_total` is greater than 1,000. Which SNS feature should the Solutions Architect configure to prevent downstream queues from receiving irrelevant messages?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Deploy the Amazon API Gateway workload across multiple Availability Zones.",
-      "B": "Configure Amazon ElastiCache to use a single-AZ deployment to save costs.",
-      "C": "Enable automatic backups and point-in-time recovery for Amazon ElastiCache.",
-      "D": "Store all temporary processing files in an unencrypted S3 bucket.",
-      "E": "Use Application Load Balancer deployed in a single Availability Zone."
+      "A": "Configure Amazon SNS subscription filter policies on each SQS subscription based on message attributes.",
+      "B": "Create three separate SNS topics and have the publishing service send messages to the appropriate topic.",
+      "C": "Deploy an AWS Lambda function between the SNS topic and each SQS queue to inspect and drop messages.",
+      "D": "Configure SQS message deduplication IDs."
     },
     "correctAnswers": [
-      "A",
-      "C"
+      "A"
     ],
-    "explanation": "Explanation: Options A and C are correct. Deploying Amazon API Gateway across multiple AZs ensures high availability, and enabling backups for Amazon ElastiCache ensures data durability. Option B compromises availability. Option D compromises security. Option E uses Application Load Balancer in a single AZ, creating a single point of failure.",
+    "explanation": "Amazon SNS Subscription Filter Policies allow subscriber endpoints (such as SQS queues) to declare a filter policy based on message attributes or payload attributes. SNS evaluates the policy on each published message: if the message attributes match the subscriber's filter policy, SNS delivers the message; otherwise, the message is dropped for that specific subscription without incurring delivery or consumer processing costs. This decouples the publisher (which publishes to a single topic) from subscriber filtering logic with zero intermediate compute infrastructure. Creating separate topics requires publisher code changes.",
     "whyOthersAreWrong": {
-      "B": "Compromises availability.",
-      "D": "Compromises security.",
-      "E": "Application Load Balancer in a single AZ, creating a single point of failur."
+      "B": "Creating multiple topics couples the publishing application to routing logic and requires extensive code modifications as new subscriber rules emerge.",
+      "C": "Placing intermediate Lambda functions between SNS and SQS adds unnecessary execution latency, invocation charges, and custom code maintenance.",
+      "D": "SQS message deduplication IDs prevent duplicate deliveries in FIFO queues; they do not filter or route messages based on business attributes."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Filter pub/sub message fanout using Amazon SNS subscription filter policies.",
+    "topic": "Amazon SNS",
     "tags": [
-      "Elastic Load Balancing",
-      "S3",
-      "FSx",
-      "Security",
-      "High Availability"
+      "SNS",
+      "SQS",
+      "Decoupling",
+      "Architecture",
+      "Event-Driven"
     ]
   },
   {
     "id": "saa-1550",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon ECS on Fargate for compute and Amazon DynamoDB for the database tier. The application needs to process files stored in Amazon EFS. The primary business requirement is strictly focused on minimizing cost. Which architectural choice BEST meets these requirements?",
+    "question": "A financial technology application uses a MongoDB-compatible JSON document database to store flexible transaction records. The architecture requires a managed AWS database service that provides automatic multi-AZ failover in under 30 seconds, automated continuous backups with 1-second point-in-time recovery granularity, and the ability to scale read throughput independently by provisioning up to 15 read replicas. Which service meets these criteria?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon ECS on Fargate and Amazon DynamoDB, leveraging managed scaling to meet the requirement of minimizing cost.",
-      "B": "Switch the compute layer to Amazon EC2 with ASG and manage the OS updates manually to achieve minimizing cost.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon EC2 with ASG prioritizing maximizing performance instead.",
-      "D": "Replace Amazon EFS with local instance store volumes and write custom replication scripts."
+      "A": "Amazon DocumentDB (with MongoDB compatibility)",
+      "B": "Amazon DynamoDB",
+      "C": "Amazon RDS for PostgreSQL with JSONB columns",
+      "D": "Self-managed MongoDB on an Amazon EC2 Auto Scaling group"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon ECS on Fargate is a managed service that naturally aligns with minimizing cost by reducing the need for manual intervention compared to Amazon EC2 with ASG. Option B increases operational burden. Option C focuses on maximizing performance which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon DocumentDB (with MongoDB compatibility) is a fully managed, purpose-built document database service designed for storing, querying, and indexing JSON data. Its decoupled compute-and-storage architecture replicates storage six times across three Availability Zones. Failover to an existing replica completes in under 30 seconds, backups are continuous and incremental with point-in-time restore to any second within the retention window, and up to 15 read replicas can be added to scale read throughput without provisioning additional storage. DynamoDB is a proprietary NoSQL key-value store, not MongoDB-compatible.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on maximizing performance which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Amazon DynamoDB is a key-value and document NoSQL database with its own proprietary API; it is not compatible with MongoDB drivers and queries.",
+      "C": "Amazon RDS for PostgreSQL is a relational database; while it supports JSONB, it is not a native MongoDB-compatible document database service.",
+      "D": "Self-managed MongoDB on EC2 requires manual cluster maintenance, custom backup scripts, OS patching, and complex manual failover orchestration."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon ECS to satisfy workload requirements.",
-    "topic": "Amazon ECS",
+    "learningObjective": "Select high-availability document databases using Amazon DocumentDB.",
+    "topic": "Amazon DocumentDB",
     "tags": [
-      "ECS",
-      "EC2",
-      "DynamoDB",
-      "EFS",
-      "Cost Optimization"
+      "DocumentDB",
+      "Databases",
+      "MongoDB",
+      "High Availability"
     ]
   },
   {
     "id": "saa-1551",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Lambda for compute and Amazon RDS for PostgreSQL for the database tier. The application needs to process files stored in Amazon S3. The primary business requirement is strictly focused on maximizing high availability across Regions. Which architectural choice BEST meets these requirements?",
+    "question": "An asynchronous video processing service pulls video rendering tasks from an Amazon SQS queue. Each rendering task takes approximately 45 seconds to complete. The company wants to optimize compute costs by running worker nodes on Amazon EC2 Spot Instances in an Auto Scaling group. If an EC2 Spot Instance receives an EC2 Spot Instance interruption notice, how should the architecture ensure that the in-flight video rendering job is not lost and is reprocessed cleanly?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using AWS Lambda and Amazon RDS for PostgreSQL, leveraging managed scaling to meet the requirement of maximizing high availability across Regions.",
-      "B": "Switch the compute layer to Amazon ECS on EC2 and manage the OS updates manually to achieve maximizing high availability across Regions.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon ECS on EC2 prioritizing reducing inter-Region data transfer costs instead.",
-      "D": "Replace Amazon S3 with local instance store volumes and write custom replication scripts."
+      "A": "Configure the SQS queue visibility timeout to be longer than the task duration (e.g. 2 minutes), and delete messages from SQS only after the rendering job successfully finishes.",
+      "B": "Delete the message from SQS immediately upon retrieval by the worker.",
+      "C": "Increase the SQS message retention period to 14 days.",
+      "D": "Use an Amazon SQS FIFO queue with deduplication enabled."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because AWS Lambda is a managed service that naturally aligns with maximizing high availability across Regions by reducing the need for manual intervention compared to Amazon ECS on EC2. Option B increases operational burden. Option C focuses on reducing inter-Region data transfer costs which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon SQS visibility timeout ensures fault tolerance for worker architectures. When a worker instance retrieves a message, the message remains in the queue but becomes invisible to other consumers for the duration of the visibility timeout (e.g. 2 minutes). Only after the worker successfully finishes rendering the video does it issue an explicit `DeleteMessage` API call. If the Spot Instance is interrupted before completion, it fails to delete the message. Once the visibility timeout expires, SQS automatically makes the message visible again for another healthy worker instance to process, ensuring zero job loss. Deleting messages upon retrieval risks data loss.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on reducing inter-Region data transfer costs which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Deleting messages immediately upon retrieval means that if the Spot Instance is terminated while rendering, the job is permanently lost.",
+      "C": "The message retention period defines how long unconsumed messages stay in the queue, but does not handle in-flight task failures during execution.",
+      "D": "FIFO queues guarantee message ordering and deduplication, but do not solve in-flight worker failure handling without visibility timeouts."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Design fault-tolerant batch processing using Amazon SQS visibility timeouts and EC2 Spot Instances.",
+    "topic": "Amazon SQS",
     "tags": [
+      "SQS",
+      "Spot",
       "EC2",
-      "Lambda",
-      "ECS",
-      "S3",
-      "High Availability"
+      "Resilience",
+      "Architecture"
     ]
   },
   {
     "id": "saa-1552",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon EKS for compute and Amazon Aurora MySQL for the database tier. The application needs to process files stored in Amazon EBS. The primary business requirement is strictly focused on minimizing operational overhead. Which architectural choice BEST meets these requirements?",
+    "question": "An enterprise is establishing a multi-account AWS architecture for 150 accounts across multiple business units. The cloud architecture team needs a service to set up a well-architected multi-account landing zone in an automated fashion, enforce mandatory organizational security baselines (such as disallowing public S3 buckets and enforcing MFA), and deploy automated guardrails across all existing and newly provisioned accounts. Which service should they use?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon EKS and Amazon Aurora MySQL, leveraging managed scaling to meet the requirement of minimizing operational overhead.",
-      "B": "Switch the compute layer to AWS Elastic Beanstalk and manage the OS updates manually to achieve minimizing operational overhead.",
-      "C": "Use a multi-Region Active-Active deployment with AWS Elastic Beanstalk prioritizing maximizing custom OS level configurations instead.",
-      "D": "Replace Amazon EBS with local instance store volumes and write custom replication scripts."
+      "A": "AWS Control Tower",
+      "B": "AWS Systems Manager Patch Manager",
+      "C": "AWS Trusted Advisor",
+      "D": "AWS Cloud9"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon EKS is a managed service that naturally aligns with minimizing operational overhead by reducing the need for manual intervention compared to AWS Elastic Beanstalk. Option B increases operational burden. Option C focuses on maximizing custom OS level configurations which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "AWS Control Tower is the easiest way to set up and govern a secure, multi-account AWS environment (landing zone) based on best practices. Control Tower automates the creation of organizational units (OUs), configures centralized identity via IAM Identity Center, sets up centralized log archives and audit accounts, and enforces pre-packaged governance guardrails (preventive Service Control Policies and detective AWS Config rules). It continuously monitors account compliance across the organization. Systems Manager Patch Manager handles OS patches. Trusted Advisor provides advisory recommendations, not automated multi-account landing zone orchestration.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on maximizing custom OS level configurations which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "AWS Systems Manager Patch Manager is used to automate operating system patching on individual EC2 instances, not multi-account governance.",
+      "C": "AWS Trusted Advisor inspects existing AWS environments to provide cost, performance, and security recommendations; it cannot build landing zones.",
+      "D": "AWS Cloud9 is a cloud-based integrated development environment (IDE) for writing code, with no relationship to multi-account organizational governance."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon Aurora.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Govern multi-account enterprise landing zones using AWS Control Tower.",
+    "topic": "AWS Control Tower",
     "tags": [
-      "Aurora",
-      "EKS",
-      "Elastic Beanstalk",
-      "RDS"
+      "Control Tower",
+      "Organizations",
+      "Governance",
+      "Security"
     ]
   },
   {
     "id": "saa-1553",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Step Functions for compute and Amazon Redshift for the database tier. The application needs to process files stored in AWS Storage Gateway. The primary business requirement is strictly focused on ensuring lowest possible latency. Which combination of actions should the Solutions Architect take? (Select TWO.)",
-    "answerType": "multiple",
-    "answerInstruction": "Choose TWO answers.",
+    "question": "A business intelligence analyst needs to prepare and clean raw sales CSV datasets stored in Amazon S3 for reporting in Amazon QuickSight. The dataset contains missing values, inconsistent date formats, and duplicate records. The analyst has no programming experience with Python, PySpark, or SQL, and requires a visual point-and-click data preparation tool with over 250 pre-built transformations that can automate data cleaning pipelines. Which AWS service should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Deploy the AWS Step Functions workload across multiple Availability Zones.",
-      "B": "Configure Amazon Redshift to use a single-AZ deployment to save costs.",
-      "C": "Enable automatic backups and point-in-time recovery for Amazon Redshift.",
-      "D": "Store all temporary processing files in an unencrypted S3 bucket.",
-      "E": "Use Amazon SQS + Lambda deployed in a single Availability Zone."
+      "A": "AWS Glue DataBrew",
+      "B": "Amazon EMR with Apache Spark",
+      "C": "Amazon Kinesis Data Analytics",
+      "D": "AWS Lambda with custom Python code"
     },
     "correctAnswers": [
-      "A",
-      "C"
+      "A"
     ],
-    "explanation": "Explanation: Options A and C are correct. Deploying AWS Step Functions across multiple AZs ensures high availability, and enabling backups for Amazon Redshift ensures data durability. Option B compromises availability. Option D compromises security. Option E uses Amazon SQS + Lambda in a single AZ, creating a single point of failure.",
+    "explanation": "AWS Glue DataBrew is a visual data preparation tool that enables data analysts and data scientists to clean, normalize, and enrich data with an interactive, point-and-click visual interface without writing any code. It provides over 250 pre-built transformations to automate tasks like filtering anomalies, standardizing date/time formats, replacing null values, and deduplicating records. Analysts can save transformations as recipes and run them on scheduled datasets in S3. EMR, Kinesis Data Analytics, and Lambda all require writing code (Python, Scala, SQL, or Java).",
     "whyOthersAreWrong": {
-      "B": "Compromises availability.",
-      "D": "Compromises security.",
-      "E": "Amazon SQS + Lambda in a single AZ, creating a single point of failur."
+      "B": "Amazon EMR requires managing big data clusters and writing code in Apache Spark, Python, or Scala, which the analyst cannot do.",
+      "C": "Amazon Kinesis Data Analytics is designed for real-time streaming SQL or Apache Flink analytics, not visual batch file preparation.",
+      "D": "AWS Lambda requires writing and maintaining custom Python code and packaging libraries, which violates the requirement for a no-code visual tool."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon Redshift.",
-    "topic": "Amazon Redshift",
+    "learningObjective": "Perform visual no-code data preparation and cleaning using AWS Glue DataBrew.",
+    "topic": "AWS Glue",
     "tags": [
-      "Redshift",
-      "Step Functions",
-      "S3",
-      "Lambda",
-      "Security"
+      "Glue",
+      "DataBrew",
+      "Analytics",
+      "S3"
     ]
   },
   {
     "id": "saa-1554",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon API Gateway for compute and Amazon ElastiCache for the database tier. The application needs to process files stored in Amazon FSx. The primary business requirement is strictly focused on maximizing security and isolation. Which architectural choice BEST meets these requirements?",
+    "question": "A financial microservice runs on Amazon EC2 instances in private subnets with no internet gateway, NAT gateway, or virtual private gateway attached to the VPC. The application must send transaction messages to an Amazon SQS queue securely. Security compliance mandates that traffic must never traverse the public internet or leave the AWS global private network. Which solution meets these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon API Gateway and Amazon ElastiCache, leveraging managed scaling to meet the requirement of maximizing security and isolation.",
-      "B": "Switch the compute layer to Application Load Balancer and manage the OS updates manually to achieve maximizing security and isolation.",
-      "C": "Use a multi-Region Active-Active deployment with Application Load Balancer prioritizing using publicly accessible endpoints for ease of use instead.",
-      "D": "Replace Amazon FSx with local instance store volumes and write custom replication scripts."
+      "A": "Create an Interface VPC Endpoint for Amazon SQS using AWS PrivateLink and configure the private subnet route tables.",
+      "B": "Deploy an AWS NAT Gateway in a public subnet.",
+      "C": "Create an AWS Site-to-Site VPN from the VPC to the SQS public endpoint.",
+      "D": "Create a Gateway VPC Endpoint for Amazon SQS."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon API Gateway is a managed service that naturally aligns with maximizing security and isolation by reducing the need for manual intervention compared to Application Load Balancer. Option B increases operational burden. Option C focuses on using publicly accessible endpoints for ease of use which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon SQS supports Interface VPC Endpoints powered by AWS PrivateLink. An interface endpoint instantiates private Elastic Network Interfaces (ENIs) with private IP addresses directly inside your private subnets. EC2 instances in private subnets communicate with Amazon SQS entirely over the private AWS network backbone without requiring an Internet Gateway, NAT Gateway, or public IP addresses. Gateway VPC Endpoints are only available for Amazon S3 and Amazon DynamoDB, not Amazon SQS. NAT Gateways require an Internet Gateway.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on using publicly accessible endpoints for ease of use which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "A NAT Gateway requires an Internet Gateway and routes traffic out to public AWS service endpoints, violating the strict internal network isolation requirement.",
+      "C": "AWS Site-to-Site VPN is designed for connecting on-premises networks to AWS VPCs; it cannot connect a VPC to native AWS public service APIs.",
+      "D": "Gateway VPC Endpoints only support Amazon S3 and Amazon DynamoDB; they are not supported for Amazon SQS."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Connect private VPC workloads to Amazon SQS securely using Interface VPC Endpoints.",
+    "topic": "AWS PrivateLink",
     "tags": [
-      "Elastic Load Balancing",
-      "FSx",
-      "Security"
+      "VPC",
+      "PrivateLink",
+      "SQS",
+      "Security",
+      "Networking"
     ]
   },
   {
     "id": "saa-1555",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon ECS on Fargate for compute and Amazon DynamoDB for the database tier. The application needs to process files stored in Amazon EFS. The primary business requirement is strictly focused on minimizing cost. Which architectural choice BEST meets these requirements?",
+    "question": "An enterprise runs a mission-critical production database on Amazon RDS for PostgreSQL deployed in a Multi-AZ configuration. The primary database instance suffers an unrecoverable hardware failure on its underlying host. How does Amazon RDS handle this failure to maintain database availability?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon ECS on Fargate and Amazon DynamoDB, leveraging managed scaling to meet the requirement of minimizing cost.",
-      "B": "Switch the compute layer to Amazon EC2 with ASG and manage the OS updates manually to achieve minimizing cost.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon EC2 with ASG prioritizing maximizing performance instead.",
-      "D": "Replace Amazon EFS with local instance store volumes and write custom replication scripts."
+      "A": "Amazon RDS automatically promotes the standby replica in the secondary Availability Zone and updates the database DNS CNAME endpoint to point to the new primary instance.",
+      "B": "The Solutions Architect must manually promote a read replica using the AWS Management Console.",
+      "C": "Amazon RDS takes a final snapshot and restores a brand-new database instance in a new Availability Zone.",
+      "D": "Amazon Route 53 routes client traffic to a standby EC2 database instance using failover routing."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon ECS on Fargate is a managed service that naturally aligns with minimizing cost by reducing the need for manual intervention compared to Amazon EC2 with ASG. Option B increases operational burden. Option C focuses on maximizing performance which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "In an Amazon RDS Multi-AZ deployment, Amazon RDS automatically provisions and maintains a synchronous standby replica in a different Availability Zone. In the event of an infrastructure or hardware failure on the primary instance, Amazon RDS automatically detects the failure and initiates failover to the standby replica (typically completing in 60 to 120 seconds) without manual intervention. Amazon RDS seamlessly updates the DNS CNAME record of the database endpoint to point to the promoted standby instance, allowing applications to resume database transactions as soon as connection retries succeed.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on maximizing performance which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "In an automated Multi-AZ deployment, failover is 100% automated and does not require manual administrator promotion.",
+      "C": "Restoring from a snapshot takes hours for large databases and results in data loss, whereas Multi-AZ synchronous replication provides zero data loss failover.",
+      "D": "Amazon RDS manages database failover internally via its own endpoint CNAME; it does not rely on external Route 53 health check routing policies."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon ECS to satisfy workload requirements.",
-    "topic": "Amazon ECS",
+    "learningObjective": "Understand automated high availability and DNS failover mechanisms in Amazon RDS Multi-AZ deployments.",
+    "topic": "Amazon RDS",
     "tags": [
-      "ECS",
-      "EC2",
-      "DynamoDB",
-      "EFS",
-      "Cost Optimization"
+      "RDS",
+      "PostgreSQL",
+      "Multi-AZ",
+      "High Availability",
+      "Databases"
     ]
   },
   {
     "id": "saa-1556",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Lambda for compute and Amazon RDS for PostgreSQL for the database tier. The application needs to process files stored in Amazon S3. The primary business requirement is strictly focused on maximizing high availability across Regions. Which architectural choice BEST meets these requirements?",
+    "question": "A media archiving organization needs to transfer 80 TB of historical film scans from an on-premises Network File System (NFS) storage server directly into Amazon S3 Glacier Flexible Retrieval over an existing 1 Gbps AWS Direct Connect connection. The transfer process must preserve POSIX file permissions, timestamps, and metadata, verify file integrity at rest, and execute on a scheduled recurring basis to capture new files automatically. Which service should the Solutions Architect recommend?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using AWS Lambda and Amazon RDS for PostgreSQL, leveraging managed scaling to meet the requirement of maximizing high availability across Regions.",
-      "B": "Switch the compute layer to Amazon ECS on EC2 and manage the OS updates manually to achieve maximizing high availability across Regions.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon ECS on EC2 prioritizing reducing inter-Region data transfer costs instead.",
-      "D": "Replace Amazon S3 with local instance store volumes and write custom replication scripts."
+      "A": "AWS DataSync with a task configured to write directly to the Amazon S3 target using the S3 Glacier Flexible Retrieval storage class.",
+      "B": "AWS Snowball Edge Storage Optimized device shipped to the data center.",
+      "C": "AWS Transfer Family configured with an SFTP endpoint.",
+      "D": "A cron job on an on-premises Linux server executing the `aws s3 sync` CLI command."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because AWS Lambda is a managed service that naturally aligns with maximizing high availability across Regions by reducing the need for manual intervention compared to Amazon ECS on EC2. Option B increases operational burden. Option C focuses on reducing inter-Region data transfer costs which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "AWS DataSync is purpose-built to automate and accelerate data transfers between on-premises storage systems (NFS, SMB, HDFS) and AWS storage services (Amazon S3, EFS, FSx). DataSync can write directly to Amazon S3 using any storage class, including S3 Glacier Flexible Retrieval and Glacier Deep Archive. It automatically preserves POSIX permissions, ownership, and timestamps, verifies data integrity in transit and at rest using checksums, and natively schedules recurring delta syncs. Snowball requires physical shipping and cannot run recurring network syncs. `aws s3 sync` lacks advanced multithreaded network acceleration and metadata preservation.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on reducing inter-Region data transfer costs which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "AWS Snowball Edge is an offline physical appliance that cannot provide automated, scheduled recurring network syncs over Direct Connect.",
+      "C": "AWS Transfer Family is a client-facing file transfer service (SFTP/FTPS), not an automated server-to-server data migration synchronization tool.",
+      "D": "The `aws s3 sync` CLI command does not provide built-in multithreaded WAN acceleration, automated metadata preservation, or end-to-end data integrity verification."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Automate on-premises NFS data transfers directly into S3 Glacier using AWS DataSync.",
+    "topic": "AWS DataSync",
     "tags": [
-      "EC2",
-      "Lambda",
-      "ECS",
+      "DataSync",
       "S3",
-      "High Availability"
+      "Glacier",
+      "Migration",
+      "Storage"
     ]
   },
   {
     "id": "saa-1557",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon EKS for compute and Amazon Aurora MySQL for the database tier. The application needs to process files stored in Amazon EBS. The primary business requirement is strictly focused on minimizing operational overhead. Which combination of actions should the Solutions Architect take? (Select TWO.)",
-    "answerType": "multiple",
-    "answerInstruction": "Choose TWO answers.",
+    "question": "An e-commerce company stores order history in an Amazon DynamoDB table. The primary key consists of `CustomerID` (Partition Key) and `OrderID` (Sort Key). The customer service portal needs to query orders by `OrderStatus` (e.g. `PENDING`, `SHIPPED`, `CANCELLED`) and filter by `OrderDate`. Currently, queries on `OrderStatus` require a full table `Scan` operation with a filter expression, which is slow and consumes massive read capacity. How should the Solutions Architect optimize the table design?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Deploy the Amazon EKS workload across multiple Availability Zones.",
-      "B": "Configure Amazon Aurora MySQL to use a single-AZ deployment to save costs.",
-      "C": "Enable automatic backups and point-in-time recovery for Amazon Aurora MySQL.",
-      "D": "Store all temporary processing files in an unencrypted S3 bucket.",
-      "E": "Use AWS Elastic Beanstalk deployed in a single Availability Zone."
+      "A": "Create a Global Secondary Index (GSI) with `OrderStatus` as the partition key and `OrderDate` as the sort key.",
+      "B": "Create a Local Secondary Index (LSI) with `OrderStatus` as the partition key and `OrderDate` as the sort key.",
+      "C": "Increase the provisioned Read Capacity Units (RCUs) on the base table.",
+      "D": "Deploy an Amazon ElastiCache for Memcached cluster to cache full table scan results."
     },
     "correctAnswers": [
-      "A",
-      "C"
+      "A"
     ],
-    "explanation": "Explanation: Options A and C are correct. Deploying Amazon EKS across multiple AZs ensures high availability, and enabling backups for Amazon Aurora MySQL ensures data durability. Option B compromises availability. Option D compromises security. Option E uses AWS Elastic Beanstalk in a single AZ, creating a single point of failure.",
+    "explanation": "A Global Secondary Index (GSI) in Amazon DynamoDB is an index with a partition key and an optional sort key that can be different from those on the base table. Creating a GSI with `OrderStatus` as the partition key and `OrderDate` as the sort key enables fast, efficient `Query` operations directly against orders in a specific status within a date range, completely eliminating expensive, slow, and capacity-exhausting full table `Scan` operations. Local Secondary Indexes (LSIs) must share the same partition key as the base table (`CustomerID`) and can only be created at table creation time.",
     "whyOthersAreWrong": {
-      "B": "Compromises availability.",
-      "D": "Compromises security.",
-      "E": "AWS Elastic Beanstalk in a single AZ, creating a single point of failur."
+      "B": "A Local Secondary Index (LSI) requires the exact same partition key as the base table (`CustomerID`) and cannot define an alternate partition key like `OrderStatus`.",
+      "C": "Increasing provisioned RCUs on the base table masks inefficient full-table scans, resulting in unnecessarily high AWS billing costs.",
+      "D": "Caching full table scan results in Memcached is an anti-pattern that fails to support dynamic queries and introduces cache staleness."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon Aurora.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Design efficient query patterns in Amazon DynamoDB using Global Secondary Indexes (GSIs).",
+    "topic": "Amazon DynamoDB",
     "tags": [
-      "Aurora",
-      "RDS",
-      "EKS",
-      "S3",
-      "Security"
+      "DynamoDB",
+      "GSI",
+      "Databases",
+      "Performance",
+      "NoSQL"
     ]
   },
   {
     "id": "saa-1558",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use AWS Step Functions for compute and Amazon Redshift for the database tier. The application needs to process files stored in AWS Storage Gateway. The primary business requirement is strictly focused on ensuring lowest possible latency. Which architectural choice BEST meets these requirements?",
+    "question": "An enterprise with multiple AWS accounts in AWS Organizations has a centralized networking team that manages network infrastructure and security. The network team wants to centrally create and maintain a set of Amazon VPCs, subnets, route tables, and NAT Gateways. Application development teams in other AWS accounts should be able to deploy their own Amazon EC2 instances, AWS Lambda functions, and Amazon RDS databases into these centrally managed private subnets without having administrative control over the VPCs themselves. Which AWS feature enables this cross-account network sharing?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using AWS Step Functions and Amazon Redshift, leveraging managed scaling to meet the requirement of ensuring lowest possible latency.",
-      "B": "Switch the compute layer to Amazon SQS + Lambda and manage the OS updates manually to achieve ensuring lowest possible latency.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon SQS + Lambda prioritizing using asynchronous decoupled processing instead.",
-      "D": "Replace AWS Storage Gateway with local instance store volumes and write custom replication scripts."
+      "A": "VPC Sharing using AWS Resource Access Manager (AWS RAM)",
+      "B": "AWS Transit Gateway VPC attachments",
+      "C": "Inter-account VPC Peering",
+      "D": "AWS PrivateLink Endpoint Services"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because AWS Step Functions is a managed service that naturally aligns with ensuring lowest possible latency by reducing the need for manual intervention compared to Amazon SQS + Lambda. Option B increases operational burden. Option C focuses on using asynchronous decoupled processing which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "VPC Sharing (powered by AWS Resource Access Manager / AWS RAM) allows multiple AWS accounts in the same AWS Organization to share subnets from a centrally managed VPC. The network owner account creates and manages the VPC, subnets, route tables, NAT gateways, and Network ACLs. Participant accounts (application teams) can view the shared subnets and launch their application resources (EC2, ECS, RDS, Lambda) directly into those subnets, managing their own security groups while sharing the same network topology. This enforces centralized network governance and reduces the number of VPCs and NAT gateways needed. Transit Gateway connects separate VPCs; it does not share subnets.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on using asynchronous decoupled processing which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "AWS Transit Gateway connects separate, distinct VPCs; it does not allow multiple accounts to launch resources into the same shared subnets.",
+      "C": "VPC Peering connects independent VPCs; it does not provide centralized multi-account subnet sharing.",
+      "D": "AWS PrivateLink exposes specific service endpoints privately across accounts; it is not a mechanism for sharing VPC subnets."
     },
-    "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Implement centralized multi-account network governance using VPC Sharing with AWS RAM.",
+    "topic": "Amazon VPC",
     "tags": [
-      "Lambda",
-      "SQS",
-      "Step Functions",
-      "Redshift",
+      "VPC",
+      "RAM",
+      "VPC Sharing",
+      "Organizations",
       "Networking"
     ]
   },
   {
     "id": "saa-1559",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon API Gateway for compute and Amazon ElastiCache for the database tier. The application needs to process files stored in Amazon FSx. The primary business requirement is strictly focused on maximizing security and isolation. Which architectural choice BEST meets these requirements?",
+    "question": "A hybrid enterprise connects its corporate on-premises data center to an AWS VPC using an AWS Direct Connect connection. On-premises workloads must resolve domain names of resources in an Amazon Route 53 Private Hosted Zone (`corp.internal`). Concurrently, Amazon EC2 instances in the VPC must resolve domain names of on-premises servers managed by on-premises Microsoft Active Directory DNS servers (`onprem.local`). Which solution provides seamless, bidirectional hybrid DNS resolution?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon API Gateway and Amazon ElastiCache, leveraging managed scaling to meet the requirement of maximizing security and isolation.",
-      "B": "Switch the compute layer to Application Load Balancer and manage the OS updates manually to achieve maximizing security and isolation.",
-      "C": "Use a multi-Region Active-Active deployment with Application Load Balancer prioritizing using publicly accessible endpoints for ease of use instead.",
-      "D": "Replace Amazon FSx with local instance store volumes and write custom replication scripts."
+      "A": "Deploy Amazon Route 53 Resolver with Inbound Endpoints (for on-premises clients querying AWS) and Outbound Endpoints with forwarding rules (for VPC clients querying on-premises).",
+      "B": "Deploy two EC2 instances running BIND DNS software in a public subnet with Elastic IPs.",
+      "C": "Configure Route 53 Public Hosted Zones with split-view DNS.",
+      "D": "Use an AWS Network Load Balancer forwarding DNS queries on port 53 to an S3 bucket."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon API Gateway is a managed service that naturally aligns with maximizing security and isolation by reducing the need for manual intervention compared to Application Load Balancer. Option B increases operational burden. Option C focuses on using publicly accessible endpoints for ease of use which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon Route 53 Resolver provides native, fully managed bidirectional hybrid DNS resolution between AWS VPCs and on-premises networks. An Inbound Resolver Endpoint provides private IP addresses in your VPC that on-premises DNS servers can forward queries to when resolving Route 53 Private Hosted Zone domains (`corp.internal`). An Outbound Resolver Endpoint paired with Route 53 Resolver forwarding rules forwards queries for on-premises domains (`onprem.local`) from VPC resources to on-premises DNS servers over Direct Connect. Managing self-hosted BIND servers on EC2 adds maintenance and failover overhead.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on using publicly accessible endpoints for ease of use which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "Managing self-hosted BIND DNS servers introduces operational patching, scaling bottlenecks, and high maintenance compared to managed Route 53 Resolver.",
+      "C": "Route 53 Public Hosted Zones expose internal DNS records to the public internet, creating critical security and reconnaissance risks.",
+      "D": "An NLB forwarding port 53 to Amazon S3 is architecturally nonsensical, as Amazon S3 cannot process DNS protocol requests."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Configure bidirectional hybrid DNS resolution using Amazon Route 53 Resolver endpoints.",
+    "topic": "Amazon Route 53 Resolver",
     "tags": [
-      "Elastic Load Balancing",
-      "FSx",
-      "Security"
+      "Route 53",
+      "DNS",
+      "Hybrid",
+      "Direct Connect",
+      "Networking"
     ]
   },
   {
     "id": "saa-1560",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global enterprise is migrating its legacy application to AWS. The development team has chosen to use Amazon ECS on Fargate for compute and Amazon DynamoDB for the database tier. The application needs to process files stored in Amazon EFS. The primary business requirement is strictly focused on minimizing cost. Which architectural choice BEST meets these requirements?",
+    "question": "A security operations center (SOC) monitors multiple AWS accounts for anomalous activity. The security team needs an automated solution to identify suspicious API access to Amazon S3 buckets, such as unusual bulk downloads from an unfamiliar IP address, access from known malicious Tor exit nodes, or requests without proper encryption. The detection must occur in near-real-time without requiring the security team to ingest, parse, or query S3 server access logs manually. Which service should be enabled?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Implement the solution exactly using Amazon ECS on Fargate and Amazon DynamoDB, leveraging managed scaling to meet the requirement of minimizing cost.",
-      "B": "Switch the compute layer to Amazon EC2 with ASG and manage the OS updates manually to achieve minimizing cost.",
-      "C": "Use a multi-Region Active-Active deployment with Amazon EC2 with ASG prioritizing maximizing performance instead.",
-      "D": "Replace Amazon EFS with local instance store volumes and write custom replication scripts."
+      "A": "Amazon GuardDuty with S3 Protection enabled",
+      "B": "AWS CloudTrail Insights",
+      "C": "AWS WAF attached to the S3 bucket",
+      "D": "Amazon Macie"
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Explanation: Option A is correct because Amazon ECS on Fargate is a managed service that naturally aligns with minimizing cost by reducing the need for manual intervention compared to Amazon EC2 with ASG. Option B increases operational burden. Option C focuses on maximizing performance which violates the primary requirement. Option D introduces severe risk of data loss on instance termination.",
+    "explanation": "Amazon GuardDuty S3 Protection continuously monitors and profiles object-level API operations (such as `GetObject`, `ListObjects`, `PutObject`) from CloudTrail S3 data events and S3 management events. GuardDuty applies machine learning and integrated threat intelligence to detect suspicious activities, including requests originating from unusual geographic locations, Tor exit nodes, or anomalous spikes in data volume access that indicate credential compromise or data exfiltration. CloudTrail Insights detects account-level write API rate anomalies, but lacks threat intelligence and S3 data-plane behavioral modeling. AWS WAF cannot attach directly to S3 buckets. Macie scans document content for PII, not behavioral access threats.",
     "whyOthersAreWrong": {
-      "B": "Increases operational burden.",
-      "C": "Focuses on maximizing performance which violates the primary requirement.",
-      "D": "Introduces severe risk of data loss on instance termination."
+      "B": "AWS CloudTrail Insights monitors management API call volume spikes; it does not analyze S3 data-plane object events for threat intelligence or Tor IP access.",
+      "C": "AWS WAF cannot be attached directly to Amazon S3 buckets; it only attaches to CloudFront, ALBs, API Gateways, and AppSync.",
+      "D": "Amazon Macie identifies sensitive personal information (PII) inside objects; it does not detect compromised credential usage or Tor exit node access."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon ECS to satisfy workload requirements.",
-    "topic": "Amazon ECS",
+    "learningObjective": "Detect suspicious S3 data access and compromised credentials using Amazon GuardDuty S3 Protection.",
+    "topic": "Amazon GuardDuty",
     "tags": [
-      "ECS",
-      "EC2",
-      "DynamoDB",
-      "EFS",
-      "Cost Optimization"
+      "GuardDuty",
+      "S3",
+      "Security",
+      "Threat Detection"
     ]
   }
 ]

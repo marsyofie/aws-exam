@@ -18,9 +18,9 @@
     ],
     "explanation": "DynamoDB Global Tables is the managed service purpose-built for active-active, multi-region read/write replication with automatic conflict resolution, and Route 53 latency-based routing with health checks routes each user to the lowest-latency healthy regional endpoint, failing away from unhealthy regions automatically -- together these meet both stated requirements. DynamoDB has no 'manual cross-region read replica' feature (that description doesn't match any real DynamoDB capability), a single CloudFront origin defeats the purpose of an active-active multi-region design, and S3 CRR addresses static asset replication, not the application's live read/write database traffic.",
     "whyOthersAreWrong": {
-      "B": "Option B (S3 Cross-Region Replication configured on the application's static assets bucket) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (A single-region DynamoDB table combined with manual cross-region read replicas) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "E": "Option E (CloudFront configured with only a single regional origin) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
+      "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "E": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -28,7 +28,7 @@
       "DynamoDB",
       "Route 53",
       "S3",
-      "CloudFront",
+      "RDS",
       "High Availability"
     ]
   },
@@ -42,16 +42,16 @@
       "A": "AWS Application Migration Service run in point-in-time export mode only",
       "B": "A weekly AWS Snowball data transfer",
       "C": "AWS Database Migration Service (AWS DMS)",
-      "D": "AWS Elastic Disaster Recovery (AWS DRS) DESIGN HIGH-PERFORMING ARCHITECTURES"
+      "D": "AWS Elastic Disaster Recovery (AWS DRS)"
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "AWS Elastic Disaster Recovery performs continuous, block-level replication of source servers (physical, virtual, or in other clouds) into a low-cost staging area in AWS, and can launch fully provisioned recovery instances within minutes of a failure, with an RPO typically measured in seconds -- exactly matching this scenario's needs during a migration cutover window. DMS is a database-specific (schema/data) migration tool, not general server block-level replication; a weekly Snowball transfer has an RPO of up to a week, far too coarse; and there is no 'point-in-time export mode' for AWS Application Migration Service as described. DESIGN HIGH-PERFORMING ARCHITECTURES",
+    "explanation": "AWS Elastic Disaster Recovery performs continuous, block-level replication of source servers (physical, virtual, or in other clouds) into a low-cost staging area in AWS, and can launch fully provisioned recovery instances within minutes of a failure, with an RPO typically measured in seconds -- exactly matching this scenario's needs during a migration cutover window. DMS is a database-specific (schema/data) migration tool, not general server block-level replication; a weekly Snowball transfer has an RPO of up to a week, far too coarse; and there is no 'point-in-time export mode' for AWS Application Migration Service as described.",
     "whyOthersAreWrong": {
-      "A": "Option A (AWS Application Migration Service run in point-in-time export mode only) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (A weekly AWS Snowball data transfer) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (AWS Database Migration Service (AWS DMS)) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (AWS Application Migration Service run in point-in-time export mode only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (A weekly AWS Snowball data transfer) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (AWS Database Migration Service (AWS DMS)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Architecture.",
     "topic": "AWS Architecture",
@@ -77,9 +77,9 @@
     ],
     "explanation": "Read replicas offload read-only query traffic to a separately scaled copy of the database, which directly removes the reporting workload's CPU contention from the primary instance handling transactional writes. Increasing storage size doesn't address CPU contention, Multi-AZ provides high availability via a synchronous standby that isn't used for read traffic by default (a separate Multi-AZ readable standby exists but a simple replica is the standard, direct answer here), and reducing query frequency degrades the business need for the dashboard rather than solving the architecture problem.",
     "whyOthersAreWrong": {
-      "A": "Option A (Enable Multi-AZ on the primary instance) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Increase the primary instance's allocated storage) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Move the reporting dashboard's queries to run once per week instead) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "In standard Amazon RDS Multi-AZ deployments, the standby instance is purely for passive failover and cannot accept read queries or serve reporting traffic.",
+      "B": "This approach (Increase the primary instance's allocated storage) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Move the reporting dashboard's queries to run once per week instead) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon RDS.",
     "topic": "Amazon RDS",
@@ -98,16 +98,16 @@
       "A": "Enable DynamoDB Streams",
       "B": "Switch the table to use a global secondary index only",
       "C": "Redesign the partition key to have higher cardinality, for example by adding a random or calculated suffix to spread traffic across more partitions",
-      "D": "Simply increase the table's overall provisioned read/write capacity AWS SAA-C03 Practice Exam Page 10"
+      "D": "Simply increase the table's overall provisioned read/write capacity"
     },
     "correctAnswers": [
       "C"
     ],
     "explanation": "A hot partition is a data-modeling problem: too many requests are landing on the same partition key, and DynamoDB divides provisioned throughput across partitions, so a hot key can be throttled even if the table's aggregate capacity is high. The fix is to increase partition key cardinality, for example via write-sharding (adding a random suffix to the key) so requests spread across more physical partitions. Raising overall table capacity increases cost without fixing the concentration problem, a GSI addresses different access patterns rather than partition heat, and Streams is a change-capture feature unrelated to throttling.",
     "whyOthersAreWrong": {
-      "A": "Modeling problem: too many requests are landing on the same partition key, and DynamoDB divides provisioned throughput across partitions, so a hot key can be throttled even if the table's aggregate capacity is high. The fix is to increase partition key cardinality, for example via writ.",
-      "B": "Option B (Switch the table to use a global secondary index only) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Simply increase the table's overall provisioned read/write capacity AWS SAA-C03 Practice Exam Page 10) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Enable DynamoDB Streams) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (Switch the table to use a global secondary index only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Simply increase the table's overall provisioned read/write capacity) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -131,18 +131,18 @@
     "correctAnswers": [
       "C"
     ],
-    "explanation": "CloudFront caches content at edge locations distributed globally, so subsequent requests are served from a location physically close to the user rather than round-tripping to the origin region, directly reducing latency for distant users. Scaling the origin (vertically or via instance type) improves throughput at the origin but does nothing about network distance/latency, and S3 Versioning is an object-recovery feature with no performance benefit. AWS SAA-C03 Practice Exam Page 25",
+    "explanation": "CloudFront caches content at edge locations distributed globally, so subsequent requests are served from a location physically close to the user rather than round-tripping to the origin region, directly reducing latency for distant users. Scaling the origin (vertically or via instance type) improves throughput at the origin but does nothing about network distance/latency, and S3 Versioning is an object-recovery feature with no performance benefit.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 25.",
-      "B": "Option B (Enable S3 Versioning on the assets bucket) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Tripping to the origin region, directly reducing latency for distant users. Scaling the origin (vertically or via instance type) improves throughput at the origin but does nothing about network distance/latency, and S3 Versioning is an object-recovery feature with no performance benefit. AWS SA."
+      "A": "Vertically scaling compute or database instances does not resolve distributed latency bottlenecks and results in higher idle costs during off-peak periods.",
+      "B": "This approach (Enable S3 Versioning on the assets bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Move the origin to a larger EC2 instance type in the same region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
     "tags": [
       "S3",
-      "CloudFront",
       "EC2",
+      "CloudFront",
       "Networking"
     ]
   },
@@ -163,9 +163,9 @@
     ],
     "explanation": "DAX is an in-memory, write-through cache specifically for DynamoDB that can reduce response times for eventually-consistent reads from single-digit milliseconds down to microseconds, without any application-level caching logic beyond swapping the SDK client. Increasing RCUs improves throughput headroom, not per-request latency, changing billing mode affects cost/capacity management rather than raw latency, and adding a GSI supports different query patterns but doesn't fundamentally change per-request latency the way an in-memory cache does.",
     "whyOthersAreWrong": {
-      "A": "Option A (Switch the table's billing mode to on-demand) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Increase the table's provisioned read capacity units) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Add a global secondary index) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Switch the table's billing mode to on-demand) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (Increase the table's provisioned read capacity units) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Add a global secondary index) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -192,9 +192,9 @@
     ],
     "explanation": "A cluster placement group packs instances close together within a single Availability Zone on the same low-latency, high-throughput network fabric, which is exactly what tightly-coupled HPC/MPI workloads need to minimize inter-node latency. A spread placement group does the opposite -- it deliberately spreads instances across distinct underlying hardware to reduce correlated failure risk, which increases inter-node latency. Multi-AZ deployment and separate peered VPCs both add network hops and latency that work against the stated performance goal.",
     "whyOthersAreWrong": {
-      "A": "Option A (Launch the instances across multiple Availability Zones for resilience) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Launch the instances in different VPCs peered together) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Launch the instances in a spread placement group) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Launch the instances across multiple Availability Zones for resilience) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (Launch the instances in different VPCs peered together) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Launch the instances in a spread placement group) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -220,11 +220,11 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "st1 volumes are HDD-backed and priced per GB for throughput-oriented, large sequential I/O workloads like big-data processing and log processing, making them the most cost-effective option when raw throughput (not random IOPS) is what matters. gp3, io2, and gp2 are all SSD-backed and priced for IOPS-sensitive, typically smaller, random I/O patterns (boot volumes, transactional databases); using SSD-backed storage for a purely throughput-oriented, sequential workload is unnecessarily expensive.",
+    "explanation": "St1 volumes are HDD-backed and priced per GB for throughput-oriented, large sequential I/O workloads like big-data processing and log processing, making them the most cost-effective option when raw throughput (not random IOPS) is what matters. gp3, io2, and gp2 are all SSD-backed and priced for IOPS-sensitive, typically smaller, random I/O patterns (boot volumes, transactional databases); using SSD-backed storage for a purely throughput-oriented, sequential workload is unnecessarily expensive.",
     "whyOthersAreWrong": {
-      "B": "Option B (gp2 (General Purpose SSD)) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (gp3 (General Purpose SSD)) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Backed and priced per GB for throughput-oriented, large sequential I/O workloads like big-data processing and log processing, making them the most cost-effective option when raw throughput (not random IOPS) is what matters. gp3, io2, and gp2 are all SS."
+      "B": "This approach (gp2 (General Purpose SSD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (gp3 (General Purpose SSD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (io2 (Provisioned IOPS SSD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Architecture to satisfy workload requirements.",
     "topic": "AWS Architecture",
@@ -243,22 +243,21 @@
       "A": "Enable API Gateway response caching for the relevant method",
       "B": "Switch the API from REST API to a Network Load Balancer",
       "C": "Enable X-Ray tracing on the API",
-      "D": "Increase the Lambda function's reserved concurrency AWS SAA-C03 Practice Exam Page 11"
+      "D": "Increase the Lambda function's reserved concurrency"
     },
     "correctAnswers": [
       "A"
     ],
     "explanation": "API Gateway caching stores responses for a configurable TTL keyed by request parameters, so identical repeated requests are served directly from the API Gateway cache without invoking Lambda at all, cutting both invocation count and latency. Increasing reserved concurrency helps Lambda handle more concurrent invocations but doesn't reduce the number of invocations, an NLB operates at Layer 4 and doesn't provide HTTP response caching, and X-Ray is a tracing/observability tool with no caching effect.",
     "whyOthersAreWrong": {
-      "B": "Option B (Switch the API from REST API to a Network Load Balancer) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Enable X-Ray tracing on the API) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Increase the Lambda function's reserved concurrency AWS SAA-C03 Practice Exam Page 11) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Switch the API from REST API to a Network Load Balancer) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Enable X-Ray tracing on the API) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Increase the Lambda function's reserved concurrency) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
     "topic": "AWS Lambda",
     "tags": [
       "Lambda",
-      "Elastic Load Balancing",
       "Networking"
     ]
   },
@@ -277,11 +276,11 @@
     "correctAnswers": [
       "D"
     ],
-    "explanation": "ECS Service Auto Scaling (built on Application Auto Scaling) supports target tracking policies that automatically add or remove tasks to keep a metric like average CPU utilization near a target value, which is exactly the described requirement. Manual adjustment doesn't scale operationally or respond to unplanned traffic, increasing a single task's CPU/memory reservation changes per-task sizing rather than the number of tasks, and Fargate task placement across AZs is a resilience/availability concern, not an autoscaling mechanism. AWS SAA-C03 Practice Exam Page 26",
+    "explanation": "ECS Service Auto Scaling (built on Application Auto Scaling) supports target tracking policies that automatically add or remove tasks to keep a metric like average CPU utilization near a target value, which is exactly the described requirement. Manual adjustment doesn't scale operationally or respond to unplanned traffic, increasing a single task's CPU/memory reservation changes per-task sizing rather than the number of tasks, and Fargate task placement across AZs is a resilience/availability concern, not an autoscaling mechanism.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 26.",
-      "B": "Option B (Manually adjust the desired task count via the console each morning and evening) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Increase the task definition's CPU and memory reservation) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Add more Availability Zones to the ECS cluster) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "C": "This approach (Increase the task definition's CPU and memory reservation) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
     "topic": "Amazon ECS",
@@ -308,9 +307,9 @@
     ],
     "explanation": "Global Accelerator uses AWS's global Anycast network and edge locations to bring TCP and UDP traffic onto AWS's private backbone as close to the client as possible, which is well-suited to latency-sensitive, non-HTTP protocols like real-time UDP game traffic. CloudFront is an HTTP(S) content delivery network and doesn't support arbitrary UDP traffic in this way, Route 53 latency-based routing alone only affects DNS resolution and doesn't accelerate the actual data path, and Direct Connect is for dedicated connectivity from specific on-premises locations, not for improving performance for public internet players worldwide.",
     "whyOthersAreWrong": {
-      "B": "Option B (Amazon CloudFront) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "CloudFront is an HTTP(S) content delivery network and doesn't support arbitrary UDP traffic in this way, Route 53 latency-based routing alone only affects DNS resolution and doesn't accelerate the actual data path, and Direct Connect is for dedicated connectivity from specific on-premises locations, not for improving performance for public internet players worldwid.",
-      "D": "Option D (AWS Direct Connect) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Amazon CloudFront) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations.",
+      "D": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
     "topic": "Amazon Route 53",
@@ -318,7 +317,6 @@
       "Route 53",
       "CloudFront",
       "Direct Connect",
-      "Elastic Load Balancing",
       "Networking"
     ]
   },
@@ -339,15 +337,15 @@
     ],
     "explanation": "Redshift is a columnar, massively parallel processing (MPP) data warehouse purpose-built for large-scale analytical (OLAP) SQL queries across very large datasets. RDS for PostgreSQL is a general-purpose relational (OLTP) database not designed for petabyte-scale MPP analytics, DynamoDB is a NoSQL key-value/document store without general SQL analytical query capability at that scale, and ElastiCache is an in-memory cache, not a data warehouse.",
     "whyOthersAreWrong": {
-      "A": "Option A (Amazon ElastiCache for Redis) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Amazon DynamoDB) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Amazon RDS for PostgreSQL) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "Introducing an in-memory caching cluster adds architectural complexity and ongoing cache invalidation overhead without solving persistent storage durability requirements.",
+      "B": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints.",
+      "C": "This approach (Amazon RDS for PostgreSQL) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Redshift.",
-    "topic": "Amazon Redshift",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
+    "topic": "Amazon DynamoDB",
     "tags": [
-      "Redshift",
       "DynamoDB",
+      "ElastiCache",
       "RDS",
       "High Availability"
     ]
@@ -371,15 +369,15 @@
     ],
     "explanation": "Aurora Auto Scaling for replicas adds/removes read replicas automatically based on a target-tracking metric, and Aurora Serverless v2 scales database capacity (ACUs) up and down in fine-grained increments in near real time based on actual load -- both directly address elastic scaling with minimal idle cost. A single fixed-size replica sized for peak load is provisioned for the worst case at all times, which is the opposite of minimizing idle cost, manual resizing doesn't respond quickly to unpredictable spikes, and RDS Proxy improves connection pooling/failover behavior but doesn't itself add or remove database capacity.",
     "whyOthersAreWrong": {
-      "B": "Option B (Manually resizing a read replica through a change window every business day) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Size replica sized for peak load is provisioned for the worst case at all times, which is the opposite of minimizing idle cost, manual resizing doesn't respond quickly to unpredictable spikes, and RDS Proxy improves connection pooling/failover behavior but doesn't itself add or remove database capacity.",
-      "E": "Grained increments in near real time based on actual load -- both directly address elastic scaling with minimal idle cost. A single fixe."
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
+      "E": "This approach (A single, large, fixed-size read replica sized for peak load and left running continuously) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon Aurora to satisfy workload requirements.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Select the most cost-effective architecture using Amazon RDS to satisfy workload requirements.",
+    "topic": "Amazon RDS",
     "tags": [
-      "Aurora",
       "RDS",
+      "Aurora",
       "Lambda",
       "CloudWatch",
       "High Availability"
@@ -395,16 +393,16 @@
       "A": "Increase the function's timeout setting",
       "B": "Switch the function's runtime to a compiled language only, with no other configuration change",
       "C": "Configure Provisioned Concurrency for the function ahead of the predictable peak periods",
-      "D": "Reduce the function's memory allocation to start faster AWS SAA-C03 Practice Exam Page 12"
+      "D": "Reduce the function's memory allocation to start faster"
     },
     "correctAnswers": [
       "C"
     ],
     "explanation": "Provisioned Concurrency keeps a specified number of execution environments pre-initialized and ready to respond immediately, eliminating cold-start latency for that concurrency level; since the peak periods are predictable, it can be scheduled to ramp up ahead of time via Application Auto Scaling. Increasing the timeout only affects how long a request is allowed to run, not startup latency, changing the runtime language can help but is a much larger, more disruptive change than a configuration setting and doesn't fully eliminate cold starts, and reducing memory generally increases (not decreases) init and execution time since memory is tied to allocated CPU.",
     "whyOthersAreWrong": {
-      "A": "Option A (Increase the function's timeout setting) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Switch the function's runtime to a compiled language only, with no other configuration change) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Start latency for that concurrency level; since the peak periods are predictable, it can be scheduled to ramp up ahead of time via Application Auto Scaling. Increasing the timeout only affects how long a request is allowed to run, not startup latency, changing the runtime language can help but is a much larger, more disruptive change than a configuration setting and doesn't fully eliminate cold starts, and reducing memory generally increases (not decreases) init and execution time since memory is tied to allocated CPU."
+      "A": "This approach (Increase the function's timeout setting) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
+      "D": "This approach (Reduce the function's memory allocation to start faster) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
     "topic": "AWS Lambda",
@@ -428,11 +426,11 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "S3 Transfer Acceleration routes uploads through the nearest CloudFront edge location and then over Amazon's optimized backbone network to the destination bucket, which can significantly improve throughput for geographically distant uploaders, especially for large files. Versioning, changing storage class, and Requester Pays are all unrelated to network transfer performance -- they affect object recovery, storage cost/durability tier, and billing responsibility, respectively. AWS SAA-C03 Practice Exam Page 27",
+    "explanation": "S3 Transfer Acceleration routes uploads through the nearest CloudFront edge location and then over Amazon's optimized backbone network to the destination bucket, which can significantly improve throughput for geographically distant uploaders, especially for large files. Versioning, changing storage class, and Requester Pays are all unrelated to network transfer performance -- they affect object recovery, storage cost/durability tier, and billing responsibility, respectively.",
     "whyOthersAreWrong": {
-      "B": "Option B (Enable S3 Versioning on the bucket) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Enable Requester Pays on the bucket) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Move the bucket to S3 One Zone-IA storage class) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Enable S3 Versioning on the bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Enable Requester Pays on the bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "S3 One Zone-IA stores data in a single Availability Zone, risking permanent data loss if that Availability Zone is impaired, violating multi-AZ durability requirements."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -459,9 +457,9 @@
     ],
     "explanation": "The Horizontal Pod Autoscaler supports scaling on custom and external metrics (not just CPU/memory) when a metrics adapter, such as one that surfaces CloudWatch metrics into the Kubernetes metrics API, is configured -- this lets scaling decisions be driven by an application-specific signal like queue depth. Default CPU-only HPA configuration can't react to a metric it doesn't have visibility into, manual scaling doesn't meet an automated requirement, and increasing node size changes cluster capacity, not the number of running pod replicas.",
     "whyOthersAreWrong": {
-      "A": "Option A (Rely solely on the default HPA CPU-based scaling with no additional configuration) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Increase the EKS worker node instance size only) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Manually scale deployments via kubectl during business hours) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
+      "B": "This approach (Increase the EKS worker node instance size only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EKS.",
     "topic": "Amazon EKS",
@@ -480,16 +478,16 @@
       "A": "No -- but only if the objects are also moved to S3 Glacier Instant Retrieval instead",
       "B": "No -- S3 Standard-IA has the same millisecond-scale first-byte latency as S3 Standard; the trade-offs are a per-GB retrieval fee and a minimum storage duration charge, not latency",
       "C": "Yes -- S3 Standard-IA objects must first be manually restored using a restore request before they can be read",
-      "D": "Yes -- S3 Standard-IA always incurs an hours-long retrieval delay before objects become readable DESIGN COST-OPTIMIZED ARCHITECTURES"
+      "D": "Yes -- S3 Standard-IA always incurs an hours-long retrieval delay before objects become readable"
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "S3 Standard-IA is designed for infrequently accessed data that still needs millisecond access when it is accessed -- its latency and throughput performance are the same as S3 Standard. The actual trade-offs versus Standard are a per-GB retrieval fee and a 30-day minimum storage duration charge, which make it uneconomical for frequently accessed ('hot') data, but this is a cost concern, not a latency one. Hours-long retrieval delays and manual restore requests are characteristic of the S3 Glacier Flexible Retrieval and Glacier Deep Archive tiers, not Standard-IA. DESIGN COST-OPTIMIZED ARCHITECTURES",
+    "explanation": "S3 Standard-IA is designed for infrequently accessed data that still needs millisecond access when it is accessed -- its latency and throughput performance are the same as S3 Standard. The actual trade-offs versus Standard are a per-GB retrieval fee and a 30-day minimum storage duration charge, which make it uneconomical for frequently accessed ('hot') data, but this is a cost concern, not a latency one. Hours-long retrieval delays and manual restore requests are characteristic of the S3 Glacier Flexible Retrieval and Glacier Deep Archive tiers, not Standard-IA.",
     "whyOthersAreWrong": {
-      "A": "DESIGN COST-OPTIMIZED ARCHITECTURES.",
-      "C": "Option C (Yes -- S3 Standard-IA objects must first be manually restored using a restore request before they can be read) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "IA is designed for infrequently accessed data that still needs millisecond access when it is accessed -- its latency and throughput performance are the same as S3 Standar."
+      "A": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data.",
+      "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "D": "Infrequent Access tiers have a 30-day minimum storage duration and retrieval fees that are suboptimal for immediate, active analytical queries."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
     "topic": "Amazon S3",
@@ -516,9 +514,9 @@
     ],
     "explanation": "For a workload that is fixed in instance family, size, and region with a long, predictable horizon, a 3-year Standard Reserved Instance with All Upfront payment typically provides the deepest discount of any of these options, since Standard RIs trade away flexibility (family/size/region changes) for maximum discount. Compute Savings Plans offer more flexibility across instance family/region/OS but at a somewhat lower maximum discount, which isn't needed here. Spot is unsuitable for a workload that must run continuously and can't tolerate interruption, and On-Demand offers no discount at all.",
     "whyOthersAreWrong": {
-      "B": "Option B (On-Demand Instances with no commitment) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Compute Savings Plans, 1-year term) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (EC2 Spot Instances) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (On-Demand Instances with no commitment) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Compute Savings Plans, 1-year term) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (EC2 Spot Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -537,16 +535,16 @@
       "A": "Standard Reserved Instances with a 3-year commitment",
       "B": "Dedicated Hosts",
       "C": "On-Demand Instances",
-      "D": "EC2 Spot Instances, with the application designed to handle interruption AWS SAA-C03 Practice Exam Page 13"
+      "D": "EC2 Spot Instances, with the application designed to handle interruption"
     },
     "correctAnswers": [
       "D"
     ],
     "explanation": "Spot Instances offer the deepest discounts (often up to 90% off On-Demand) in exchange for the possibility of interruption with a two-minute warning, which is an acceptable trade-off for a fault-tolerant, checkpoint-capable, time-flexible batch workload. Reserved Instances require a long commitment better suited to steady-state workloads, On-Demand carries no discount, and Dedicated Hosts are for licensing/compliance/isolation requirements and are one of the more expensive options, not a cost-optimization choice.",
     "whyOthersAreWrong": {
-      "A": "Option A (Standard Reserved Instances with a 3-year commitment) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Dedicated Hosts) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (On-Demand Instances) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Standard Reserved Instances with a 3-year commitment) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (Dedicated Hosts) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (On-Demand Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -570,11 +568,11 @@
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Compute Savings Plans provide the most flexibility of any AWS discount mechanism -- the commitment is to a dollar-per-hour spend amount, and the discount automatically applies to usage across any instance family, size, OS, region, and even to Fargate and Lambda usage, making it the best fit when future compute needs are uncertain. Standard RIs and EC2 Instance Savings Plans both lock in specific instance family/region attributes, which conflicts with the stated need for flexibility, and Zonal RIs add an even narrower AZ-level commitment. AWS SAA-C03 Practice Exam Page 28",
+    "explanation": "Compute Savings Plans provide the most flexibility of any AWS discount mechanism -- the commitment is to a dollar-per-hour spend amount, and the discount automatically applies to usage across any instance family, size, OS, region, and even to Fargate and Lambda usage, making it the best fit when future compute needs are uncertain. Standard RIs and EC2 Instance Savings Plans both lock in specific instance family/region attributes, which conflicts with the stated need for flexibility, and Zonal RIs add an even narrower AZ-level commitment.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 28.",
-      "B": "Option B (Standard Reserved Instances, locked to a specific instance family and region) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Zonal Reserved Instances) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (EC2 Instance Savings Plans, locked to a specific instance family and region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (Standard Reserved Instances, locked to a specific instance family and region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Zonal Reserved Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",

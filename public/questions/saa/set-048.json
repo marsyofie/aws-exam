@@ -16,9 +16,9 @@
     ],
     "explanation": "Origin Access Control (OAC), the current recommended replacement for the older Origin Access Identity, lets you restrict a bucket policy to only allow requests signed by a specific CloudFront distribution, effectively blocking direct S3 URL access while still allowing CloudFront to serve the content. S3 buckets do not have security groups (that's an EC2/VPC construct), making a public bucket relies on the wrong control entirely, and Transfer Acceleration is unrelated to access control.",
     "whyOthersAreWrong": {
-      "B": "Option B (Make the bucket public and rely on CloudFront's cache-hit ratio to limit direct access) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Enable S3 Transfer Acceleration on the bucket) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Add a security group to the S3 bucket denying all traffic not from CloudFront's IP range) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Make the bucket public and rely on CloudFront's cache-hit ratio to limit direct access) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
+      "D": "Amazon S3 is a managed regional service that does not reside within a VPC subnet; security groups cannot be attached directly to Amazon S3 buckets."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
     "topic": "AWS CloudFront",
@@ -26,7 +26,7 @@
       "CloudFront",
       "S3",
       "VPC",
-      "IAM",
+      "EC2",
       "Security"
     ]
   },
@@ -49,15 +49,15 @@
     ],
     "explanation": "RDS for SQL Server Windows Authentication requires an AWS Managed Microsoft AD directory (not an AD Connector, which is only a proxy used for EC2/WorkSpaces sign-in to an existing on-prem AD). Establishing a trust between AWS Managed Microsoft AD and the on-prem AD lets existing corporate credentials work for both EC2 domain-join and RDS Windows Authentication without duplicating accounts. Recreating users as IAM users and using IAM Identity Center as the RDS directory are not supported mechanisms for this use case.",
     "whyOthersAreWrong": {
-      "B": "Option B (Create an AD Connector and use it directly as the RDS for SQL Server Windows Authentication directory) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Use IAM Identity Center as the directory backing RDS SQL Server Windows Authentication) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "E": "Option E (Manually recreate every on-premises Active Directory user as a native IAM user) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Create an AD Connector and use it directly as the RDS for SQL Server Windows Authentication directory) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Use IAM Identity Center as the directory backing RDS SQL Server Windows Authentication) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "E": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon RDS.",
-    "topic": "Amazon RDS",
+    "learningObjective": "Design an efficient cloud migration strategy leveraging AWS IAM.",
+    "topic": "AWS IAM",
     "tags": [
-      "RDS",
       "IAM",
+      "RDS",
       "EC2",
       "Security",
       "High Availability"
@@ -73,24 +73,24 @@
       "A": "AWS Secrets Manager, retrieved by the function at runtime via the SDK, with IAM policy scoped to the specific secret ARN",
       "B": "Store the key as a plaintext Lambda environment variable",
       "C": "Base64-encode the key and commit it to the application's source repository",
-      "D": "Store the key in an S3 bucket with default encryption enabled AWS SAA-C03 Practice Exam Page 5"
+      "D": "Store the key in an S3 bucket with default encryption enabled"
     },
     "correctAnswers": [
       "A"
     ],
     "explanation": "Secrets Manager stores the value encrypted at rest with KMS, supports resource-based and IAM policies scoped to individual secret ARNs for fine-grained access control, and has built-in support for automatic rotation (including custom rotation Lambdas for arbitrary secrets like third-party API keys). Plaintext environment variables and base64-encoded values in source control are not encryption (base64 is trivially reversible), and while an encrypted S3 object protects data at rest, it lacks native secret-specific access patterns and rotation workflows.",
     "whyOthersAreWrong": {
-      "B": "Option B (Store the key as a plaintext Lambda environment variable) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Base64-encode the key and commit it to the application's source repository) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Party API keys). Plaintext environment variables and base64-encoded values in source control are not encryption (base64 is trivially reversible), and while an encrypted S3 object protects data at rest, it lacks native secret-specific access patterns and rotation workflows."
+      "B": "This approach (Store the key as a plaintext Lambda environment variable) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Base64-encode the key and commit it to the application's source repository) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Store the key in an S3 bucket with default encryption enabled) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
-    "topic": "AWS IAM",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
+    "topic": "Amazon S3",
     "tags": [
-      "IAM",
       "S3",
+      "IAM",
       "Lambda",
-      "Secrets Manager",
+      "KMS",
       "Security"
     ]
   },
@@ -113,14 +113,13 @@
     ],
     "explanation": "GuardDuty provides continuous, ML-based threat detection (anomalous API calls, compromised instances, reconnaissance, etc.) and can be centrally enabled and auto-enrolled across an entire AWS Organization from a delegated administrator account. Security Hub then aggregates GuardDuty findings (plus other sources) into one organization-wide dashboard with a consistent findings format. Config alone is a configuration-compliance/audit tool, not a threat detector; Trusted Advisor's relevant checks here are limited and don't provide continuous threat detection; Macie is scoped to discovering sensitive data in S3, not general network traffic analysis.",
     "whyOthersAreWrong": {
-      "B": "Option B (Enable AWS Trusted Advisor's cost-optimization checks) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": ") and can be centrally enabled and auto-enrolled across an entire AWS Organization from a delegated administrator account. Security Hub then aggregates GuardDuty findings (plus other sources) into one organization-wide dashboard with a consistent findings format. Config alone is a configuration-compliance/audit tool, not a threat detector; Trusted Advisor's relevant checks here are limited and don't provide continuous threat detection; Macie is scoped to discovering sensitive data in S3, not general network traffic analysis.",
-      "D": "Option D (Enable AWS Config in each account independently with no aggregation) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Enable AWS Trusted Advisor's cost-optimization checks) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Enable Amazon Macie for network traffic analysis) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Config.",
-    "topic": "AWS Config",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
+    "topic": "Amazon S3",
     "tags": [
-      "Config",
       "S3",
       "EC2",
       "Security",
@@ -137,24 +136,23 @@
       "A": "Grant the vendor's AWS account a bucket ACL grant for the entire bucket",
       "B": "Create an IAM user for the vendor and share long-term access keys over email",
       "C": "Make the specific prefix publicly readable and share the S3 URL",
-      "D": "Create a cross-account IAM role that the vendor's AWS account assumes via sts:AssumeRole, using an ExternalId condition in the trust policy DESIGN RESILIENT ARCHITECTURES"
+      "D": "Create a cross-account IAM role that the vendor's AWS account assumes via sts:AssumeRole, using an ExternalId condition in the trust policy"
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "A cross-account role assumed via STS provides short-lived, auditable, revocable access without any static credentials, and requiring an ExternalId in the trust policy is the standard AWS-recommended mitigation for the confused-deputy problem when a third party is involved. Long-term access keys and public URLs both violate least privilege and credential-hygiene requirements, and a bucket ACL grant for the whole bucket is both overly broad (not scoped to the prefix) and lacks the auditability and temporary nature of assumed-role credentials. DESIGN RESILIENT ARCHITECTURES AWS SAA-C03 Practice Exam Page 21",
+    "explanation": "A cross-account role assumed via STS provides short-lived, auditable, revocable access without any static credentials, and requiring an ExternalId in the trust policy is the standard AWS-recommended mitigation for the confused-deputy problem when a third party is involved. Long-term access keys and public URLs both violate least privilege and credential-hygiene requirements, and a bucket ACL grant for the whole bucket is both overly broad (not scoped to the prefix) and lacks the auditability and temporary nature of assumed-role credentials.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 21.",
-      "B": "Option B (Create an IAM user for the vendor and share long-term access keys over email) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Make the specific prefix publicly readable and share the S3 URL) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Grant the vendor's AWS account a bucket ACL grant for the entire bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Using static IAM user credentials or long-lived access keys violates AWS security best practices; temporary IAM roles and AWS STS should always be preferred.",
+      "C": "This approach (Make the specific prefix publicly readable and share the S3 URL) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
     "tags": [
       "IAM",
       "S3",
-      "Security",
-      "High Availability"
+      "Security"
     ]
   },
   {
@@ -174,15 +172,15 @@
     ],
     "explanation": "Aurora Global Database uses dedicated, purpose-built storage-level replication to a secondary region with typical replication lag under one second and can be promoted to full read/write via managed failover in about a minute, matching both the RPO and RTO targets. Snapshot copies and S3 export replication have RPOs measured in hours, and a single-AZ instance has no cross-region resilience at all.",
     "whyOthersAreWrong": {
-      "A": "Option A (Cross-region S3 replication of database export files) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (A single-AZ RDS instance with automated backups) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (A nightly cross-region snapshot copy of an RDS MySQL instance) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Cross-region S3 replication of database export files) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (A single-AZ RDS instance with automated backups) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (A nightly cross-region snapshot copy of an RDS MySQL instance) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon Aurora.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon RDS.",
+    "topic": "Amazon RDS",
     "tags": [
-      "Aurora",
       "RDS",
+      "Aurora",
       "S3",
       "High Availability"
     ]
@@ -197,16 +195,16 @@
       "A": "Amazon EFS (Standard), which replicates data across multiple AZs automatically",
       "B": "Instance store volumes synced via a custom rsync script",
       "C": "A single EC2 instance running NFS server software in one AZ",
-      "D": "An EBS volume attached to all instances simultaneously AWS SAA-C03 Practice Exam Page 6"
+      "D": "An EBS volume attached to all instances simultaneously"
     },
     "correctAnswers": [
       "A"
     ],
     "explanation": "EFS Standard is a fully managed, POSIX-compliant NFS filesystem that automatically stores data redundantly across multiple Availability Zones, and can be mounted concurrently by many EC2 instances across those AZs. EBS volumes are AZ-scoped and, with rare exceptions, can only attach to one instance at a time (io2 Multi-Attach is limited to a single AZ), instance store is ephemeral and local to a single instance, and a single self-managed NFS server reintroduces a single point of failure.",
     "whyOthersAreWrong": {
-      "B": "Option B (Instance store volumes synced via a custom rsync script) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (A single EC2 instance running NFS server software in one AZ) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (An EBS volume attached to all instances simultaneously AWS SAA-C03 Practice Exam Page 6) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "This approach (Instance store volumes synced via a custom rsync script) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (A single EC2 instance running NFS server software in one AZ) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "Amazon EBS volumes are typically restricted to a single instance within a single Availability Zone and cannot provide shared multi-AZ file access."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EFS.",
     "topic": "Amazon EFS",
@@ -234,9 +232,9 @@
     ],
     "explanation": "Pilot light minimizes idle cost by keeping only the most critical, hard-to-quickly-recreate components (typically the database) running continuously, while compute and other resources are pre-staged as AMIs/templates and launched only when a disaster is declared -- this combination achieves a roughly 10-minute RTO at low steady-state cost. A full duplicate idle environment (warm standby/hot site) achieves faster RTO but at much higher standing cost, backup-and-restore alone has an RTO measured in hours, not minutes, and active-active multi-site is the most expensive and operationally complex option, well beyond what 'minimizing standing cost' calls for.",
     "whyOthersAreWrong": {
-      "A": "Option A (Rely solely on nightly backups with a manual restore process initiated after a disaster is declared) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Keep a full production-scale duplicate environment running idle in the DR region at all times) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "To-quickly-recreate components (typically the database) running continuously, while compute and other resources are pr."
+      "A": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "C": "This approach (Keep a full production-scale duplicate environment running idle in the DR region at all times) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Implement a fully active-active multi-site architecture serving live production traffic from both regions at all times) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Architecture to satisfy workload requirements.",
     "topic": "AWS Architecture",
@@ -262,14 +260,13 @@
     ],
     "explanation": "An Auto Scaling group spanning multiple AZs, using the ALB's health checks (which reflect application-level health, not just instance status), automatically terminates and replaces unhealthy instances and rebalances capacity across the remaining healthy AZs if one AZ fails -- directly meeting both requirements. A single large instance and a single-AZ ASG are both single points of failure, and manual intervention doesn't meet the 'automatically' requirement.",
     "whyOthersAreWrong": {
-      "A": "Option A (An Auto Scaling group confined to a single AZ for simplicity) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Manually launching replacement instances when CloudWatch alarms fire) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (A single large EC2 instance sized to handle peak load) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (An Auto Scaling group confined to a single AZ for simplicity) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "C": "This approach (A single large EC2 instance sized to handle peak load) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Elastic Load Balancing.",
-    "topic": "AWS Elastic Load Balancing",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
+    "topic": "Amazon EC2",
     "tags": [
-      "Elastic Load Balancing",
       "EC2",
       "CloudWatch"
     ]
@@ -289,11 +286,11 @@
     "correctAnswers": [
       "C"
     ],
-    "explanation": "DynamoDB Global Tables provide fully managed, multi-region, multi-active replication with automatic last-writer-wins conflict resolution, letting applications read and write to a local regional table with low latency while changes propagate to other regions automatically. A single-region table forces cross-region latency for distant users, and building custom Streams-based replication reinvents what Global Tables already provides, with none of the built-in conflict handling. AWS SAA-C03 Practice Exam Page 22",
+    "explanation": "DynamoDB Global Tables provide fully managed, multi-region, multi-active replication with automatic last-writer-wins conflict resolution, letting applications read and write to a local regional table with low latency while changes propagate to other regions automatically. A single-region table forces cross-region latency for distant users, and building custom Streams-based replication reinvents what Global Tables already provides, with none of the built-in conflict handling.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 22.",
-      "B": "Option B (DynamoDB Streams triggering a Lambda function that manually copies items to tables in other regions) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (A single-region DynamoDB table accessed cross-region by all users) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Cross-region replication of the DynamoDB table's underlying S3 export) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "D": "This approach (A single-region DynamoDB table accessed cross-region by all users) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -314,22 +311,21 @@
       "A": "Add a second EBS volume for redundancy",
       "B": "Take daily AMI snapshots and manually relaunch the instance if it fails",
       "C": "Move the application to a larger single instance in the same AZ",
-      "D": "Deploy the application across multiple AZs in an Auto Scaling group behind an Application Load Balancer AWS SAA-C03 Practice Exam Page 7"
+      "D": "Deploy the application across multiple AZs in an Auto Scaling group behind an Application Load Balancer"
     },
     "correctAnswers": [
       "D"
     ],
     "explanation": "Spreading identical instances across multiple AZs behind an ALB, managed by an Auto Scaling group, is the standard way to achieve AZ-level resilience with automatic traffic rerouting (the ALB simply stops sending traffic to unhealthy targets) and requires no application code changes -- only infrastructure changes. A larger single instance and an extra EBS volume don't address AZ-level failure at all, and manual AMI-based recovery is neither automatic nor fast.",
     "whyOthersAreWrong": {
-      "A": "Option A (Add a second EBS volume for redundancy) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Take daily AMI snapshots and manually relaunch the instance if it fails) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Move the application to a larger single instance in the same AZ) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Add a second EBS volume for redundancy) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "C": "This approach (Move the application to a larger single instance in the same AZ) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
     "tags": [
       "EC2",
-      "Elastic Load Balancing",
       "High Availability"
     ]
   },
@@ -350,9 +346,9 @@
     ],
     "explanation": "If the visibility timeout is shorter than actual processing time, the message becomes visible to other consumers again before the original worker finishes, leading to duplicate or interrupted processing; increasing the timeout to comfortably exceed worst-case processing time (and using a dead-letter queue with a maxReceiveCount to catch messages that fail repeatedly for a real reason, such as a poison-pill payload) is the standard fix. Decreasing the timeout would make the problem worse, SNS is a pub/sub service with no comparable visibility-timeout/processing model, and long vs. short polling affects empty-response behavior, not message processing safety.",
     "whyOthersAreWrong": {
-      "A": "Option A (Decrease the visibility timeout to make failures surface faster) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Switch from SQS to SNS for the same workload) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Switch from long polling to short polling on the queue) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Decrease the visibility timeout to make failures surface faster) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Amazon SNS is a pub/sub fan-out notification service and lacks message queuing, buffering, and persistent backpressure handling on its own.",
+      "C": "This approach (Switch from long polling to short polling on the queue) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
     "topic": "Amazon SQS",
@@ -379,9 +375,9 @@
     ],
     "explanation": "Backup and restore is the lowest-cost DR pattern because nothing runs continuously in the DR region -- only backups (snapshots, AMIs, replicated data) are maintained, and resources are provisioned from those backups only after a disaster is declared. This comfortably meets an RTO of hours and RPO of 24 hours. Pilot light, warm standby, and active-active all involve progressively more continuously running infrastructure and cost, which is unnecessary when the RTO/RPO targets are this relaxed.",
     "whyOthersAreWrong": {
-      "B": "Option B (Pilot light with continuously running compute in the DR region) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Warm standby with a scaled-down but always-running copy of the full stack) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "This comfortably meets an RTO of hours and RPO of 24 hours. Pilot light, warm standby, and activ."
+      "B": "This approach (Pilot light with continuously running compute in the DR region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "This approach (Warm standby with a scaled-down but always-running copy of the full stack) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "Provisioning full multi-Region infrastructure introduces substantial ongoing compute costs and cross-Region data replication complexity that exceed the workload's constraints."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
     "topic": "Amazon S3",
@@ -410,9 +406,9 @@
     ],
     "explanation": "Multi-AZ provides high availability through a synchronous standby that RDS automatically fails over to during an AZ outage or instance failure, while read replicas provide horizontal read scalability by offloading read-only queries to one or more asynchronously replicated copies -- together they address both stated goals. Manual snapshots are a backup/DR mechanism, not an availability or scaling mechanism; increasing storage size affects capacity, not availability or read throughput; and enhanced monitoring is purely observability, with no effect on resilience or scaling.",
     "whyOthersAreWrong": {
-      "C": "Option C (Increase the allocated storage size of the primary instance) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Only queries to one or more asynchronously replicated copies -- together they address both stated goals. Manual snapshots are a backup/DR mechanism, not an availability or scaling mechanism; increasing storage size affects capacity, not availability or read throughput; and enhanced monitoring is purely observability, with no effect on resilience or scaling.",
-      "E": "Option E (Enable enhanced monitoring) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "C": "This approach (Increase the allocated storage size of the primary instance) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "E": "This approach (Enable enhanced monitoring) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
     "topic": "Amazon RDS",
@@ -436,18 +432,17 @@
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Failover routing is purpose-built for exactly this active-passive pattern: Route 53 continuously monitors the primary record's health check and automatically shifts all DNS answers to the secondary record when the primary is unhealthy, then reverts automatically once the health check passes again. Simple routing has no failover logic at all, weighted routing distributes a fixed proportion of traffic regardless of health, and geolocation routing selects a target based on the requester's location, not endpoint health. AWS SAA-C03 Practice Exam Page 23",
+    "explanation": "Failover routing is purpose-built for exactly this active-passive pattern: Route 53 continuously monitors the primary record's health check and automatically shifts all DNS answers to the secondary record when the primary is unhealthy, then reverts automatically once the health check passes again. Simple routing has no failover logic at all, weighted routing distributes a fixed proportion of traffic regardless of health, and geolocation routing selects a target based on the requester's location, not endpoint health.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 23.",
-      "B": "Option B (Route 53 geolocation routing policy) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Route 53 simple routing policy pointing only to the primary region) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Route 53 weighted routing policy with a fixed 50/50 split) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations.",
+      "C": "This approach (Route 53 simple routing policy pointing only to the primary region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Route 53.",
     "topic": "Amazon Route 53",
     "tags": [
       "Route 53",
       "IAM",
-      "Elastic Load Balancing",
       "High Availability"
     ]
   },
@@ -461,23 +456,24 @@
       "A": "Disable retries entirely so failures surface immediately",
       "B": "Increase the Lambda function's memory allocation only",
       "C": "Log failures to CloudWatch Logs only and review the log group manually every night",
-      "D": "Configure an SQS queue as an on-failure (dead-letter) destination for the Lambda function, with an appropriate retry/maxReceiveCount configuration AWS SAA-C03 Practice Exam Page 8"
+      "D": "Configure an SQS queue as an on-failure (dead-letter) destination for the Lambda function, with an appropriate retry/maxReceiveCount configuration"
     },
     "correctAnswers": [
       "D"
     ],
     "explanation": "Configuring a dead-letter queue (or an on-failure Lambda destination) captures events that exhaust their retry attempts, preserving them for later inspection instead of silently dropping them, while Lambda's built-in asynchronous invocation retries handle the 'retried up to a threshold' part automatically. Increasing memory doesn't address a downstream dependency timeout, disabling retries increases the chance of losing events on transient failures, and manually scanning logs is not a durable capture mechanism and doesn't scale operationally.",
     "whyOthersAreWrong": {
-      "A": "Option A (Disable retries entirely so failures surface immediately) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Increase the Lambda function's memory allocation only) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Log failures to CloudWatch Logs only and review the log group manually every night) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "This approach (Disable retries entirely so failures surface immediately) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "This approach (Increase the Lambda function's memory allocation only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Lambda.",
     "topic": "AWS Lambda",
     "tags": [
       "Lambda",
       "SQS",
-      "CloudWatch"
+      "CloudWatch",
+      "Glue"
     ]
   },
   {
@@ -497,9 +493,9 @@
     ],
     "explanation": "A Site-to-Site VPN over the internet, configured as a backup route (with BGP path preference so DX is preferred when healthy), gives an independent physical path that does not depend on the DX connection at all, providing resilience without the lead time and cost of a second physical DX circuit. Increasing bandwidth or adding another VIF on the same physical connection does nothing to protect against failure of that connection itself, and disabling BGP would actually remove the dynamic routing needed for automatic failover.",
     "whyOthersAreWrong": {
-      "B": "Option B (Increase the bandwidth of the existing Direct Connect connection) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Add a second virtual interface (VIF) on the same physical DX connection) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Disable BGP on the DX connection to simplify failover) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
+      "C": "This approach (Add a second virtual interface (VIF) on the same physical DX connection) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "This approach (Disable BGP on the DX connection to simplify failover) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Direct Connect.",
     "topic": "AWS Direct Connect",
@@ -526,17 +522,17 @@
     ],
     "explanation": "Aurora's cluster (writer) endpoint is a DNS name that Aurora automatically repoints to whichever instance currently holds the writer role; when a failover occurs, Aurora detects the writer failure, promotes a replica (typically in tens of seconds), and updates the writer endpoint's DNS -- so applications connecting to the writer endpoint need no configuration change. Pointing to an instance-specific endpoint or a hardcoded IP defeats this automatic behavior, and disabling automatic failover directly contradicts the stated requirement for minimal downtime.",
     "whyOthersAreWrong": {
-      "B": "Option B (Disable automatic failover so the team can control promotion timing manually) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Use a hardcoded IP address for the database connection) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Manually update the application's connection string to point to a specific replica's instance endpoint after a failure) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "C": "This approach (Use a hardcoded IP address for the database connection) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "D": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Aurora.",
     "topic": "Amazon Aurora",
     "tags": [
       "Aurora",
       "IAM",
-      "Route 53",
       "RDS",
+      "Route 53",
       "High Availability"
     ]
   },
@@ -557,9 +553,9 @@
     ],
     "explanation": "S3 Versioning preserves every version of an object so any prior state can be restored after an accidental overwrite or delete, and MFA Delete adds a requirement for MFA authentication to permanently delete an object version or to disable versioning itself -- directly matching the 'secondary authorization' requirement, since it can't be bypassed by IAM permissions alone. Versioning without MFA Delete still allows an admin with sufficient IAM permissions to permanently purge versions. Transfer Acceleration is unrelated, and manual weekly exports don't provide recovery to an arbitrary point in time between exports.",
     "whyOthersAreWrong": {
-      "A": "Option A (Enable S3 Versioning only, with default settings) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "B": "Option B (Take manual point-in-time exports of the bucket to a separate account weekly) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "C": "Option C (Enable S3 Transfer Acceleration) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "S3 Versioning preserves previous versions of modified or deleted objects, but does not prevent public exposure or enforce bucket access controls.",
+      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
+      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
     "topic": "Amazon S3",
@@ -579,20 +575,21 @@
       "A": "An ElastiCache for Memcached cluster, since Memcached is simpler to operate",
       "B": "A single ElastiCache for Redis node with no replicas",
       "C": "An ElastiCache for Redis replication group with Multi-AZ and automatic failover enabled",
-      "D": "Store sessions in the application server's local memory instead AWS SAA-C03 Practice Exam Page 9"
+      "D": "Store sessions in the application server's local memory instead"
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "A Redis replication group with Multi-AZ enabled maintains at least one read replica in a different AZ and will automatically detect a primary node failure and promote a replica to primary with minimal data loss and no manual steps -- this is the only option here that includes both replication and automated failover. A single node with no replicas has no failover target at all, Memcached has no built-in replication or persistence model comparable to Redis, and local server memory means sessions are lost the moment that specific server is replaced or fails. AWS SAA-C03 Practice Exam Page 24",
+    "explanation": "A Redis replication group with Multi-AZ enabled maintains at least one read replica in a different AZ and will automatically detect a primary node failure and promote a replica to primary with minimal data loss and no manual steps -- this is the only option here that includes both replication and automated failover. A single node with no replicas has no failover target at all, Memcached has no built-in replication or persistence model comparable to Redis, and local server memory means sessions are lost the moment that specific server is replaced or fails.",
     "whyOthersAreWrong": {
-      "A": "C03 Practice Exam Page 24.",
-      "B": "Option B (A single ElastiCache for Redis node with no replicas) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints.",
-      "D": "Option D (Store sessions in the application server's local memory instead AWS SAA-C03 Practice Exam Page 9) is suboptimal because it fails to satisfy the stated operational, architectural, or cost constraints."
+      "A": "Introducing an in-memory caching cluster adds architectural complexity and ongoing cache invalidation overhead without solving persistent storage durability requirements.",
+      "B": "Introducing an in-memory caching cluster adds architectural complexity and ongoing cache invalidation overhead without solving persistent storage durability requirements.",
+      "D": "This approach (Store sessions in the application server's local memory instead) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
-    "topic": "Amazon RDS",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ElastiCache.",
+    "topic": "Amazon ElastiCache",
     "tags": [
+      "ElastiCache",
       "RDS",
       "High Availability"
     ]
