@@ -1,0 +1,467 @@
+[
+  {
+    "id": "saa-1601",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates an internal analytics API on Amazon EC2 in a private subnet. A partner company in a separate AWS account needs to consume this API privately, without traversing the public internet and without VPC peering that would expose the entire VPC CIDR to the partner. The partner should reach only the specific service endpoint. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Expose the API behind a Network Load Balancer and publish it as an AWS PrivateLink endpoint service that the partner consumes via an interface endpoint",
+      "B": "Establish VPC peering between the two accounts' VPCs",
+      "C": "Attach both VPCs to a Transit Gateway and share full routes",
+      "D": "Place the API behind a public Application Load Balancer restricted by security group"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS PrivateLink lets a provider publish a service behind a Network Load Balancer as a VPC endpoint service. The partner creates an interface endpoint in their own VPC to reach only that specific service over private connectivity. No CIDR ranges are exposed and traffic stays on the AWS network, satisfying the requirement to expose only the single endpoint privately across accounts.",
+    "whyOthersAreWrong": {
+      "B": "VPC peering connects entire VPC route domains, exposing broader CIDR ranges rather than only the specific service, contradicting the requirement.",
+      "C": "Transit Gateway with full routes similarly interconnects networks broadly rather than exposing a single service endpoint.",
+      "D": "A public ALB routes traffic over the internet, which the requirement explicitly prohibits."
+    },
+    "learningObjective": "Use AWS PrivateLink to expose a single service privately across accounts without broad network exposure.",
+    "topic": "AWS PrivateLink",
+    "tags": ["PrivateLink", "VPC", "cross-account", "networking", "security"]
+  },
+  {
+    "id": "saa-1602",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a read-heavy reporting workload against an Amazon RDS for PostgreSQL primary instance. During business hours, complex read queries from a business-intelligence tool slow down the transactional application sharing the same instance. The team wants to offload the reporting reads without changing the transactional application and with minimal management effort. What should the solutions architect recommend?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create one or more RDS read replicas and point the BI tool at a replica endpoint",
+      "B": "Convert the instance to Multi-AZ and direct BI queries to the standby",
+      "C": "Increase the primary instance size to the largest available type",
+      "D": "Enable RDS storage auto scaling"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "RDS read replicas asynchronously replicate from the primary and serve read-only traffic. Pointing the BI tool at a read replica offloads the heavy reporting queries from the primary, protecting transactional performance. The transactional application continues to use the primary unchanged, and read replicas are a managed, low-effort feature.",
+    "whyOthersAreWrong": {
+      "B": "The Multi-AZ standby is not readable; it exists only for failover, so it cannot serve BI queries.",
+      "C": "A larger primary may delay contention but does not isolate reporting load from transactional load and increases cost for all workloads.",
+      "D": "Storage auto scaling only grows disk space and does nothing to offload read query load."
+    },
+    "learningObjective": "Offload read-heavy reporting from a transactional RDS primary using read replicas.",
+    "topic": "Amazon RDS",
+    "tags": ["RDS", "read-replica", "performance", "scaling"]
+  },
+  {
+    "id": "saa-1603",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must transfer 80 TB of on-premises data to Amazon S3 within one week. The site has a 100 Mbps internet uplink that is also used for daily operations, so only a fraction of the bandwidth is available for the transfer. The team wants the fastest reliable method that does not saturate the production link. Which approach should they use?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Order an AWS Snowball Edge device, load the data locally, and ship it to AWS",
+      "B": "Upload the data directly to S3 over the internet using multipart upload",
+      "C": "Use S3 Transfer Acceleration over the existing internet link",
+      "D": "Set up AWS DataSync over the existing internet link"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "At 100 Mbps (shared), transferring 80 TB over the internet would take far longer than a week and would compete with production traffic. AWS Snowball Edge lets the team copy the data to a physical device locally at LAN speed and ship it to AWS for import into S3, avoiding the constrained uplink entirely and meeting the one-week deadline reliably.",
+    "whyOthersAreWrong": {
+      "B": "Direct multipart upload still relies on the constrained shared link and would take many weeks for 80 TB, missing the deadline and saturating the link.",
+      "C": "Transfer Acceleration optimizes the path to S3 but is still bounded by the limited local uplink bandwidth.",
+      "D": "DataSync accelerates transfers but still uses the same limited internet link, so it cannot move 80 TB within the deadline without saturating production traffic."
+    },
+    "learningObjective": "Select an offline data transfer method when network bandwidth and deadlines make online transfer infeasible.",
+    "topic": "AWS Snow Family",
+    "tags": ["Snowball", "data-migration", "S3", "bandwidth"]
+  },
+  {
+    "id": "saa-1604",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A serverless application uses Amazon API Gateway backed by AWS Lambda. During marketing campaigns, request volume spikes suddenly and the team observes elevated latency caused by database connection exhaustion on the backing Amazon RDS instance as many concurrent Lambda executions each open a connection. Which solution best mitigates connection exhaustion with minimal code changes?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use Amazon RDS Proxy to pool and share database connections across Lambda invocations",
+      "B": "Increase the RDS instance's max_connections parameter to a very high value",
+      "C": "Set Lambda reserved concurrency to unlimited to handle more requests",
+      "D": "Move the Lambda functions into the RDS subnet to reduce latency"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon RDS Proxy maintains a pool of database connections and multiplexes many Lambda invocations over a smaller set of persistent connections. This prevents the connection storms caused by high Lambda concurrency, reducing connection exhaustion and latency with minimal application changes because the function simply connects to the proxy endpoint.",
+    "whyOthersAreWrong": {
+      "B": "Raising max_connections consumes significant memory per connection and does not scale to thousands of concurrent Lambdas; it often destabilizes the database.",
+      "C": "Unlimited concurrency increases, not decreases, the number of simultaneous connections, worsening exhaustion.",
+      "D": "Placing Lambdas in the same subnet does not change how many connections are opened and does not solve exhaustion."
+    },
+    "learningObjective": "Use RDS Proxy to manage database connection pooling for high-concurrency serverless workloads.",
+    "topic": "Amazon RDS",
+    "tags": ["RDS-Proxy", "Lambda", "connections", "performance", "serverless"]
+  },
+  {
+    "id": "saa-1605",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company needs to grant a third-party monitoring vendor read-only access to CloudWatch metrics in its AWS account. The vendor operates in its own AWS account. Security requires that the access uses temporary credentials, can be revoked centrally, and does not involve creating long-lived IAM user access keys. Which approach should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an IAM role with a trust policy allowing the vendor's account to assume it, scoped to read-only CloudWatch permissions and an external ID",
+      "B": "Create an IAM user for the vendor and share the access key and secret key",
+      "C": "Add the vendor's account root user to the account's administrators group",
+      "D": "Embed static credentials in a shared configuration file in S3"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Cross-account access is best granted with an IAM role. A trust policy allows the vendor's account to assume the role, and attaching a read-only CloudWatch policy enforces least privilege. Assumed roles issue temporary credentials via STS, and access can be revoked centrally by editing or deleting the role. Requiring an external ID protects against the confused-deputy problem, satisfying all requirements without long-lived keys.",
+    "whyOthersAreWrong": {
+      "B": "IAM user access keys are long-lived static credentials, which the security requirements prohibit.",
+      "C": "Adding the vendor to administrators grossly violates least privilege and is unrelated to safe cross-account access.",
+      "D": "Storing static credentials in a shared file is insecure, long-lived, and not centrally revocable."
+    },
+    "learningObjective": "Grant secure, temporary, least-privilege cross-account access using IAM roles and external IDs.",
+    "topic": "AWS IAM",
+    "tags": ["IAM", "cross-account", "assume-role", "security", "least-privilege"]
+  },
+  {
+    "id": "saa-1606",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company stores application logs in Amazon S3. Analysts occasionally run ad hoc SQL queries against months of log data but do not query it daily. The team wants a query solution with no infrastructure to provision, paying only for data scanned, and wants to reduce query cost over time. Which combination of choices meets these goals? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use Amazon Athena to query the log data directly in S3",
+      "B": "Convert the logs to a columnar format such as Apache Parquet and partition them",
+      "C": "Load all logs into an always-on Amazon Redshift cluster",
+      "D": "Run the queries on an EMR cluster kept running continuously",
+      "E": "Import the logs into an RDS instance and query with SQL"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Amazon Athena is serverless, requires no provisioning, and charges per amount of data scanned, matching the ad hoc, infrequent query pattern. Converting logs to a columnar, partitioned format like Parquet lets Athena read only the relevant columns and partitions, drastically reducing the data scanned and therefore the cost of each query over time. Together these meet the no-infrastructure and cost-reduction goals.",
+    "whyOthersAreWrong": {
+      "C": "An always-on Redshift cluster incurs continuous cost even when idle, which contradicts the infrequent-query, pay-per-use goal.",
+      "D": "A continuously running EMR cluster also incurs idle cost and adds significant operational overhead.",
+      "E": "Loading logs into RDS requires provisioning and managing a database and is not a pay-per-scan analytics solution."
+    },
+    "learningObjective": "Design a serverless, cost-efficient ad hoc query solution over S3 log data.",
+    "topic": "Amazon Athena",
+    "tags": ["Athena", "S3", "Parquet", "cost-optimization", "analytics"]
+  },
+  {
+    "id": "saa-1607",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer-facing website on EC2 behind an Application Load Balancer. It needs to serve traffic only over HTTPS using a certificate that is automatically renewed, and it wants to offload TLS termination from the instances. The domain is managed in Amazon Route 53. Which combination of actions accomplishes this with the least operational overhead? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Provision a public certificate in AWS Certificate Manager (ACM) for the domain",
+      "B": "Attach the ACM certificate to an HTTPS listener on the Application Load Balancer",
+      "C": "Install and manually renew a certificate on each EC2 instance",
+      "D": "Terminate TLS on the instances and forward plaintext to the ALB",
+      "E": "Use a self-signed certificate stored in an S3 bucket"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "AWS Certificate Manager issues free public TLS certificates and, when validated via DNS in Route 53, renews them automatically with no manual effort. Attaching that ACM certificate to an HTTPS listener on the ALB terminates TLS at the load balancer, offloading it from the EC2 instances. This delivers automatic renewal and TLS offload with minimal operational overhead.",
+    "whyOthersAreWrong": {
+      "C": "Manually installing and renewing certificates on each instance is high operational overhead and error-prone, the opposite of the requirement.",
+      "D": "Terminating TLS on the instances does not offload it to the ALB and forwarding plaintext to the ALB is the wrong direction.",
+      "E": "A self-signed certificate is not trusted by browsers and does not auto-renew, failing the public HTTPS requirement."
+    },
+    "learningObjective": "Configure automated, offloaded TLS termination for a web application using ACM and an ALB.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ACM", "ALB", "TLS", "Route53", "security"]
+  },
+  {
+    "id": "saa-1608",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company processes uploaded video files. When a file lands in S3, it must run a workflow with multiple sequential steps that include waiting for a long-running transcoding job, branching based on output, and retrying failed steps. The team wants a managed orchestration service that visualizes the workflow state and handles error handling and retries declaratively. Which service should orchestrate the workflow?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Step Functions",
+      "B": "Amazon SQS with a single worker",
+      "C": "A cron-driven script on EC2 that polls for state",
+      "D": "Amazon SNS with multiple subscribers"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Step Functions is a managed workflow orchestration service that models multi-step processes as state machines with built-in sequencing, branching (Choice states), waiting for long-running tasks (callback patterns or wait states), and declarative retry/catch error handling. It provides a visual representation of execution state, matching all stated requirements.",
+    "whyOthersAreWrong": {
+      "B": "A single SQS queue and worker provides message buffering but no built-in multi-step orchestration, branching, or visualized state.",
+      "C": "A cron-driven polling script requires custom code for sequencing, branching, and retries and adds operational overhead.",
+      "D": "SNS fans out notifications but does not orchestrate sequential, branching, retryable workflows."
+    },
+    "learningObjective": "Select a managed orchestration service for multi-step workflows with branching and error handling.",
+    "topic": "AWS Step Functions",
+    "tags": ["Step-Functions", "orchestration", "workflow", "serverless"]
+  },
+  {
+    "id": "saa-1609",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application writes infrequently accessed but latency-sensitive metadata to Amazon S3 and reads it milliseconds later. Occasionally the application reads an object immediately after overwriting it and must always receive the latest version. The team is concerned about consistency. What is true about S3 behavior relevant to this design?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "S3 provides strong read-after-write consistency for new objects and overwrites, so reads immediately return the latest data",
+      "B": "S3 only guarantees eventual consistency, so the application must add a caching layer to read the latest version",
+      "C": "S3 requires enabling a consistency feature per bucket to get strong consistency",
+      "D": "S3 strong consistency applies only to objects stored in S3 Standard-IA"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon S3 provides strong read-after-write consistency automatically for all GET, PUT, and LIST operations, including overwrites and deletes, at no additional cost and with no configuration. A read issued immediately after a successful write returns the latest version, so the application's requirement is met natively by S3.",
+    "whyOthersAreWrong": {
+      "B": "S3 is no longer eventually consistent for these operations; strong consistency is the default, so an extra caching layer is unnecessary for correctness.",
+      "C": "Strong consistency is automatic and does not require enabling any per-bucket feature.",
+      "D": "Strong consistency applies across all S3 storage classes, not only Standard-IA."
+    },
+    "learningObjective": "Understand S3 strong read-after-write consistency and its impact on application design.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "consistency", "storage"]
+  },
+  {
+    "id": "saa-1610",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs microservices on Amazon ECS on Fargate behind an Application Load Balancer. Different services are addressed by path prefixes such as /orders and /inventory. The team wants to route requests to the correct target group based on the URL path and to run each service as an independent, scalable target. Which ALB feature enables this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Path-based routing rules that forward to different target groups",
+      "B": "A separate Network Load Balancer for each microservice",
+      "C": "Cross-zone load balancing",
+      "D": "Sticky sessions keyed by path"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "The Application Load Balancer supports content-based routing, including path-based rules. Listener rules can match patterns like /orders/* and /inventory/* and forward each to a dedicated target group backing the corresponding ECS service. Each service scales independently behind its own target group, satisfying the routing and scalability requirements with a single ALB.",
+    "whyOthersAreWrong": {
+      "B": "NLB operates at layer 4 and cannot route on URL paths; using one per service adds cost and complexity unnecessarily.",
+      "C": "Cross-zone load balancing distributes traffic evenly across AZs but does not route by URL path.",
+      "D": "Sticky sessions affect which target a client returns to, not which service a path is routed to."
+    },
+    "learningObjective": "Use ALB path-based routing to direct traffic to independent microservice target groups.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ALB", "path-based-routing", "ECS", "microservices"]
+  },
+  {
+    "id": "saa-1611",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's EC2 Auto Scaling group launches instances that must join a domain and install monitoring agents at boot. Currently the team bakes everything into a custom AMI, but AMI rebuilds are slow and frequent configuration changes are needed. They want faster instance launches while keeping configuration flexible, and to minimize the frequency of AMI rebuilds. Which approach best balances these needs?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Bake stable, slow-changing components into a base AMI and apply frequently changing configuration at boot via user data or a configuration management tool",
+      "B": "Rebuild the AMI on every configuration change and redeploy the launch template",
+      "C": "Install all software manually after each instance launches",
+      "D": "Store configuration in an S3 bucket and require operators to apply it by hand"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A layered approach bakes stable, slow-changing dependencies into a base (golden) AMI to keep launches fast, while applying frequently changing configuration dynamically at boot through user data or a configuration management tool. This reduces AMI rebuild frequency, keeps configuration flexible, and preserves quick, consistent scaling launches.",
+    "whyOthersAreWrong": {
+      "B": "Rebuilding the AMI on every change is exactly the slow process the team wants to reduce.",
+      "C": "Manual installation after launch breaks auto scaling automation and cannot keep pace with scaling events.",
+      "D": "Requiring operators to apply configuration by hand does not work for automated scaling and adds operational burden."
+    },
+    "learningObjective": "Balance golden AMIs with dynamic configuration to optimize launch speed and maintainability in Auto Scaling.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": ["Auto-Scaling", "AMI", "user-data", "operational-excellence"]
+  },
+  {
+    "id": "saa-1612",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must encrypt data at rest in Amazon S3 and requires that the encryption keys be created and controlled by the company, with the ability to audit every key usage and to disable a key immediately to make data inaccessible. The team wants AWS to handle the cryptographic operations without managing key material outside AWS. Which encryption approach meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Server-side encryption with an AWS KMS customer managed key (SSE-KMS)",
+      "B": "Server-side encryption with Amazon S3 managed keys (SSE-S3)",
+      "C": "Client-side encryption with keys stored on-premises only",
+      "D": "No encryption, relying on bucket policies to restrict access"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "SSE-KMS with a customer managed key lets the company create and control the key, define its policy, and disable or schedule deletion to render data inaccessible. All key usage is logged in AWS CloudTrail for auditing. AWS performs the cryptographic operations, so the company does not manage raw key material externally. This satisfies control, auditability, and immediate revocation requirements.",
+    "whyOthersAreWrong": {
+      "B": "SSE-S3 keys are fully managed by AWS; the customer cannot control, disable, or granularly audit individual key usage.",
+      "C": "Client-side encryption with on-premises keys means the company manages key material outside AWS, contradicting the requirement.",
+      "D": "No encryption fails the encrypt-at-rest requirement entirely; bucket policies control access, not encryption."
+    },
+    "learningObjective": "Choose an S3 encryption option that provides customer key control, auditability, and revocation.",
+    "topic": "AWS KMS",
+    "tags": ["KMS", "S3", "encryption", "security", "audit"]
+  },
+  {
+    "id": "saa-1613",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a latency-sensitive TCP-based application that must handle millions of requests per second with ultra-low latency and preserve the client source IP for the backend. It also needs a static IP address per Availability Zone that clients can whitelist. Which load balancer is most appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Network Load Balancer",
+      "B": "Application Load Balancer",
+      "C": "Gateway Load Balancer",
+      "D": "Classic Load Balancer"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "The Network Load Balancer operates at layer 4, is designed for millions of requests per second at ultra-low latency, preserves the client source IP to the target by default, and provides a static IP per Availability Zone (with optional Elastic IPs) that clients can whitelist. This matches every requirement.",
+    "whyOthersAreWrong": {
+      "B": "The ALB is a layer-7 load balancer that does not provide static IPs per AZ by default and adds HTTP-layer processing latency not needed for raw TCP.",
+      "C": "Gateway Load Balancer is for inserting third-party virtual appliances (firewalls/IDS), not for general TCP application load balancing.",
+      "D": "The Classic Load Balancer is a legacy option lacking the performance and static IP characteristics of the NLB."
+    },
+    "learningObjective": "Select the load balancer that provides layer-4 performance, source IP preservation, and static IPs.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["NLB", "load-balancing", "performance", "networking"]
+  },
+  {
+    "id": "saa-1614",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to reduce the cost of an Amazon S3 bucket that holds objects with unpredictable and changing access patterns. Some objects are accessed frequently for a while and then rarely, but the pattern differs per object and cannot be predicted in advance. The team wants automatic cost optimization without performance impact on frequently accessed objects and without operational effort. Which storage class should they choose?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "S3 Intelligent-Tiering",
+      "B": "S3 Standard-Infrequent Access",
+      "C": "S3 One Zone-Infrequent Access",
+      "D": "S3 Glacier Flexible Retrieval"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "S3 Intelligent-Tiering automatically moves each object between access tiers based on its individual, observed access pattern, with no retrieval fees and no performance impact on frequently accessed data. Because the access patterns are unpredictable and vary per object, Intelligent-Tiering optimizes cost automatically without manual lifecycle rules or operational effort.",
+    "whyOthersAreWrong": {
+      "B": "Standard-IA charges retrieval fees and is best when access is known to be infrequent; unpredictable frequent access could incur higher costs.",
+      "C": "One Zone-IA stores data in a single AZ, reducing durability, and also assumes infrequent access with retrieval fees.",
+      "D": "Glacier Flexible Retrieval imposes retrieval latency and fees, unsuitable for objects that may be accessed frequently at times."
+    },
+    "learningObjective": "Select the S3 storage class that automatically optimizes cost for unpredictable per-object access patterns.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "Intelligent-Tiering", "cost-optimization", "storage-classes"]
+  },
+  {
+    "id": "saa-1615",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company deploys an application across three Availability Zones using an Auto Scaling group behind an Application Load Balancer. During a partial AZ impairment, some instances become unhealthy but the ALB keeps sending them traffic, causing errors. The team wants the ALB to stop routing to unhealthy instances and Auto Scaling to replace them automatically. Which combination of settings achieves this? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure ALB target group health checks so unhealthy targets are removed from rotation",
+      "B": "Set the Auto Scaling group health check type to ELB so it replaces instances the ALB marks unhealthy",
+      "C": "Disable health checks to avoid removing instances during the impairment",
+      "D": "Use only EC2 status checks and ignore ALB health",
+      "E": "Manually terminate unhealthy instances during each incident"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "ALB target group health checks detect unhealthy targets and stop routing traffic to them, eliminating the errors. Setting the Auto Scaling group health check type to ELB makes Auto Scaling consider a target unhealthy when the ALB does, so it automatically terminates and replaces those instances. Together these provide automatic traffic removal and self-healing replacement.",
+    "whyOthersAreWrong": {
+      "C": "Disabling health checks would keep routing to broken instances, worsening errors.",
+      "D": "Relying only on EC2 status checks misses application-level failures the ALB detects, so unhealthy instances keep receiving traffic.",
+      "E": "Manual termination is slow, error-prone operational toil and not an automatic solution."
+    },
+    "learningObjective": "Combine ALB health checks with ELB-type Auto Scaling health checks for automatic recovery.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": ["Auto-Scaling", "ALB", "health-checks", "reliability"]
+  },
+  {
+    "id": "saa-1616",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to centralize outbound internet access for dozens of VPCs across multiple accounts to simplify management and reduce the number of NAT gateways it operates. All VPCs must retain private connectivity to each other and share centralized egress. Which architecture best achieves this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Connect all VPCs to a Transit Gateway and route outbound internet traffic through NAT gateways in a shared egress VPC",
+      "B": "Create a NAT gateway in every VPC and use VPC peering between all VPCs",
+      "C": "Attach an internet gateway to each VPC and assign public IPs",
+      "D": "Use PrivateLink endpoints in each VPC for internet access"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A Transit Gateway provides scalable hub-and-spoke connectivity among many VPCs and accounts. Routing all VPCs' outbound internet traffic through NAT gateways in a single shared egress VPC centralizes egress, reduces the number of NAT gateways, and simplifies management, while the Transit Gateway maintains private inter-VPC connectivity. This meets both the centralization and inter-VPC connectivity requirements.",
+    "whyOthersAreWrong": {
+      "B": "A NAT gateway in every VPC is exactly the sprawl the company wants to reduce, and full-mesh peering does not scale well across dozens of VPCs.",
+      "C": "Internet gateways with public IPs remove the private-network requirement and do not centralize egress.",
+      "D": "PrivateLink provides access to specific services, not general outbound internet egress."
+    },
+    "learningObjective": "Design centralized VPC egress using Transit Gateway and a shared NAT egress VPC.",
+    "topic": "AWS Transit Gateway",
+    "tags": ["Transit-Gateway", "NAT-gateway", "centralized-egress", "networking", "multi-account"]
+  },
+  {
+    "id": "saa-1617",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an application that must comply with a requirement to store data only in a specific country. The workload uses Amazon S3 and Amazon RDS. Auditors require assurance that no data is stored or replicated outside the approved AWS Region. Which combination of controls provides this assurance? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Create S3 buckets and RDS instances only in the approved Region and avoid enabling cross-Region replication",
+      "B": "Apply a service control policy that denies actions in all Regions except the approved Region",
+      "C": "Enable S3 Cross-Region Replication to a second Region for durability",
+      "D": "Use a global service endpoint and let AWS choose the Region automatically",
+      "E": "Store data in an S3 bucket configured for multi-Region access points across several Regions"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Creating resources only in the approved Region and not enabling cross-Region replication keeps data within the country boundary. An SCP that denies all actions outside the approved Region provides a preventative, organization-wide guardrail auditors can rely on, ensuring principals cannot create or replicate resources elsewhere. Together these enforce and demonstrate data residency.",
+    "whyOthersAreWrong": {
+      "C": "Cross-Region Replication copies data to another Region, violating the data residency requirement.",
+      "D": "Letting AWS choose a Region provides no residency guarantee and could place data outside the approved country.",
+      "E": "Multi-Region access points distribute data across Regions, which breaks the single-country residency requirement."
+    },
+    "learningObjective": "Enforce and demonstrate data residency using Region-scoped resources and service control policies.",
+    "topic": "AWS Organizations",
+    "tags": ["data-residency", "SCP", "S3", "compliance", "governance"]
+  },
+  {
+    "id": "saa-1618",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company hosts a REST API on Amazon API Gateway. It wants to protect the backend from sudden traffic surges by limiting the number of requests per second per client and providing tiered access with usage quotas for different partners. Which API Gateway features should be used? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure usage plans with API keys to enforce per-client quotas",
+      "B": "Configure throttling limits (rate and burst) on the API stage or method",
+      "C": "Place a Network Load Balancer in front of API Gateway to limit connections",
+      "D": "Enable S3 Transfer Acceleration on the API",
+      "E": "Use Route 53 weighted routing to drop excess requests"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "API Gateway usage plans, combined with API keys issued to partners, enforce per-client request quotas and tiered access levels. Throttling settings (steady-state rate and burst) at the stage or method level protect the backend from surges by rejecting requests above the configured limits. Together they deliver per-client rate limiting and tiered quotas.",
+    "whyOthersAreWrong": {
+      "C": "A Network Load Balancer does not perform per-client API request quota enforcement and is not how API Gateway throttling is implemented.",
+      "D": "S3 Transfer Acceleration is for S3 uploads, unrelated to API rate limiting.",
+      "E": "Route 53 weighted routing distributes DNS responses; it cannot enforce per-client request rate limits or quotas."
+    },
+    "learningObjective": "Use API Gateway usage plans and throttling to enforce per-client quotas and protect backends.",
+    "topic": "Amazon API Gateway",
+    "tags": ["API-Gateway", "throttling", "usage-plans", "rate-limiting"]
+  },
+  {
+    "id": "saa-1619",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's data science team needs to share a large, read-only reference dataset stored in Amazon EFS with hundreds of EC2 instances in an Auto Scaling group. The dataset is read concurrently by all instances and must be available across multiple Availability Zones. The team wants a POSIX-compliant shared file system with automatic scaling of throughput. Which storage option fits best?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon EFS mounted by all instances across Availability Zones",
+      "B": "A single Amazon EBS volume attached to one instance and shared via copy",
+      "C": "Amazon S3 mounted as a block device on each instance",
+      "D": "Instance store volumes replicated between instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon EFS is a fully managed, POSIX-compliant, elastic file system that can be mounted concurrently by thousands of instances across multiple Availability Zones. It scales throughput automatically and provides shared read access to the dataset, exactly matching the requirement for a multi-AZ, concurrently accessed shared file system.",
+    "whyOthersAreWrong": {
+      "B": "A single EBS volume attaches to instances within one AZ and is not a shared concurrent file system across many instances and AZs.",
+      "C": "S3 is object storage and cannot be mounted as a native POSIX block device; it is not a shared file system.",
+      "D": "Instance store is ephemeral local storage tied to a single instance and cannot be shared across a fleet."
+    },
+    "learningObjective": "Select a shared, POSIX-compliant, multi-AZ file system for concurrent access by a large instance fleet.",
+    "topic": "Amazon EFS",
+    "tags": ["EFS", "shared-storage", "POSIX", "multi-AZ"]
+  },
+  {
+    "id": "saa-1620",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a workload on EC2 that generates predictable, steady CPU usage 24/7 and will run for at least the next three years. The team wants to minimize compute cost while retaining the flexibility to change instance families as the application evolves. Which purchasing option provides the best savings with that flexibility?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Compute Savings Plans with a three-year commitment",
+      "B": "Standard Reserved Instances for a specific instance type",
+      "C": "On-Demand Instances",
+      "D": "Spot Instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Compute Savings Plans provide the largest discounts (comparable to Reserved Instances) in exchange for a committed hourly spend, while applying automatically across instance families, sizes, Regions, and even Fargate and Lambda. This gives the deep savings appropriate for steady 24/7 usage plus the flexibility to change instance families as the application evolves.",
+    "whyOthersAreWrong": {
+      "B": "Standard Reserved Instances lock savings to a specific instance type/family, reducing the flexibility to change families the company wants.",
+      "C": "On-Demand offers no discount and is the most expensive for steady, long-running usage.",
+      "D": "Spot is cheapest but can be interrupted, which is unsuitable for a steady, always-on production workload."
+    },
+    "learningObjective": "Choose a savings model that balances deep discounts with flexibility for steady long-running workloads.",
+    "topic": "Amazon EC2",
+    "tags": ["Savings-Plans", "cost-optimization", "EC2", "commitment"]
+  }
+]

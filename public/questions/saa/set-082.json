@@ -1,0 +1,465 @@
+[
+  {
+    "id": "saa-1621",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a containerized batch application that processes jobs from a queue. Job volume is highly variable: sometimes zero jobs for hours, sometimes thousands arrive at once. The team wants compute to scale from zero to many tasks based on queue depth, pay nothing when idle, and avoid managing servers. Which architecture meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon ECS on AWS Fargate with service auto scaling driven by the SQS queue depth metric",
+      "B": "A fixed-size ECS on EC2 cluster sized for peak load",
+      "C": "A single large EC2 instance polling the queue continuously",
+      "D": "AWS Batch on a managed EC2 environment kept at a minimum of ten instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "ECS on Fargate removes server management and bills only for running tasks. Using a target-tracking or step scaling policy based on the SQS ApproximateNumberOfMessages metric (via CloudWatch and Application Auto Scaling) lets the service scale tasks from zero up to thousands as the queue grows and back to zero when empty, so the company pays nothing when idle. This satisfies scale-to-zero, cost, and serverless requirements.",
+    "whyOthersAreWrong": {
+      "B": "A fixed cluster sized for peak wastes money during idle periods and does not scale to zero.",
+      "C": "A single large instance runs continuously (incurring idle cost) and cannot scale out to handle thousands of concurrent jobs.",
+      "D": "Keeping a minimum of ten instances always incurs cost during idle hours, violating the pay-nothing-when-idle requirement."
+    },
+    "learningObjective": "Design queue-driven, scale-to-zero container compute with no idle cost.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS", "Fargate", "SQS", "auto-scaling", "cost-optimization"]
+  },
+  {
+    "id": "saa-1622",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's compliance team requires a centralized, tamper-evident record of all management API calls across every account in its AWS Organization, stored in a dedicated logging account and protected from deletion by member-account users. Which solution meets these requirements with the least operational effort?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an organization trail in AWS CloudTrail that delivers logs to an S3 bucket in the logging account with Object Lock enabled",
+      "B": "Enable a separate CloudTrail in each account writing to that account's own bucket",
+      "C": "Rely on Amazon CloudWatch Logs in each account with cross-account subscriptions",
+      "D": "Use AWS Config in each account to record API activity"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An organization trail is configured once in the management account and automatically logs API activity for all member accounts, delivering to a central S3 bucket in a dedicated logging account. Enabling S3 Object Lock (and log file validation) makes the records tamper-evident and prevents deletion, meeting the centralization, immutability, and low-effort requirements without per-account configuration.",
+    "whyOthersAreWrong": {
+      "B": "Per-account trails writing to their own buckets are decentralized, higher effort, and leave logs deletable by member-account users.",
+      "C": "CloudWatch Logs subscriptions capture log data but are not the purpose-built, tamper-evident record of management API calls that CloudTrail provides.",
+      "D": "AWS Config records resource configuration changes, not a complete tamper-evident record of all management API calls."
+    },
+    "learningObjective": "Centralize immutable, organization-wide API audit logging with minimal operational effort.",
+    "topic": "AWS CloudTrail",
+    "tags": ["CloudTrail", "Organizations", "Object-Lock", "audit", "security"]
+  },
+  {
+    "id": "saa-1623",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an Amazon Aurora MySQL cluster supporting a workload whose traffic is unpredictable, with long idle periods interspersed with sudden bursts. The team wants the database to automatically scale capacity up and down, including near-zero during idle times, without manually resizing instances, while remaining compatible with the existing MySQL application. Which option best fits?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon Aurora Serverless v2",
+      "B": "A provisioned Aurora cluster sized for peak load",
+      "C": "Amazon RDS for MySQL with storage auto scaling",
+      "D": "A provisioned Aurora cluster with a read replica"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Aurora Serverless v2 automatically and rapidly scales compute capacity (in fine-grained increments) up during bursts and down during idle periods, so the company pays for the capacity actually used without manually resizing. It is compatible with the existing MySQL application. This directly matches the unpredictable, bursty traffic and no-manual-resize requirements.",
+    "whyOthersAreWrong": {
+      "B": "A provisioned cluster sized for peak wastes capacity during long idle periods and requires manual resizing to change.",
+      "C": "RDS storage auto scaling grows disk space only; it does not scale compute for bursty traffic.",
+      "D": "Adding a read replica scales reads but does not automatically scale compute down to near-zero during idle times."
+    },
+    "learningObjective": "Select an auto-scaling database engine for unpredictable, bursty workloads with idle periods.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "Serverless", "auto-scaling", "cost-optimization"]
+  },
+  {
+    "id": "saa-1624",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company delivers large software installers to customers worldwide from an S3 bucket in one Region. Customers far from that Region report slow downloads, and the company also wants to reduce data transfer costs from S3 to the internet. Which solution improves global download performance and can lower egress cost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Serve the files through Amazon CloudFront with the S3 bucket as the origin",
+      "B": "Replicate the bucket to every AWS Region and have customers pick the nearest",
+      "C": "Increase the S3 bucket's request rate limit",
+      "D": "Enable S3 Requester Pays on the bucket"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "CloudFront caches content at edge locations close to users, improving download performance globally. Because repeat downloads are served from the edge cache, origin fetches from S3 decrease, and CloudFront's data transfer pricing to the internet is generally lower than direct S3 egress, reducing costs. This is the standard, low-effort solution for global static content delivery.",
+    "whyOthersAreWrong": {
+      "B": "Replicating to every Region is costly, operationally heavy, and pushes Region selection onto customers; CloudFront handles proximity automatically.",
+      "C": "S3 request rate is not the bottleneck for global latency; distance to the single Region is.",
+      "D": "Requester Pays shifts cost to the downloader but does nothing to improve performance and is inappropriate for customer distribution."
+    },
+    "learningObjective": "Use a CDN to improve global content delivery performance and reduce egress cost.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "S3", "performance", "cost-optimization", "content-delivery"]
+  },
+  {
+    "id": "saa-1625",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application on EC2 needs to call Amazon S3 and Amazon DynamoDB APIs. Security policy prohibits storing any long-lived credentials on instances and requires that permissions follow least privilege and be auditable. What is the recommended way to provide these permissions?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach an IAM role to the EC2 instances via an instance profile with a least-privilege policy",
+      "B": "Store an IAM user's access keys in an environment variable on each instance",
+      "C": "Hard-code access keys in the application configuration file",
+      "D": "Place credentials in EC2 user data at launch"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Attaching an IAM role through an instance profile provides temporary, automatically rotated credentials to the application via the instance metadata service, with no long-lived keys stored on the instance. Scoping the role's policy to only the required S3 and DynamoDB actions enforces least privilege, and role usage is auditable through CloudTrail. This is the AWS-recommended pattern.",
+    "whyOthersAreWrong": {
+      "B": "Access keys in environment variables are long-lived static credentials that violate the policy and are hard to rotate.",
+      "C": "Hard-coding keys in configuration files is insecure and exposes long-lived credentials.",
+      "D": "User data is retrievable via instance metadata and stores static credentials, violating the no-long-lived-credentials requirement."
+    },
+    "learningObjective": "Provide EC2 workloads AWS API access securely using IAM roles instead of static credentials.",
+    "topic": "AWS IAM",
+    "tags": ["IAM", "instance-profile", "EC2", "least-privilege", "security"]
+  },
+  {
+    "id": "saa-1626",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company needs a message queue for decoupling an order-processing pipeline. Orders for a given customer must be processed strictly in the order received, and duplicate submissions caused by client retries must not be processed twice. Throughput requirements are moderate. Which queue configuration meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "An Amazon SQS FIFO queue using the customer ID as the message group ID with content-based deduplication",
+      "B": "An Amazon SQS Standard queue with a visibility timeout",
+      "C": "An Amazon SNS standard topic with multiple subscribers",
+      "D": "An Amazon Kinesis data stream with a single shard"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "SQS FIFO queues guarantee ordered delivery within a message group and exactly-once processing through deduplication. Using the customer ID as the message group ID preserves per-customer ordering while allowing parallelism across customers, and content-based (or explicit) deduplication prevents duplicate submissions from being processed twice. This matches the ordering, deduplication, and moderate-throughput needs.",
+    "whyOthersAreWrong": {
+      "B": "Standard queues provide best-effort ordering and at-least-once delivery, so they can reorder and deliver duplicates.",
+      "C": "SNS standard topics are for pub/sub fan-out, not ordered, deduplicated queue processing.",
+      "D": "A single-shard Kinesis stream orders records but does not provide SQS-style deduplication and complicates per-customer grouping."
+    },
+    "learningObjective": "Select a queue that guarantees ordering per key and prevents duplicate processing.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "FIFO", "ordering", "deduplication", "decoupling"]
+  },
+  {
+    "id": "saa-1627",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants near-real-time visibility when specific configuration changes occur, such as a security group being modified to allow inbound traffic on port 22 from 0.0.0.0/0. It needs to automatically detect the noncompliant configuration and trigger a remediation action. Which combination of services accomplishes this? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use AWS Config with a rule that evaluates security group compliance",
+      "B": "Trigger an automatic remediation using an AWS Systems Manager Automation document when the Config rule is noncompliant",
+      "C": "Enable Amazon Macie to scan security groups",
+      "D": "Use Amazon Athena to periodically query security group tables",
+      "E": "Configure Amazon QuickSight dashboards to visualize the rule state"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "AWS Config continuously records resource configurations and can evaluate them against rules, including detecting a security group that allows 0.0.0.0/0 on port 22. When the rule reports noncompliance, Config can invoke an automatic remediation using a Systems Manager Automation document to revoke the offending rule. Together they provide detection and automated remediation.",
+    "whyOthersAreWrong": {
+      "C": "Amazon Macie discovers sensitive data in S3; it does not evaluate security group configurations.",
+      "D": "Athena queries data in S3 and is not a mechanism for real-time configuration compliance evaluation or remediation.",
+      "E": "QuickSight visualizes data but does not detect noncompliant configurations or remediate them."
+    },
+    "learningObjective": "Detect and automatically remediate noncompliant configurations using AWS Config and SSM Automation.",
+    "topic": "AWS Config",
+    "tags": ["Config", "Systems-Manager", "remediation", "security", "compliance"]
+  },
+  {
+    "id": "saa-1628",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer portal that must remain available even if an entire AWS Region becomes unavailable. The portal uses an Aurora database and stateless web servers. During a Regional failure, users should be routed automatically to a healthy Region with an RTO of minutes. The team accepts running reduced capacity in the secondary Region. Which combination of components supports this design? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Deploy an Aurora global database with a secondary Region for fast cross-Region replication and failover",
+      "B": "Use Amazon Route 53 health checks with failover routing to direct users to the healthy Region",
+      "C": "Rely on a single-Region Multi-AZ Aurora deployment",
+      "D": "Use an Application Load Balancer to route traffic between Regions",
+      "E": "Store all state on the web servers' local disks"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "An Aurora global database replicates data to a secondary Region with typically sub-second lag and supports fast cross-Region failover, enabling a low RTO. Route 53 failover routing with health checks monitors the primary Region and automatically directs users to the secondary Region when the primary is unhealthy. Together they provide automatic cross-Region failover for the portal.",
+    "whyOthersAreWrong": {
+      "C": "A single-Region Multi-AZ deployment protects against AZ failure, not a full Regional outage.",
+      "D": "An Application Load Balancer operates within a single Region and cannot route across Regions.",
+      "E": "Storing state on local disks breaks statelessness and prevents seamless failover between Regions."
+    },
+    "learningObjective": "Design multi-Region resilience using Aurora global database and Route 53 failover routing.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "global-database", "Route53", "multi-region", "disaster-recovery"]
+  },
+  {
+    "id": "saa-1629",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an internal application on EC2 that needs to resolve and connect to on-premises services by hostname over an existing AWS Direct Connect link. DNS records for those services live on on-premises DNS servers. The team wants EC2 instances in the VPC to resolve those on-premises names privately. Which solution should be implemented?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure Route 53 Resolver outbound endpoints with forwarding rules to the on-premises DNS servers",
+      "B": "Create a public hosted zone in Route 53 for the on-premises domain",
+      "C": "Add the on-premises records manually to each instance's hosts file",
+      "D": "Enable DNS resolution over the internet gateway"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Route 53 Resolver outbound endpoints, paired with forwarding rules, send DNS queries for specified domains from the VPC to the on-premises DNS servers over the Direct Connect connection. This lets EC2 instances resolve on-premises hostnames privately and dynamically, without manual record maintenance, satisfying the hybrid DNS requirement.",
+    "whyOthersAreWrong": {
+      "B": "A public hosted zone would require re-creating and maintaining records in Route 53 and exposes names publicly, not forwarding to the authoritative on-premises servers.",
+      "C": "Editing hosts files on every instance is unscalable, error-prone, and does not stay in sync with on-premises DNS.",
+      "D": "On-premises private DNS is reached over Direct Connect, not the internet gateway, and there is no such 'DNS over IGW' feature for private resolution."
+    },
+    "learningObjective": "Implement hybrid DNS resolution from a VPC to on-premises servers using Route 53 Resolver.",
+    "topic": "Amazon Route 53",
+    "tags": ["Route53-Resolver", "hybrid", "DNS", "Direct-Connect", "networking"]
+  },
+  {
+    "id": "saa-1630",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's web tier runs on EC2 in an Auto Scaling group. The application occasionally receives large file uploads that take several minutes. During scale-in events, in-flight uploads are dropped because instances terminate immediately. The team wants scale-in to wait for active requests to finish before terminating instances. Which feature addresses this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable Application Load Balancer connection draining (deregistration delay) and Auto Scaling lifecycle behavior that respects it",
+      "B": "Increase the Auto Scaling group's maximum size",
+      "C": "Disable health checks during scale-in",
+      "D": "Switch the load balancer to a Network Load Balancer"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Deregistration delay (connection draining) on the ALB target group keeps a terminating instance in a draining state so in-flight requests can complete before the instance is fully deregistered and terminated. Auto Scaling honors this during scale-in, preventing dropped uploads. Configuring an appropriate deregistration delay solves the problem directly.",
+    "whyOthersAreWrong": {
+      "B": "Increasing maximum size affects capacity, not whether in-flight requests complete before termination.",
+      "C": "Disabling health checks does not prevent instances from terminating during scale-in or preserve active connections.",
+      "D": "Switching to an NLB does not inherently solve graceful request completion and is unnecessary for an HTTP upload workload."
+    },
+    "learningObjective": "Use connection draining/deregistration delay to complete in-flight requests during scale-in.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ALB", "connection-draining", "Auto-Scaling", "reliability"]
+  },
+  {
+    "id": "saa-1631",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must store highly sensitive documents in S3 and requires that access be denied unless the request is made over TLS and originates from the corporate VPC via a VPC endpoint. Which mechanism enforces both conditions?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "An S3 bucket policy with conditions on aws:SecureTransport and the source VPC endpoint (aws:sourceVpce)",
+      "B": "An IAM user policy that grants s3:GetObject to all employees",
+      "C": "Enabling default encryption on the bucket",
+      "D": "A network ACL on the S3 service"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A resource-based S3 bucket policy can deny requests where aws:SecureTransport is false (enforcing TLS) and can restrict access to a specific VPC endpoint using the aws:sourceVpce condition key. Combining these conditions in a single bucket policy enforces both the TLS-only and VPC-endpoint-only requirements at the bucket level.",
+    "whyOthersAreWrong": {
+      "B": "Granting GetObject to all employees does not enforce TLS or restrict traffic to the VPC endpoint, and it is overly permissive.",
+      "C": "Default encryption protects data at rest but does not control the transport protocol or network path of requests.",
+      "D": "Network ACLs apply to VPC subnets and cannot be attached to the S3 service to enforce these conditions."
+    },
+    "learningObjective": "Enforce TLS-only and VPC-endpoint-only access to S3 using bucket policy conditions.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "bucket-policy", "VPC-endpoint", "TLS", "security"]
+  },
+  {
+    "id": "saa-1632",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a workload that reads and writes to an Amazon EBS volume attached to an EC2 instance. The workload is throughput-oriented, sequentially processing large files, and needs consistently high MB/s at the lowest cost for that access pattern. Which EBS volume type is most appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Throughput Optimized HDD (st1)",
+      "B": "Provisioned IOPS SSD (io2)",
+      "C": "General Purpose SSD (gp3)",
+      "D": "Cold HDD (sc1)"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Throughput Optimized HDD (st1) is designed for large, sequential, throughput-intensive workloads such as big-data and log processing, delivering high MB/s at a lower cost per GB than SSD volumes. For a sequential, throughput-oriented pattern that does not need high IOPS, st1 provides the best cost-to-throughput fit.",
+    "whyOthersAreWrong": {
+      "B": "io2 provides high provisioned IOPS for latency-sensitive transactional workloads and is the most expensive; it is overkill and costlier for sequential throughput.",
+      "C": "gp3 offers balanced SSD performance but costs more per GB for pure sequential throughput than st1.",
+      "D": "sc1 is the lowest-cost HDD but is optimized for infrequently accessed cold data and provides lower throughput than st1, failing the consistently high MB/s need."
+    },
+    "learningObjective": "Match the EBS volume type to a sequential, throughput-oriented workload at lowest cost.",
+    "topic": "Amazon EBS",
+    "tags": ["EBS", "st1", "throughput", "storage", "cost-optimization"]
+  },
+  {
+    "id": "saa-1633",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to give its developers self-service access to sign in to multiple AWS accounts with permissions appropriate to each account, using their existing corporate identities in an external identity provider. The team wants centralized management of access and temporary credentials rather than per-account IAM users. Which service should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS IAM Identity Center integrated with the external identity provider",
+      "B": "An IAM user created in each account for every developer",
+      "C": "Amazon Cognito user pools for workforce access",
+      "D": "IAM access keys shared through a password manager"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS IAM Identity Center provides centralized workforce access to multiple AWS accounts, integrates with external identity providers via SAML/SCIM, and issues temporary credentials through permission sets scoped per account. Developers use their existing corporate identities to self-service sign in, eliminating per-account IAM users and satisfying the centralized, temporary-credential requirements.",
+    "whyOthersAreWrong": {
+      "B": "Per-account IAM users are decentralized, high-maintenance, and use long-lived credentials, the opposite of the requirement.",
+      "C": "Amazon Cognito is designed for application end-user (customer) identity, not workforce access to AWS accounts.",
+      "D": "Sharing IAM access keys uses long-lived credentials and is insecure and unmanageable at scale."
+    },
+    "learningObjective": "Provide centralized, federated, temporary-credential access to multiple AWS accounts for a workforce.",
+    "topic": "AWS IAM Identity Center",
+    "tags": ["IAM-Identity-Center", "SSO", "federation", "multi-account", "security"]
+  },
+  {
+    "id": "saa-1634",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a public API on Amazon API Gateway integrated with AWS Lambda. It wants to authenticate requests using JSON Web Tokens issued by its existing OpenID Connect identity provider and to authorize access based on token claims, without writing custom authentication code where possible. Which approach should be used?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure a JWT authorizer (or Amazon Cognito authorizer) on API Gateway to validate tokens and authorize on claims",
+      "B": "Validate the JWT inside each Lambda function manually",
+      "C": "Place the API behind a security group that allows only known IPs",
+      "D": "Use API keys distributed to each client"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "API Gateway supports built-in JWT authorizers (for HTTP APIs) and Cognito authorizers (for REST APIs) that validate JSON Web Tokens against the configured issuer and can authorize requests based on token scopes/claims. This offloads authentication and authorization from application code and rejects invalid tokens before invoking the backend, matching the requirement to avoid custom auth code.",
+    "whyOthersAreWrong": {
+      "B": "Manually validating JWTs in every function is custom code the requirement seeks to avoid and duplicates logic across functions.",
+      "C": "IP-based security groups do not authenticate users or evaluate token claims.",
+      "D": "API keys identify a calling application for usage plans; they are not authentication of end-user identity or claims-based authorization."
+    },
+    "learningObjective": "Offload JWT-based authentication and claims authorization to API Gateway authorizers.",
+    "topic": "Amazon API Gateway",
+    "tags": ["API-Gateway", "JWT", "authorization", "Cognito", "security"]
+  },
+  {
+    "id": "saa-1635",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an application whose logs are written to Amazon CloudWatch Logs. The security team needs to retain logs for seven years for compliance but wants to minimize storage cost, since logs older than 90 days are rarely queried. CloudWatch Logs storage is relatively expensive for long-term retention. Which approach best meets the retention and cost goals?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Export or stream logs to Amazon S3 and transition them to Glacier storage classes via lifecycle policies, keeping short retention in CloudWatch Logs",
+      "B": "Set the CloudWatch Logs retention to seven years and keep everything in CloudWatch Logs",
+      "C": "Delete logs after 90 days to save cost",
+      "D": "Copy logs manually to EBS volumes for archival"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Keeping only recent logs in CloudWatch Logs and moving older logs to S3 (via export or a subscription/Firehose pipeline) lets lifecycle policies transition them to low-cost Glacier storage classes for long-term compliance retention. This satisfies the seven-year requirement at much lower cost than retaining everything in the pricier CloudWatch Logs storage.",
+    "whyOthersAreWrong": {
+      "B": "Retaining seven years entirely in CloudWatch Logs is significantly more expensive than archiving to Glacier.",
+      "C": "Deleting logs after 90 days violates the seven-year compliance retention requirement.",
+      "D": "Manually copying logs to EBS is operationally heavy, not durable object storage, and lacks lifecycle tiering."
+    },
+    "learningObjective": "Design cost-optimized long-term log retention by archiving to S3/Glacier.",
+    "topic": "Amazon CloudWatch",
+    "tags": ["CloudWatch-Logs", "S3", "Glacier", "retention", "cost-optimization"]
+  },
+  {
+    "id": "saa-1636",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a fleet of EC2 instances that must all mount a shared configuration directory that is updated a few times per day and read constantly. The instances span two Availability Zones. The team needs low-latency reads, POSIX semantics, and automatic multi-AZ durability with the least operational overhead. Which storage option should they choose?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon EFS with the General Purpose performance mode",
+      "B": "Separate EBS volumes per instance synchronized with a cron job",
+      "C": "An S3 bucket synced to each instance every minute",
+      "D": "Amazon FSx for Lustre"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon EFS provides a POSIX-compliant shared file system automatically replicated across multiple Availability Zones, mountable by all instances simultaneously with low-latency reads and no servers to manage. For a shared config directory read constantly across two AZs, EFS General Purpose mode delivers the required semantics and durability with minimal operational overhead.",
+    "whyOthersAreWrong": {
+      "B": "Per-instance EBS volumes with cron synchronization is complex, error-prone, and not a true shared file system.",
+      "C": "S3 sync introduces staleness between syncs and lacks POSIX file semantics for a mounted directory.",
+      "D": "FSx for Lustre targets high-performance computing scratch workloads, which is unnecessary and more complex for a small shared config directory."
+    },
+    "learningObjective": "Choose a shared POSIX file system with multi-AZ durability and low operational overhead.",
+    "topic": "Amazon EFS",
+    "tags": ["EFS", "shared-storage", "multi-AZ", "POSIX"]
+  },
+  {
+    "id": "saa-1637",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company processes payment events that must never be lost and must be handled exactly once even if producers retry. Events are produced by multiple services and consumed by a single processing application that can occasionally fall behind. Which two design choices support these requirements? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use an Amazon SQS FIFO queue with deduplication to prevent duplicate processing",
+      "B": "Configure a dead-letter queue to capture messages that fail processing after a threshold",
+      "C": "Use an SNS topic with HTTP subscribers and no queue",
+      "D": "Process events directly from an in-memory buffer on the consumer",
+      "E": "Disable the visibility timeout so messages are always visible"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "An SQS FIFO queue provides exactly-once processing via deduplication, preventing duplicates from producer retries, and durably buffers events so the consumer can fall behind without data loss. A dead-letter queue captures messages that repeatedly fail processing so they are not lost and can be investigated. Together they ensure durability and exactly-once handling.",
+    "whyOthersAreWrong": {
+      "C": "SNS HTTP subscribers without a queue provide no durable buffering, so events are lost if the consumer is behind or unavailable.",
+      "D": "An in-memory buffer is lost on process restart or failure, violating the never-lost requirement.",
+      "E": "Disabling the visibility timeout would let multiple workers reprocess the same message, causing duplicate processing."
+    },
+    "learningObjective": "Design a durable, exactly-once payment event pipeline with failure isolation.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "FIFO", "dead-letter-queue", "reliability", "exactly-once"]
+  },
+  {
+    "id": "saa-1638",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a data-processing job on EC2 that must access an S3 bucket in the same Region. The bucket receives terabytes of traffic from the instances daily. The team wants to avoid NAT gateway data-processing charges for this S3 traffic and keep the traffic on the AWS private network. Which solution is the most cost-effective?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a gateway VPC endpoint for Amazon S3 and route bucket traffic through it",
+      "B": "Route S3 traffic through a NAT gateway in a public subnet",
+      "C": "Assign public IP addresses to the instances to reach S3 directly",
+      "D": "Create an interface VPC endpoint for S3 and pay per-GB endpoint charges"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A gateway VPC endpoint for S3 enables private connectivity from the VPC to S3 with no additional per-GB endpoint or NAT data-processing charges; it simply adds routes to the route tables. For terabytes of daily S3 traffic in the same Region, this is the most cost-effective way to keep traffic private and avoid NAT processing fees.",
+    "whyOthersAreWrong": {
+      "B": "A NAT gateway charges per-GB processed, which is expensive at terabyte-per-day volumes.",
+      "C": "Public IPs send traffic over the internet path (not fully private) and can still incur data transfer costs; it is not the recommended private, cost-optimized approach.",
+      "D": "Interface endpoints for S3 incur hourly and per-GB charges, making them more expensive than the free gateway endpoint for this in-Region traffic."
+    },
+    "learningObjective": "Use an S3 gateway endpoint to avoid NAT charges and keep high-volume traffic private.",
+    "topic": "Amazon VPC",
+    "tags": ["VPC-endpoint", "S3", "NAT-gateway", "cost-optimization", "networking"]
+  },
+  {
+    "id": "saa-1639",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a website that experiences a predictable traffic surge every weekday at 9:00 AM when employees log in. The current Auto Scaling group uses only target-tracking on CPU, and the surge causes brief performance degradation while new instances launch. The team wants capacity ready before the surge without over-provisioning the rest of the day. What should they add?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "A scheduled scaling action that increases desired capacity shortly before 9:00 AM on weekdays",
+      "B": "A larger instance type for the whole fleet at all times",
+      "C": "A longer target-tracking cooldown period",
+      "D": "A Network Load Balancer in front of the group"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Because the surge is predictable in time, a scheduled scaling action can raise the Auto Scaling group's desired (or minimum) capacity a few minutes before 9:00 AM on weekdays so capacity is warm when traffic arrives, then scale back afterward. This eliminates the launch-lag degradation without over-provisioning the rest of the day, complementing the existing target-tracking policy.",
+    "whyOthersAreWrong": {
+      "B": "Permanently larger instances over-provision the entire day and increase cost, which the team wants to avoid.",
+      "C": "A longer cooldown slows scaling reactions and would worsen, not prevent, the surge-time lag.",
+      "D": "Changing the load balancer type does not pre-provision compute capacity for a predictable surge."
+    },
+    "learningObjective": "Use scheduled scaling to pre-provision capacity for predictable, time-based traffic surges.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": ["Auto-Scaling", "scheduled-scaling", "performance", "cost-optimization"]
+  },
+  {
+    "id": "saa-1640",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must share large reference datasets stored in Amazon S3 with a partner's AWS account. The partner should be able to read the objects, but the company wants to avoid managing individual IAM users for the partner and wants to grant access at the bucket/prefix level. Which approach is most appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add an S3 bucket policy that grants s3:GetObject on the specific prefix to the partner account's principal",
+      "B": "Create IAM users in the company's account and give the credentials to the partner",
+      "C": "Make the bucket public so anyone can read the objects",
+      "D": "Email the objects to the partner as they change"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A resource-based S3 bucket policy can grant read access (s3:GetObject) scoped to a specific prefix to the partner's AWS account principal. The partner uses their own account's identities to access the data, so the company does not manage IAM users for them, and access is confined to the intended bucket/prefix. This is the standard secure cross-account S3 sharing pattern.",
+    "whyOthersAreWrong": {
+      "B": "Creating IAM users for the partner is exactly the per-user management the company wants to avoid and shares long-lived credentials.",
+      "C": "Making the bucket public exposes data to everyone, violating security and the intent to share only with the partner.",
+      "D": "Emailing objects is impractical for large datasets, insecure, and not a scalable sharing mechanism."
+    },
+    "learningObjective": "Share S3 data with a partner account securely using a bucket policy without managing external IAM users.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "bucket-policy", "cross-account", "security"]
+  }
+]
