@@ -1,0 +1,463 @@
+[
+  {
+    "id": "saa-1681",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a web application that allows users to upload profile pictures. The application stores images in Amazon S3 and serves them through Amazon CloudFront. The company wants to restrict access so that images can only be viewed through the CloudFront distribution and not by directly accessing the S3 bucket URL. Which approach BEST achieves this restriction?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure an Origin Access Control (OAC) on the CloudFront distribution and update the S3 bucket policy to allow access only from the OAC",
+      "B": "Make the S3 bucket public and rely on CloudFront to cache all content",
+      "C": "Enable S3 Block Public Access and do not create any CloudFront configuration",
+      "D": "Create a VPC endpoint for S3 and route CloudFront through the VPC"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Origin Access Control (OAC) is the recommended method to restrict S3 access so that only CloudFront can retrieve objects. The S3 bucket policy is configured to deny all access except requests that come from the specific CloudFront distribution's OAC identity. Users who try to access the S3 URL directly receive an access denied error, while requests through CloudFront work normally.",
+    "whyOthersAreWrong": {
+      "B": "Making the S3 bucket public means anyone can access images directly via the S3 URL, defeating the purpose of the restriction.",
+      "C": "Blocking public access without CloudFront integration would prevent CloudFront from retrieving objects, breaking image delivery entirely.",
+      "D": "CloudFront is a global CDN edge service that does not operate within a VPC and cannot be routed through VPC endpoints for S3."
+    },
+    "learningObjective": "Use CloudFront Origin Access Control to restrict direct S3 access and ensure content is served only through the CDN.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "OAC", "S3", "access-control", "security"]
+  },
+  {
+    "id": "saa-1682",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a three-tier application with an Amazon Aurora PostgreSQL database. The application processes financial transactions that require strong read-after-write consistency. The database is experiencing high read load that is affecting write performance. The solutions architect needs to offload reads without sacrificing read-after-write consistency for the financial transactions. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add Aurora Replicas and use the cluster endpoint for write operations and the reader endpoint only for non-transactional read queries, while keeping transactional reads on the writer instance through the cluster endpoint",
+      "B": "Create an Aurora cross-Region read replica and direct all reads to it",
+      "C": "Move all read queries to the Aurora reader endpoint without distinguishing between transactional and non-transactional reads",
+      "D": "Replace Aurora with Amazon DynamoDB using strongly consistent reads"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Aurora Replicas share the same storage volume as the writer but may have a slight replication lag (typically tens of milliseconds). For financial transactions that require read-after-write consistency, those reads must stay on the writer instance (cluster endpoint). Non-transactional reads (reports, dashboards, searches) can be safely offloaded to the reader endpoint. This hybrid approach reduces load on the writer while maintaining consistency where required.",
+    "whyOthersAreWrong": {
+      "B": "Cross-Region read replicas have higher replication lag due to network latency between Regions, making them unsuitable for read-after-write consistency requirements.",
+      "C": "Directing all reads to the reader endpoint means transactional reads may see stale data due to replication lag, violating the read-after-write consistency requirement for financial transactions.",
+      "D": "DynamoDB is a NoSQL database that would require completely rewriting the application's SQL-based financial transaction logic, introducing massive migration effort and risk."
+    },
+    "learningObjective": "Design a read-scaling strategy that preserves read-after-write consistency for critical operations while offloading other reads.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "read-consistency", "reader-endpoint", "PostgreSQL", "financial"]
+  },
+  {
+    "id": "saa-1683",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building a serverless REST API using Amazon API Gateway and AWS Lambda. The API receives an average of 10 requests per second, but during marketing campaigns, traffic spikes to 5,000 requests per second for 15-minute windows. The backend Lambda function queries a third-party API that has a strict rate limit of 100 requests per second. If the third-party API limit is exceeded, the Lambda function receives errors and the entire request fails. Which architecture change prevents failures during traffic spikes while ensuring all requests are eventually processed?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Place an Amazon SQS queue between API Gateway and the Lambda function, configure Lambda to poll the queue with a reserved concurrency of 100, and return an accepted status to the client immediately",
+      "B": "Increase the Lambda function's memory to 10 GB to process requests faster",
+      "C": "Add an Amazon ElastiCache layer in front of the third-party API",
+      "D": "Configure API Gateway throttling to reject all requests above 100 per second"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "By placing an SQS queue between API Gateway and Lambda, incoming requests are immediately accepted and queued. API Gateway returns an accepted response to the client. Lambda polls the queue with a reserved concurrency of 100, ensuring that no more than 100 concurrent Lambda invocations call the third-party API, respecting its rate limit. During spikes, excess requests are buffered in the queue and processed once capacity is available. All requests are eventually processed.",
+    "whyOthersAreWrong": {
+      "B": "Increasing Lambda memory improves processing speed but does not limit the rate of outbound calls to the third-party API. More concurrent Lambda invocations would still exceed the rate limit.",
+      "C": "ElastiCache can cache responses but the third-party API likely returns different results per request (or requests are unique), making caching ineffective. It also does not buffer incoming requests.",
+      "D": "API Gateway throttling at 100 per second would reject 4,900 legitimate requests per second during spikes, causing client-facing failures instead of processing them asynchronously."
+    },
+    "learningObjective": "Use SQS as a buffer to decouple high-throughput API requests from a rate-limited downstream dependency.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS", "Lambda", "API-Gateway", "rate-limiting", "decoupling", "buffering"]
+  },
+  {
+    "id": "saa-1684",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has multiple development teams that deploy applications into a shared AWS account. Each team should only be able to manage resources that their team created. The company wants to enforce this isolation without creating separate AWS accounts for each team. Resources must be tagged with a 'Team' tag at creation time. Which approach MOST effectively enforces resource isolation between teams?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create IAM policies using attribute-based access control (ABAC) that use condition keys to match the requesting principal's team tag against the resource's Team tag, allowing actions only when the tags match",
+      "B": "Create separate VPCs for each team and use security groups to prevent cross-team access",
+      "C": "Use AWS Config rules to report resources that are missing the Team tag",
+      "D": "Create a shared IAM role for all teams with full administrative access and trust them to only modify their own resources"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "ABAC uses IAM policy condition keys (such as aws:ResourceTag and aws:PrincipalTag) to control access based on tags. By tagging IAM principals with their team identifier and requiring that the resource's Team tag matches the principal's team tag, each team can only manage resources tagged with their team name. This provides scalable, fine-grained resource isolation without separate accounts or manual policy management per team.",
+    "whyOthersAreWrong": {
+      "B": "Separate VPCs isolate network traffic but do not prevent one team from managing another team's EC2 instances, S3 buckets, Lambda functions, or other non-VPC resources within the shared account.",
+      "C": "AWS Config rules are detective controls that report non-compliance after the fact but do not prevent a team from modifying another team's resources.",
+      "D": "A shared administrative role with no enforcement relies entirely on trust. Any team member could modify or delete another team's resources, either accidentally or intentionally."
+    },
+    "learningObjective": "Implement attribute-based access control (ABAC) with IAM to enforce resource isolation between teams using tags.",
+    "topic": "AWS IAM",
+    "tags": ["IAM", "ABAC", "tags", "resource-isolation", "access-control"]
+  },
+  {
+    "id": "saa-1685",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a production Amazon RDS Multi-AZ MySQL database that stores critical business data. The company's compliance requirement states that database backups must be retained for 7 years and must be restorable in a different AWS Region in case of a regional disaster. Automated backups have a maximum retention period of 35 days. Which approach ensures backups are available for 7 years and restorable in another Region?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable automated backups and use AWS Backup to create a backup plan that copies snapshots to a secondary Region with a retention policy of 7 years",
+      "B": "Rely solely on RDS automated backups with the retention period set to 35 days",
+      "C": "Create a read replica in another Region and delete the primary after 7 years",
+      "D": "Export the database to CSV files monthly and store them on a local file server for 7 years"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Backup can create backup plans for RDS that automate snapshot creation, cross-Region copies, and lifecycle management with retention policies up to perpetual. By configuring a backup plan that copies snapshots to a secondary Region with a 7-year retention, the company meets both the long-term retention and cross-Region restorability requirements. This approach is fully managed and operates alongside RDS automated backups.",
+    "whyOthersAreWrong": {
+      "B": "RDS automated backups have a maximum retention of 35 days, far short of the 7-year requirement. They also do not automatically replicate to another Region.",
+      "C": "A cross-Region read replica provides continuous replication but is not a backup mechanism. It cannot be used to restore to a point in time 7 years ago, and deleting the primary would cause the replica to become independent.",
+      "D": "Monthly CSV exports are not full database backups, may miss data between exports, and storing on a local file server introduces durability and disaster recovery risks."
+    },
+    "learningObjective": "Use AWS Backup to implement long-term, cross-Region database backup retention policies for compliance.",
+    "topic": "AWS Backup",
+    "tags": ["AWS-Backup", "RDS", "cross-Region", "compliance", "retention", "disaster-recovery"]
+  },
+  {
+    "id": "saa-1686",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer-facing API on Amazon API Gateway backed by AWS Lambda functions. The company wants to protect the API from common web exploits such as SQL injection and cross-site scripting (XSS) in the request body. The company also wants to rate-limit requests from individual IP addresses to 1,000 requests per 5-minute period. Which combination of services should a solutions architect configure?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Associate an AWS WAF web ACL with the API Gateway stage that includes managed rule groups for SQL injection and XSS protection",
+      "B": "Configure an AWS WAF rate-based rule that limits requests from individual IP addresses to 1,000 per 5-minute evaluation period",
+      "C": "Enable AWS Shield Advanced on the API Gateway to block SQL injection attacks",
+      "D": "Configure API Gateway usage plans and API keys to limit each user to 1,000 requests per 5 minutes",
+      "E": "Deploy Amazon Inspector to scan the Lambda function code for SQL injection vulnerabilities"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "AWS WAF integrates directly with API Gateway and provides managed rule groups that inspect request bodies for SQL injection and XSS patterns. Rate-based rules in WAF evaluate the request rate per IP address over a 5-minute rolling window and automatically block IPs that exceed the threshold. Together, these two WAF configurations protect against web exploits and enforce per-IP rate limiting.",
+    "whyOthersAreWrong": {
+      "C": "Shield Advanced protects against DDoS attacks (network and transport layer floods) but does not inspect request content for SQL injection or XSS patterns. Application-layer protection requires WAF.",
+      "D": "API Gateway usage plans rate-limit based on API keys, not IP addresses. They require clients to include API keys in requests, which is a different access-control mechanism and does not address the per-IP requirement.",
+      "E": "Amazon Inspector scans for software vulnerabilities in the runtime environment and code, not for SQL injection in incoming HTTP requests. It is a scanning tool, not a real-time request filter."
+    },
+    "learningObjective": "Configure AWS WAF with managed rules and rate-based rules to protect API Gateway from web exploits and abusive traffic.",
+    "topic": "AWS WAF",
+    "tags": ["WAF", "API-Gateway", "SQL-injection", "XSS", "rate-limiting", "security"]
+  },
+  {
+    "id": "saa-1687",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a machine learning training workload on a cluster of GPU-optimized Amazon EC2 instances. The training job reads a 5 TB dataset from shared storage and generates frequent small random-read I/O operations. The job requires sub-millisecond latency for reads and the dataset must be accessible from all instances simultaneously. The data does not need to persist after the training job completes. Which storage solution provides the BEST performance for this workload?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon FSx for Lustre linked to an S3 bucket containing the source dataset",
+      "B": "Amazon EFS in General Purpose performance mode",
+      "C": "Amazon S3 with direct API calls from each instance",
+      "D": "Amazon EBS gp3 volumes attached to each instance with the dataset copied individually"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon FSx for Lustre is a fully managed high-performance parallel file system designed for ML training and HPC workloads. It delivers sub-millisecond latencies for random reads and supports concurrent access from thousands of instances. When linked to an S3 bucket, it lazily loads data on first access and can use scratch file systems for temporary datasets that do not require persistence. This matches the workload requirements perfectly.",
+    "whyOthersAreWrong": {
+      "B": "EFS General Purpose mode has higher latencies (single-digit milliseconds) and lower throughput compared to FSx for Lustre. For GPU-intensive ML training with sub-millisecond latency requirements, EFS does not provide sufficient performance.",
+      "C": "S3 API calls have latencies in the range of tens to hundreds of milliseconds per request, far exceeding the sub-millisecond requirement. S3 is also not a file system, requiring application changes.",
+      "D": "EBS volumes cannot be shared across instances (except Multi-Attach for io1/io2, limited to a single AZ). Copying 5 TB to each instance wastes time, storage, and does not provide shared access."
+    },
+    "learningObjective": "Select FSx for Lustre for high-performance, shared-access storage requirements in ML training workloads.",
+    "topic": "Amazon FSx",
+    "tags": ["FSx-Lustre", "ML-training", "high-performance", "shared-storage", "GPU"]
+  },
+  {
+    "id": "saa-1688",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an application running on Amazon EC2 that needs to send email notifications to customers when their orders are shipped. The application processes approximately 50,000 orders per day. The company wants a managed service to handle email delivery, track bounces and complaints, and maintain sender reputation without managing email infrastructure. Which AWS service BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon Simple Email Service (SES)",
+      "B": "Amazon Simple Notification Service (SNS) with email subscriptions",
+      "C": "Amazon Pinpoint for transactional messaging",
+      "D": "Configure the EC2 instance as a Postfix mail server"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon SES is a managed email service designed for sending transactional, marketing, and notification emails at scale. It handles email delivery, provides built-in bounce and complaint tracking, manages sender reputation, and integrates with SNS for delivery notifications. At 50,000 emails per day, SES is cost-effective and eliminates the need to manage any email infrastructure.",
+    "whyOthersAreWrong": {
+      "B": "SNS email subscriptions require each recipient to confirm their subscription before receiving emails. This is unsuitable for transactional order notifications sent to customers who haven't pre-subscribed. SNS also lacks bounce/complaint management and sender reputation features.",
+      "C": "Amazon Pinpoint is focused on customer engagement campaigns with audience segmentation. While it can send transactional messages, SES is the more appropriate and cost-effective choice for straightforward transactional email delivery.",
+      "D": "Running a self-managed Postfix server requires managing IP reputation, bounce handling, compliance, security patching, and scaling—exactly the operational burden the company wants to avoid."
+    },
+    "learningObjective": "Select Amazon SES for managed transactional email delivery with bounce and complaint tracking.",
+    "topic": "Amazon SES",
+    "tags": ["SES", "email", "transactional", "notifications", "managed-service"]
+  },
+  {
+    "id": "saa-1689",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an application on Amazon EC2 instances in private subnets that generates detailed application logs. The operations team needs to search and analyze these logs in near real-time to troubleshoot issues. The team wants a managed solution that provides full-text search, dashboards, and alerting without managing any infrastructure. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Install the Amazon CloudWatch agent on EC2 instances to stream logs to CloudWatch Logs, and use CloudWatch Logs Insights for search and analysis with CloudWatch alarms for alerting",
+      "B": "Write logs to Amazon S3 and use Amazon Athena to run ad-hoc SQL queries when issues arise",
+      "C": "Stream logs to Amazon Kinesis Data Firehose and deliver to Amazon Redshift for querying",
+      "D": "Set up a self-managed Elasticsearch cluster on EC2 instances in the same VPC"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "The CloudWatch agent streams application logs from EC2 to CloudWatch Logs in near real-time. CloudWatch Logs Insights provides interactive full-text search and analytics with a purpose-built query language. CloudWatch dashboards visualize log data, and CloudWatch alarms provide alerting based on log patterns or metrics. The entire stack is fully managed, requiring no infrastructure provisioning or management.",
+    "whyOthersAreWrong": {
+      "B": "S3 with Athena is a batch-oriented approach. Logs must first be written to S3, and Athena queries are not real-time. This does not meet the near real-time troubleshooting requirement.",
+      "C": "Streaming to Redshift via Firehose adds infrastructure cost and management complexity. Redshift is optimized for analytical queries on structured data, not near real-time log search and troubleshooting.",
+      "D": "A self-managed Elasticsearch cluster requires provisioning EC2 instances, managing cluster health, scaling, patching, and backup—exactly the infrastructure management the company wants to avoid."
+    },
+    "learningObjective": "Use CloudWatch Logs with Logs Insights for managed near real-time log analysis and troubleshooting.",
+    "topic": "Amazon CloudWatch",
+    "tags": ["CloudWatch", "Logs-Insights", "monitoring", "troubleshooting", "managed-service"]
+  },
+  {
+    "id": "saa-1690",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is designing a multi-account AWS architecture using AWS Organizations. The company has a central networking account that manages a shared AWS Transit Gateway. Application accounts in different organizational units need to connect their VPCs to the Transit Gateway without the application teams having access to the networking account. Which service allows the networking account to share the Transit Gateway with application accounts within the organization?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Resource Access Manager (RAM) to share the Transit Gateway with specific organizational units or accounts",
+      "B": "VPC peering between each application account VPC and the networking account VPC",
+      "C": "AWS PrivateLink to expose the Transit Gateway as a service to other accounts",
+      "D": "Deploy a separate Transit Gateway in each application account and connect them using inter-Region peering"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Resource Access Manager (RAM) enables resource sharing across AWS accounts within an Organization. The networking account can share its Transit Gateway with specific organizational units or accounts using RAM. Application accounts can then attach their VPCs to the shared Transit Gateway without needing access to the networking account. This provides centralized network management with distributed connectivity.",
+    "whyOthersAreWrong": {
+      "B": "VPC peering creates point-to-point connections between VPCs and does not scale well for multiple accounts. It also does not use the Transit Gateway and requires the networking team to accept peering requests.",
+      "C": "PrivateLink is designed for exposing services across VPCs via endpoint services, not for sharing network infrastructure resources like Transit Gateway.",
+      "D": "Deploying a Transit Gateway per account eliminates the centralized management benefit, significantly increases cost, and requires complex inter-Region peering configurations."
+    },
+    "learningObjective": "Use AWS Resource Access Manager to share network infrastructure resources across accounts in an AWS Organization.",
+    "topic": "AWS Resource Access Manager",
+    "tags": ["RAM", "Transit-Gateway", "Organizations", "multi-account", "networking"]
+  },
+  {
+    "id": "saa-1691",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates an e-commerce application where product catalog data is stored in Amazon DynamoDB. The product catalog is read thousands of times per second, but prices and descriptions change only a few times per day. The company wants to reduce the read capacity unit consumption on the DynamoDB table and improve response times for frequently accessed items. Which approach MOST effectively achieves this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable DynamoDB Accelerator (DAX) as an in-memory cache in front of the DynamoDB table",
+      "B": "Increase the provisioned read capacity units on the DynamoDB table",
+      "C": "Create a DynamoDB global table across multiple Regions",
+      "D": "Enable DynamoDB Streams and process changes with Lambda to update an external database"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "DAX is a fully managed, DynamoDB-compatible in-memory cache that sits in front of DynamoDB tables. For read-heavy workloads with infrequently changing data, DAX serves cached responses in microseconds instead of single-digit milliseconds, dramatically reducing read capacity unit consumption and improving response times. Since catalog data changes only a few times daily, cached data remains valid for extended periods.",
+    "whyOthersAreWrong": {
+      "B": "Increasing read capacity units allows the table to handle more reads but does not reduce read capacity consumption or improve response times. It simply costs more.",
+      "C": "Global tables replicate data across Regions for multi-Region availability. They do not reduce read capacity consumption within a single Region or provide caching.",
+      "D": "DynamoDB Streams with Lambda processing is useful for event-driven architectures but does not reduce read load on the DynamoDB table or cache frequently accessed items."
+    },
+    "learningObjective": "Use DynamoDB Accelerator (DAX) to cache read-heavy workloads and reduce DynamoDB read capacity consumption.",
+    "topic": "Amazon DynamoDB",
+    "tags": ["DynamoDB", "DAX", "caching", "performance", "read-heavy"]
+  },
+  {
+    "id": "saa-1692",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company needs to transfer 80 TB of data from an on-premises data center to Amazon S3. The data center has a 100 Mbps internet connection, and the transfer must be completed within 2 weeks. A rough calculation shows that the 100 Mbps link would take approximately 74 days to transfer 80 TB. Which data transfer method can complete the migration within the required timeframe?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Order an AWS Snowball Edge Storage Optimized device, load the data on-premises, and ship it to AWS",
+      "B": "Use AWS DataSync over the existing 100 Mbps internet connection",
+      "C": "Use S3 Transfer Acceleration with multipart upload over the internet",
+      "D": "Set up a 1 Gbps AWS Direct Connect connection and transfer the data immediately"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Snowball Edge Storage Optimized provides 80 TB of usable storage capacity. The device is shipped to the data center, loaded with data using high-speed local connections (up to 100 Gbps), and shipped back to AWS where data is uploaded to S3. The entire process (ordering, shipping, loading, return shipping, and upload) typically completes within 1-2 weeks, well within the deadline. This bypasses the insufficient internet bandwidth entirely.",
+    "whyOthersAreWrong": {
+      "B": "DataSync optimizes network transfers but is still limited by the 100 Mbps internet connection. Even at full utilization, 80 TB would take approximately 74 days, far exceeding the 2-week deadline.",
+      "C": "S3 Transfer Acceleration improves transfer speeds through CloudFront edge locations but is still constrained by the 100 Mbps uplink bandwidth. It cannot overcome the fundamental bandwidth limitation.",
+      "D": "AWS Direct Connect typically takes 4-8 weeks to provision, which exceeds the 2-week deadline before any data transfer begins."
+    },
+    "learningObjective": "Select the appropriate offline data transfer method when network bandwidth is insufficient for large-scale migrations.",
+    "topic": "AWS Snow Family",
+    "tags": ["Snowball", "data-migration", "S3", "offline-transfer", "bandwidth"]
+  },
+  {
+    "id": "saa-1693",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a containerized microservices application on Amazon ECS with Fargate. The application uses sensitive database credentials and third-party API keys that are currently hardcoded in the task definition as environment variables. The security team requires that secrets be stored securely, encrypted at rest, automatically rotated, and injected into containers at runtime without modifying application code. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store secrets in AWS Secrets Manager with automatic rotation enabled, and reference the Secrets Manager ARNs in the ECS task definition using the secrets property to inject them as environment variables at runtime",
+      "B": "Store secrets in an encrypted file in Amazon S3 and download the file at container startup using an entrypoint script",
+      "C": "Store secrets as plaintext in AWS Systems Manager Parameter Store Standard parameters",
+      "D": "Encrypt the secrets using a KMS key and store the ciphertext directly in the task definition environment variables"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Secrets Manager provides encrypted storage, automatic rotation for supported secrets, and native ECS integration. By referencing Secrets Manager ARNs in the ECS task definition's secrets block, Fargate automatically retrieves and injects secrets as environment variables when the container starts. No application code changes are needed, and secrets are never stored in the task definition in plaintext.",
+    "whyOthersAreWrong": {
+      "B": "Downloading from S3 at startup requires custom entrypoint scripts (modifying container behavior), does not provide automatic rotation, and introduces a race condition if the container starts before the download completes.",
+      "C": "Parameter Store Standard parameters are stored as plaintext (not encrypted at rest by default) and do not support automatic secret rotation natively. This fails the encryption and rotation requirements.",
+      "D": "Storing ciphertext in environment variables requires the application to decrypt at runtime, which means modifying application code. The ciphertext is also visible in the task definition to anyone with describe access."
+    },
+    "learningObjective": "Use AWS Secrets Manager with ECS task definition integration for secure, rotatable secret injection.",
+    "topic": "AWS Secrets Manager",
+    "tags": ["Secrets-Manager", "ECS", "Fargate", "security", "rotation", "containers"]
+  },
+  {
+    "id": "saa-1694",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to implement a serverless event-driven architecture where changes to items in an Amazon DynamoDB table trigger multiple independent downstream processes: sending a notification email, updating a search index, and generating an analytics event. Each downstream process must receive every change event independently and process it at its own pace. Which architecture pattern BEST supports these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable DynamoDB Streams, configure a Lambda function to read from the stream and publish events to an Amazon SNS topic, with separate SQS queues subscribed to the SNS topic for each downstream process",
+      "B": "Enable DynamoDB Streams and create three Lambda function triggers on the same stream",
+      "C": "Poll the DynamoDB table every minute from three separate Lambda functions to detect changes",
+      "D": "Write change events directly from the application to three separate SQS queues alongside the DynamoDB write"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "This implements the fan-out pattern: DynamoDB Streams captures every item change. A Lambda function reads from the stream and publishes each event to an SNS topic. Each downstream process has its own SQS queue subscribed to the topic (SNS fan-out to SQS). Each queue independently buffers events, allowing each consumer to process at its own pace without affecting others. SQS provides retry and dead-letter queue capabilities for reliability.",
+    "whyOthersAreWrong": {
+      "B": "DynamoDB Streams supports a maximum of 2 simultaneous Lambda function consumers per stream (via event source mappings with the same stream). Even if 3 were possible, multiple Lambda triggers on the same stream share the read throughput and do not provide independent buffering for each consumer.",
+      "C": "Polling DynamoDB does not reliably detect changes (items could be modified between polls). It is also wasteful, as it consumes read capacity even when no changes occur, and changes could be missed or duplicated.",
+      "D": "Writing to three SQS queues from the application code adds complexity, couples the application to all downstream consumers, and risks partial failures where the DynamoDB write succeeds but some queue writes fail."
+    },
+    "learningObjective": "Design a fan-out event-driven architecture using DynamoDB Streams, SNS, and SQS for independent downstream processing.",
+    "topic": "Event-Driven Architecture",
+    "tags": ["DynamoDB-Streams", "SNS", "SQS", "fan-out", "event-driven", "decoupling"]
+  },
+  {
+    "id": "saa-1695",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an application on Amazon EC2 instances that must access secrets stored in AWS Secrets Manager. The security team insists that the application must NOT use long-term AWS access keys and that access to Secrets Manager must be restricted to only the specific secrets the application needs. Which approach BEST meets these security requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an IAM role with a policy that allows secretsmanager:GetSecretValue on only the specific secret ARNs, and attach the role to the EC2 instances as an instance profile",
+      "B": "Create an IAM user with Secrets Manager access, generate access keys, and store them in the application's configuration file on the instance",
+      "C": "Embed the secrets directly in the application source code to avoid needing AWS API calls",
+      "D": "Create an IAM role with full AdministratorAccess and attach it to the EC2 instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An IAM instance profile role provides temporary credentials that are automatically rotated by the EC2 metadata service, eliminating the need for long-term access keys. By scoping the IAM policy to allow secretsmanager:GetSecretValue only on specific secret ARNs, the application follows the principle of least privilege and can only access the secrets it needs.",
+    "whyOthersAreWrong": {
+      "B": "Creating an IAM user with access keys constitutes long-term credentials, which violates the security requirement. Storing access keys in configuration files also creates a security risk if the file is compromised.",
+      "C": "Embedding secrets in source code is a critical security anti-pattern. Secrets in code are exposed in version control, deployment artifacts, and to anyone with code access.",
+      "D": "AdministratorAccess grants full access to all AWS services and resources, violating the least-privilege principle and granting far more permissions than accessing specific secrets."
+    },
+    "learningObjective": "Use IAM instance profile roles with least-privilege policies to provide secure, keyless access to AWS services from EC2.",
+    "topic": "AWS IAM",
+    "tags": ["IAM", "instance-profile", "least-privilege", "Secrets-Manager", "security"]
+  },
+  {
+    "id": "saa-1696",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an internal application that uses an Application Load Balancer in a public subnet to route traffic to EC2 instances in private subnets. The application should only be accessible from the company's corporate network (10.0.0.0/8) through a VPN connection, not from the public internet. However, the security team discovers that the ALB is accessible from any IP address on the internet. Which solution prevents public internet access while maintaining access from the corporate network?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Replace the internet-facing ALB with an internal ALB deployed in private subnets, and route corporate traffic through the existing VPN connection",
+      "B": "Add a security group rule to the ALB that denies all inbound traffic from 0.0.0.0/0",
+      "C": "Remove the internet gateway from the VPC to prevent all internet access",
+      "D": "Configure a network ACL on the ALB's subnet to allow only TCP port 443 from the internet"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An internal ALB is not exposed to the internet—it only has private IP addresses and is accessible only from within the VPC or through connected networks (VPN, Direct Connect, peered VPCs). By replacing the internet-facing ALB with an internal ALB and routing corporate traffic through the existing VPN connection, the application is accessible only from the corporate network while being completely invisible from the public internet.",
+    "whyOthersAreWrong": {
+      "B": "Security groups are stateful and only support allow rules, not deny rules. You cannot add a deny rule to a security group. You could restrict inbound to the corporate CIDR, but the ALB would still have a public IP accessible from the internet (just with connections refused), and security group changes can be accidentally reverted.",
+      "C": "Removing the internet gateway would break all internet connectivity for the entire VPC, including NAT gateways used by instances in private subnets for software updates and other legitimate internet access.",
+      "D": "Allowing TCP 443 from the internet via NACL still permits anyone on the internet to reach the ALB on port 443, which does not restrict access to the corporate network."
+    },
+    "learningObjective": "Use internal ALBs for applications that should only be accessible from private networks via VPN or Direct Connect.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["ALB", "internal-load-balancer", "VPN", "security", "private-access"]
+  },
+  {
+    "id": "saa-1697",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building a photo-sharing application where users upload high-resolution photos. The application needs to generate three thumbnail sizes (small, medium, large) for each uploaded photo. The thumbnail generation is CPU-intensive and takes approximately 30 seconds per photo. Uploads can spike to hundreds of photos per minute during events. The company wants a serverless architecture that can handle these spikes without provisioning servers. Which architecture BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Upload photos to Amazon S3, configure an S3 event notification to send a message to an Amazon SQS queue, and have an AWS Lambda function poll the queue to generate thumbnails and save them back to S3",
+      "B": "Upload photos to Amazon S3, trigger a Lambda function directly from S3 event notifications, and generate all three thumbnails synchronously within the Lambda handler",
+      "C": "Upload photos directly to an EC2 instance running a thumbnail generation service with a fixed fleet size",
+      "D": "Upload photos to Amazon EFS and use a cron job on an EC2 instance to scan for new files every 5 minutes"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Using SQS as a buffer between S3 event notifications and Lambda provides several advantages: SQS absorbs traffic spikes by queuing messages when Lambda is at its concurrency limit, provides automatic retry for failed processing, and offers dead-letter queue capability. Lambda's SQS integration automatically scales the number of concurrent functions based on queue depth. This serverless architecture handles hundreds of uploads per minute without provisioned servers.",
+    "whyOthersAreWrong": {
+      "B": "Direct S3-to-Lambda invocation works functionally but lacks the buffering benefit of SQS. During extreme spikes, Lambda throttling would cause S3 to retry asynchronous invocations, potentially losing events after the retry limit. SQS provides more reliable message retention and processing.",
+      "C": "A fixed EC2 fleet cannot handle traffic spikes without over-provisioning and requires server management, contradicting the serverless requirement.",
+      "D": "A cron job scanning every 5 minutes introduces up to 5 minutes of latency, does not scale, requires server management, and is not event-driven."
+    },
+    "learningObjective": "Design a serverless image processing pipeline using S3, SQS, and Lambda for reliable, scalable event-driven processing.",
+    "topic": "AWS Lambda",
+    "tags": ["Lambda", "SQS", "S3", "image-processing", "serverless", "event-driven"]
+  },
+  {
+    "id": "saa-1698",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a hybrid environment with an on-premises data center connected to AWS via AWS Direct Connect. The company wants to resolve DNS names for resources in its on-premises environment from applications running in an Amazon VPC, and vice versa. Currently, VPC resources can resolve AWS-hosted DNS names but cannot resolve on-premises DNS names (e.g., internal.corp.example.com). Which solution enables bidirectional DNS resolution between the VPC and the on-premises environment?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create Amazon Route 53 Resolver inbound and outbound endpoints in the VPC, configure forwarding rules to send on-premises domain queries to the on-premises DNS servers, and configure the on-premises DNS servers to forward AWS domain queries to the inbound endpoint",
+      "B": "Replicate all on-premises DNS records into a Route 53 private hosted zone manually",
+      "C": "Install a BIND DNS server on an EC2 instance in the VPC and configure it as a forwarder to the on-premises DNS servers",
+      "D": "Enable DNS hostnames and DNS resolution on the VPC without any additional configuration"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Route 53 Resolver endpoints provide managed DNS forwarding between VPC and on-premises environments. Outbound endpoints forward DNS queries from VPC resources to on-premises DNS servers for on-premises domain names. Inbound endpoints accept DNS queries from on-premises DNS servers, allowing on-premises resources to resolve VPC-hosted DNS names. This creates a fully bidirectional DNS resolution path over the existing Direct Connect connection.",
+    "whyOthersAreWrong": {
+      "B": "Manually replicating DNS records is error-prone, does not stay synchronized with on-premises changes, requires ongoing maintenance, and does not enable on-premises resources to resolve VPC DNS names.",
+      "C": "A self-managed BIND server on EC2 requires provisioning, managing, and maintaining the instance (patching, availability, scaling). Route 53 Resolver endpoints are a fully managed alternative that eliminates this operational burden.",
+      "D": "Enabling DNS hostnames and resolution on the VPC allows VPC resources to resolve AWS public DNS names and VPC-internal names, but does not enable resolution of on-premises domain names or allow on-premises queries to reach the VPC."
+    },
+    "learningObjective": "Configure Route 53 Resolver endpoints for bidirectional DNS resolution in hybrid cloud environments.",
+    "topic": "Amazon Route 53",
+    "tags": ["Route-53", "Resolver", "hybrid-DNS", "Direct-Connect", "on-premises"]
+  },
+  {
+    "id": "saa-1699",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a data lake on Amazon S3 that is accessed by multiple analytics teams using Amazon Athena. The company needs to implement fine-grained access control so that different teams can only query specific databases, tables, and columns within the data lake. Managing individual IAM policies for each team's S3 access patterns has become unmanageable. Which service provides centralized, fine-grained access control for the data lake?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Lake Formation with data permissions that grant access at the database, table, and column level",
+      "B": "S3 bucket policies with conditions based on object key prefixes for each team",
+      "C": "Amazon Macie to classify and protect sensitive data in the data lake",
+      "D": "AWS IAM policies with S3 ARN-level permissions for each table's underlying S3 objects"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Lake Formation provides centralized data governance for data lakes. It allows administrators to define fine-grained permissions at the database, table, column, and even row level using a simple grant/revoke model. These permissions integrate with Athena, Redshift Spectrum, and EMR, so analytics teams can only access the data they are authorized to see. This eliminates the need to manage complex S3-level IAM policies.",
+    "whyOthersAreWrong": {
+      "B": "S3 bucket policies based on key prefixes cannot enforce column-level access control. They operate at the object level and become extremely complex to manage across many tables and teams.",
+      "C": "Amazon Macie is a data security service that discovers and classifies sensitive data. It does not enforce access control or restrict which teams can query specific tables and columns.",
+      "D": "IAM policies at the S3 ARN level cannot enforce column-level access within Athena queries. They control object-level access, which does not map cleanly to database, table, and column abstractions."
+    },
+    "learningObjective": "Use AWS Lake Formation for centralized, fine-grained access control over data lake resources.",
+    "topic": "AWS Lake Formation",
+    "tags": ["Lake-Formation", "data-lake", "Athena", "access-control", "governance"]
+  },
+  {
+    "id": "saa-1700",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to monitor its AWS environment and receive alerts when the estimated monthly charges exceed a specific threshold. The finance team needs to be notified by email when the estimated charges exceed $5,000 and again when they exceed $10,000. The solution should require minimal setup and ongoing maintenance. Which approach BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable billing alerts in the AWS Billing console, create two Amazon CloudWatch billing alarms (one for $5,000 and one for $10,000) using the EstimatedCharges metric, and configure each alarm to send notifications to an Amazon SNS topic subscribed by the finance team's email address",
+      "B": "Create a Lambda function that runs daily to check the Cost Explorer API and sends emails through Amazon SES when thresholds are exceeded",
+      "C": "Use AWS Budgets to create a cost budget and set alerts, but configure the alerts to go to an S3 bucket for later review",
+      "D": "Review the monthly AWS bill manually and forward it to the finance team via corporate email"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "CloudWatch billing alarms use the EstimatedCharges metric (available after enabling billing alerts) to monitor estimated charges in near real-time. Creating two alarms at the $5,000 and $10,000 thresholds with SNS email notifications provides automatic, managed alerting with zero ongoing maintenance. This is the simplest, most direct solution for threshold-based billing alerts.",
+    "whyOthersAreWrong": {
+      "B": "A custom Lambda function with SES requires writing and maintaining code, managing Lambda execution roles, handling SES identity verification, and troubleshooting failures—significantly more setup and maintenance than CloudWatch billing alarms.",
+      "C": "AWS Budgets supports email and SNS notifications directly. Sending alerts to S3 does not provide real-time notification and requires the finance team to actively check S3, defeating the purpose of automated alerting.",
+      "D": "Manual review is error-prone, depends on human diligence, and does not provide real-time alerts when thresholds are crossed mid-month."
+    },
+    "learningObjective": "Configure CloudWatch billing alarms with SNS notifications for automated cost threshold alerting.",
+    "topic": "AWS Cost Management",
+    "tags": ["CloudWatch", "billing-alarms", "SNS", "cost-management", "monitoring"]
+  }
+]
