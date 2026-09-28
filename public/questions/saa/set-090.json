@@ -1,0 +1,464 @@
+[
+  {
+    "id": "saa-1781",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a customer portal on EC2 instances behind an Application Load Balancer. The security team wants all administrative access to the instances to occur without opening inbound SSH ports, without bastion hosts, and without managing SSH keys, while keeping a full audit trail of session activity. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Systems Manager Session Manager to open shell sessions to the instances with activity logged to CloudWatch Logs or S3",
+      "B": "Deploy a bastion host in a public subnet and restrict SSH to the corporate IP range",
+      "C": "Open inbound port 22 on the instance security group only during maintenance windows",
+      "D": "Distribute SSH key pairs to administrators and rotate them monthly"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Systems Manager Session Manager provides secure shell access to instances through the SSM agent and IAM, without opening inbound ports, running bastion hosts, or managing SSH keys. Session activity can be logged to CloudWatch Logs or S3 for a complete audit trail, satisfying all the stated requirements.",
+    "whyOthersAreWrong": {
+      "B": "A bastion host still requires opening SSH and managing keys and adds infrastructure, contrary to the requirements.",
+      "C": "Opening port 22 even temporarily exposes an inbound attack surface and still requires key management.",
+      "D": "Distributing and rotating SSH keys is exactly the key-management burden the team wants to eliminate and still needs an inbound path."
+    },
+    "learningObjective": "Use Session Manager for keyless, portless, audited administrative access to EC2 instances.",
+    "topic": "AWS Systems Manager",
+    "tags": ["Session-Manager", "Systems-Manager", "security", "audit", "no-SSH"]
+  },
+  {
+    "id": "saa-1782",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company processes uploaded images. When an image is uploaded to Amazon S3, the company must run two independent actions: generate a thumbnail and record metadata in a database. Each action must run for every upload, must scale automatically, and a failure in one must not prevent the other. The company wants a serverless, event-driven design. Which architecture BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Send S3 upload events to Amazon EventBridge and create two rules, each invoking a separate Lambda function",
+      "B": "Configure a single S3 event notification to one Lambda function that performs both actions sequentially",
+      "C": "Poll the S3 bucket every minute with a Lambda function to detect new objects",
+      "D": "Write both actions into the uploading client so it calls the database and thumbnail service directly"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Routing S3 events to EventBridge lets multiple rules match the same event, each invoking an independent Lambda function. The thumbnail and metadata functions run for every upload, scale independently, and are isolated so a failure in one does not affect the other. This is a clean serverless, event-driven fan-out design.",
+    "whyOthersAreWrong": {
+      "B": "A single function doing both actions sequentially couples them; a failure in one action can prevent or complicate the other, and they cannot scale independently.",
+      "C": "Polling adds latency and cost, can miss or duplicate detections, and is not event-driven.",
+      "D": "Embedding both actions in the client couples the workflow to the uploader, risks partial failure, and is harder to scale and secure than server-side event handling."
+    },
+    "learningObjective": "Use S3-to-EventBridge fan-out to trigger independent, isolated serverless actions per event.",
+    "topic": "Amazon EventBridge",
+    "tags": ["EventBridge", "S3", "Lambda", "fan-out", "event-driven", "serverless"]
+  },
+  {
+    "id": "saa-1783",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a fleet of EC2 instances in an Auto Scaling group that must be patched to a compliant baseline on a regular schedule, with reporting on which instances are compliant. The team wants a managed capability that automates patch scanning and installation across the fleet without building custom scripts. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Systems Manager Patch Manager with a patch baseline and a maintenance window to scan and install patches on a schedule",
+      "B": "Write a cron job on each instance that runs the OS package manager nightly",
+      "C": "Rebuild and redeploy the AMI manually whenever a patch is released",
+      "D": "Use Amazon Inspector to install patches automatically across the fleet"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Systems Manager Patch Manager automates patch scanning and installation against a defined patch baseline, scheduled through maintenance windows, across an entire instance fleet. It provides compliance reporting showing which instances are patched, meeting the requirement without custom scripts.",
+    "whyOthersAreWrong": {
+      "B": "Per-instance cron jobs are custom scripts to build and maintain, lack centralized baselines and compliance reporting, and drift across the fleet.",
+      "C": "Manually rebuilding and redeploying AMIs for every patch is labor-intensive and does not provide scheduled scanning or per-instance compliance reporting.",
+      "D": "Amazon Inspector assesses instances for vulnerabilities but does not install patches; remediation is handled by Patch Manager."
+    },
+    "learningObjective": "Use Systems Manager Patch Manager for automated, scheduled fleet patching with compliance reporting.",
+    "topic": "AWS Systems Manager",
+    "tags": ["Systems-Manager", "Patch-Manager", "patching", "compliance", "operations"]
+  },
+  {
+    "id": "saa-1784",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to reduce the cost of data transfer out of its VPC. Its EC2 instances in private subnets currently reach Amazon S3 and Amazon DynamoDB through a NAT gateway, incurring NAT data processing charges for this traffic. The company wants to eliminate NAT charges for traffic to these two services while keeping the traffic private. Which solution BEST achieves this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create gateway VPC endpoints for Amazon S3 and Amazon DynamoDB and route traffic to them",
+      "B": "Add a second NAT gateway to distribute the load and reduce charges",
+      "C": "Move the instances to public subnets so they reach S3 and DynamoDB directly",
+      "D": "Replace the NAT gateway with a NAT instance to lower processing costs"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Gateway VPC endpoints for S3 and DynamoDB route traffic to those services privately via route table entries and incur no hourly or data processing charges. Directing S3 and DynamoDB traffic through gateway endpoints removes it from the NAT gateway, eliminating NAT data processing charges for that traffic while keeping it on the AWS network.",
+    "whyOthersAreWrong": {
+      "B": "A second NAT gateway increases cost and still processes the same traffic; it does not eliminate NAT data processing charges.",
+      "C": "Moving instances to public subnets exposes them to the internet, weakening security, and still may incur data transfer costs.",
+      "D": "A NAT instance still processes the traffic and adds management overhead; gateway endpoints remove the traffic from NAT entirely at no endpoint charge."
+    },
+    "learningObjective": "Use gateway VPC endpoints to remove S3/DynamoDB traffic from NAT and eliminate NAT data processing charges.",
+    "topic": "Amazon VPC",
+    "tags": ["gateway-endpoint", "NAT-gateway", "S3", "DynamoDB", "cost-optimization"]
+  },
+  {
+    "id": "saa-1785",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates an application that experiences unpredictable, spiky read traffic against an Amazon RDS for MySQL database. Read queries are simple lookups on the same frequently requested rows, and slight staleness is acceptable. The company wants to reduce read latency and database load with minimal application changes. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add an Amazon ElastiCache cache in front of the database using a cache-aside pattern for the frequent lookups",
+      "B": "Increase the RDS instance size to handle more read traffic",
+      "C": "Enable Multi-AZ and send reads to the standby instance",
+      "D": "Convert the database to Amazon Redshift for faster reads"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A cache-aside pattern with Amazon ElastiCache stores frequently requested lookup results in memory. Repeated reads are served from the cache in sub-millisecond time, dramatically reducing latency and offloading the database during spikes. Since slight staleness is acceptable, caching is appropriate and requires only modest application changes to check the cache first.",
+    "whyOthersAreWrong": {
+      "B": "Scaling up the instance costs more and still handles every read on the database; it does not provide in-memory caching for repeated lookups.",
+      "C": "The Multi-AZ standby is not readable; it exists only for failover, so it cannot serve read traffic.",
+      "D": "Redshift is a data warehouse for analytical queries, not low-latency key lookups, and migrating would be a major change with the wrong access pattern."
+    },
+    "learningObjective": "Use ElastiCache cache-aside to reduce read latency and offload repeated lookups from a relational database.",
+    "topic": "Amazon ElastiCache",
+    "tags": ["ElastiCache", "cache-aside", "read-scaling", "performance", "RDS"]
+  },
+  {
+    "id": "saa-1786",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a workload that must comply with a requirement to keep all resources and data within a single approved AWS Region. Using AWS Organizations, the security team must ensure that principals in member accounts cannot create resources in any other Region, including future new Regions, and the control must apply to administrators. Which solution BEST enforces this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach a service control policy that denies actions when aws:RequestedRegion is not the approved Region",
+      "B": "Configure an AWS Config rule that flags resources created outside the approved Region",
+      "C": "Add IAM policies to each user recommending the approved Region",
+      "D": "Use tags to label resources with their Region for later cleanup"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An SCP using the aws:RequestedRegion condition key denies any action targeting a Region other than the approved one. Because SCPs apply to all principals in member accounts (including administrators) and evaluate at request time, this preventively blocks out-of-Region resource creation, including in Regions added in the future.",
+    "whyOthersAreWrong": {
+      "B": "AWS Config is detective and reports violations after resources are created; it does not prevent out-of-Region creation.",
+      "C": "IAM policies attached per user are inconsistent to manage and can be changed by account admins; they are not an organization-wide preventive guardrail.",
+      "D": "Tagging is a labeling/cleanup mechanism and does not prevent resource creation in other Regions."
+    },
+    "learningObjective": "Enforce Region restriction organization-wide with an SCP using aws:RequestedRegion.",
+    "topic": "AWS Organizations",
+    "tags": ["SCP", "aws:RequestedRegion", "data-residency", "guardrails", "compliance"]
+  },
+  {
+    "id": "saa-1787",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company needs a relational database for a new application with a moderate, steady workload. Requirements: managed backups, automatic patching, Multi-AZ high availability, and compatibility with standard PostgreSQL. The team wants the simplest managed option that meets these needs without designing for extreme scale. Which service is MOST appropriate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon RDS for PostgreSQL with Multi-AZ enabled",
+      "B": "Amazon DynamoDB with global tables",
+      "C": "PostgreSQL self-managed on EC2 with a standby instance",
+      "D": "Amazon Redshift with concurrency scaling"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon RDS for PostgreSQL is a managed relational database that provides automated backups, automatic patching, and Multi-AZ high availability with a synchronous standby and automatic failover, while remaining compatible with standard PostgreSQL. For a moderate, steady workload it is the simplest managed fit.",
+    "whyOthersAreWrong": {
+      "B": "DynamoDB is a NoSQL service and is not PostgreSQL-compatible; migrating a relational app to it would require re-architecture.",
+      "C": "Self-managed PostgreSQL on EC2 puts backups, patching, and failover management on the team, contrary to wanting a simple managed option.",
+      "D": "Redshift is an analytical data warehouse, not a general-purpose transactional PostgreSQL database."
+    },
+    "learningObjective": "Select Amazon RDS for a managed, Multi-AZ, engine-compatible relational database for steady workloads.",
+    "topic": "Amazon RDS",
+    "tags": ["RDS", "PostgreSQL", "Multi-AZ", "managed-service", "high-availability"]
+  },
+  {
+    "id": "saa-1788",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to be alerted when its monthly AWS spend is forecasted to exceed a set threshold, and it wants to track costs by team using tags. The finance team needs email alerts and the ability to view spend per team. The solution should require minimal setup and no custom code. Which combination BEST meets these requirements? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Create an AWS Budgets cost budget with an alert that notifies by email when actual or forecasted spend exceeds the threshold",
+      "B": "Activate cost allocation tags and use AWS Cost Explorer to analyze spend grouped by the team tag",
+      "C": "Write a Lambda function that queries billing APIs hourly and emails a custom report",
+      "D": "Export raw billing data to Amazon S3 and require finance to parse it manually",
+      "E": "Enable Amazon CloudWatch anomaly detection on EC2 CPU metrics to track spend"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "AWS Budgets lets you set a cost budget and email alerts on actual or forecasted spend crossing a threshold, with minimal setup and no code. Activating cost allocation tags and using Cost Explorer lets finance group and visualize spend by the team tag. Together they provide threshold alerting and per-team cost visibility natively.",
+    "whyOthersAreWrong": {
+      "C": "A custom Lambda and billing report duplicates what Budgets provides and adds code and maintenance, contrary to the minimal-setup requirement.",
+      "D": "Manually parsing raw billing exports is labor-intensive and error-prone compared to Cost Explorer's built-in grouping.",
+      "E": "CloudWatch anomaly detection on CPU metrics measures utilization, not spend, and does not provide cost alerts or per-team cost breakdowns."
+    },
+    "learningObjective": "Use AWS Budgets and cost allocation tags with Cost Explorer for cost alerting and per-team visibility.",
+    "topic": "AWS Cost Management",
+    "tags": ["Budgets", "Cost-Explorer", "cost-allocation-tags", "cost-management", "alerting"]
+  },
+  {
+    "id": "saa-1789",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a public website on Amazon S3 served through Amazon CloudFront. The security team requires that users can only reach the site content through CloudFront and never by requesting the S3 bucket directly, while keeping the bucket private. Which configuration BEST enforces this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use CloudFront Origin Access Control (OAC) and a bucket policy that allows access only from the CloudFront distribution",
+      "B": "Enable S3 static website hosting and make the bucket publicly readable",
+      "C": "Add the bucket URL to CloudFront and rely on obscurity of the bucket name",
+      "D": "Place the bucket in a private subnet and route CloudFront through a VPC endpoint"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Origin Access Control lets CloudFront sign requests to the S3 origin. A bucket policy that permits access only from the distribution's OAC identity, combined with S3 Block Public Access, ensures the bucket stays private and content is reachable only through CloudFront. Direct S3 requests are denied.",
+    "whyOthersAreWrong": {
+      "B": "Making the bucket publicly readable allows direct S3 access, defeating the requirement.",
+      "C": "Relying on the obscurity of the bucket name provides no real access control; the bucket remains directly reachable.",
+      "D": "S3 buckets are not placed in VPC subnets, and CloudFront is a global edge service that does not route through VPC endpoints; this is not how S3/CloudFront access control works."
+    },
+    "learningObjective": "Use CloudFront OAC with a restrictive bucket policy to serve private S3 content only through the CDN.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "OAC", "S3", "access-control", "security"]
+  },
+  {
+    "id": "saa-1790",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is building an ingestion pipeline that must capture high-volume streaming telemetry, buffer it, and deliver it to Amazon S3 in near real time with automatic scaling and no servers to manage. It also needs to apply lightweight format conversion during delivery. Which service BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon Data Firehose delivering to Amazon S3 with record format conversion enabled",
+      "B": "Amazon SQS with EC2 consumers writing to S3",
+      "C": "Amazon Kinesis Data Streams with a custom consumer application on EC2",
+      "D": "AWS Glue running scheduled batch jobs against a database"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon Data Firehose is fully managed and automatically scales to ingest streaming data, buffer it, and deliver to Amazon S3 in near real time with no servers to operate. It supports built-in record format conversion (for example JSON to Parquet), directly satisfying the ingestion, delivery, scaling, and lightweight transformation requirements.",
+    "whyOthersAreWrong": {
+      "B": "SQS with EC2 consumers requires managing servers and writing delivery/batching code, contrary to the no-server requirement.",
+      "C": "Kinesis Data Streams requires building and operating a custom consumer to deliver to S3, adding operational overhead.",
+      "D": "AWS Glue runs batch ETL jobs and is not a near-real-time streaming delivery service for continuous telemetry."
+    },
+    "learningObjective": "Select Amazon Data Firehose for serverless near-real-time streaming ingestion and delivery to S3.",
+    "topic": "Amazon Kinesis",
+    "tags": ["Data-Firehose", "streaming", "S3", "serverless", "format-conversion"]
+  },
+  {
+    "id": "saa-1791",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a critical workload on an Amazon Aurora MySQL cluster. The business requires that the database survive the loss of an Availability Zone with automatic failover and minimal downtime, and that read traffic be offloaded from the writer. Which configuration BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy Aurora Replicas in multiple Availability Zones and use the reader endpoint for reads, relying on automatic failover to a replica",
+      "B": "Run a single Aurora instance and take frequent snapshots",
+      "C": "Use an external MySQL replica on EC2 for failover",
+      "D": "Enable cross-Region replication and fail over to another Region for AZ loss"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Aurora Replicas placed in different Availability Zones provide read scaling via the reader endpoint and serve as automatic failover targets. If the writer's AZ fails, Aurora automatically promotes a replica to writer, typically within seconds to about a minute, delivering high availability with minimal downtime while offloading reads.",
+    "whyOthersAreWrong": {
+      "B": "A single instance with snapshots has no automatic failover and would incur significant downtime and potential data loss on AZ failure.",
+      "C": "An external EC2 MySQL replica is not integrated with Aurora's automatic failover and adds operational burden.",
+      "D": "Cross-Region replication is for regional disaster recovery; for a single-AZ failure, in-Region Aurora Replicas provide faster, automatic failover without a Region switch."
+    },
+    "learningObjective": "Use multi-AZ Aurora Replicas with the reader endpoint for automatic failover and read offloading.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora", "replicas", "reader-endpoint", "failover", "high-availability"]
+  },
+  {
+    "id": "saa-1792",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a fleet of on-premises servers that must upload files to AWS throughout the day and also occasionally read recently written files with low latency. The company wants a hybrid solution that presents a standard file interface on-premises while durably storing data in Amazon S3, caching recently used data locally. Which service BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Storage Gateway (Amazon S3 File Gateway) presenting an NFS/SMB interface backed by S3 with local caching",
+      "B": "AWS Snowball Edge devices cycled between the site and AWS",
+      "C": "Amazon EFS mounted directly over the internet from on-premises",
+      "D": "Direct application rewrites to call the S3 API for every file operation"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon S3 File Gateway (part of AWS Storage Gateway) presents a standard NFS/SMB file interface on-premises while storing files durably as objects in Amazon S3. It caches recently accessed data locally for low-latency reads and asynchronously uploads writes to S3, matching the hybrid file-interface plus S3-backed storage requirement.",
+    "whyOthersAreWrong": {
+      "B": "Snowball is for bulk offline transfer, not ongoing daily file access with a local file interface and low-latency reads.",
+      "C": "Mounting EFS over the internet from on-premises is not the intended pattern and lacks the local caching and S3-backed model described; EFS access from on-premises typically requires Direct Connect/VPN and is a different use case.",
+      "D": "Rewriting applications to call S3 directly is a large change and does not provide a local file interface or local caching."
+    },
+    "learningObjective": "Use S3 File Gateway for a hybrid file interface backed by S3 with local caching.",
+    "topic": "AWS Storage Gateway",
+    "tags": ["Storage-Gateway", "File-Gateway", "hybrid", "S3", "caching"]
+  },
+  {
+    "id": "saa-1793",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application must send notifications to multiple subscriber types simultaneously: some subscribers are HTTPS endpoints, some are email addresses, and some are SQS queues used by internal services. The company wants a managed publish/subscribe mechanism so that one published message is delivered to all subscribers. Which service BEST meets this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon SNS with the various endpoints subscribed to a topic",
+      "B": "Amazon SQS with multiple consumers polling a single queue",
+      "C": "AWS Step Functions invoking each subscriber in sequence",
+      "D": "Amazon Kinesis Data Streams with multiple shard consumers"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon SNS is a managed publish/subscribe service. A single message published to an SNS topic is delivered to all subscribers, which can include HTTPS endpoints, email, and SQS queues simultaneously. This directly matches the fan-out-to-multiple-subscriber-types requirement.",
+    "whyOthersAreWrong": {
+      "B": "A single SQS queue delivers each message to only one consumer; competing consumers do not each receive the message, so it is not pub/sub fan-out.",
+      "C": "Step Functions orchestrates workflow steps sequentially and is not a pub/sub broadcast mechanism to heterogeneous subscribers.",
+      "D": "Kinesis Data Streams is for ordered stream processing by consumers reading shards, not for delivering a message to email/HTTPS/SQS subscribers via subscriptions."
+    },
+    "learningObjective": "Use Amazon SNS pub/sub to broadcast a message to multiple heterogeneous subscribers.",
+    "topic": "Amazon SNS",
+    "tags": ["SNS", "pub-sub", "fan-out", "notifications", "decoupling"]
+  },
+  {
+    "id": "saa-1794",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company needs to grant an application running on Amazon EKS pods access to a specific Amazon S3 bucket following least privilege, without embedding static credentials in the pods. The company wants each pod's service account to map to a scoped IAM role. Which approach BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use IAM roles for service accounts (IRSA) to associate a scoped IAM role with the Kubernetes service account used by the pods",
+      "B": "Store IAM user access keys in a Kubernetes Secret and mount it into the pods",
+      "C": "Attach an IAM role with S3 full access to the EKS worker node instance profile",
+      "D": "Hardcode temporary credentials into the container image and rebuild periodically"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "IAM roles for service accounts (IRSA) let you associate a specific, scoped IAM role with a Kubernetes service account. Pods using that service account receive temporary credentials for only the permissions the role grants (for example access to one S3 bucket), following least privilege without static credentials in the pods.",
+    "whyOthersAreWrong": {
+      "B": "Storing IAM user access keys in a Secret uses long-term static credentials that are hard to rotate and violate the no-static-credentials requirement.",
+      "C": "Granting S3 access on the node instance profile gives every pod on the node those permissions and typically over-broad access, violating least privilege and pod-level isolation.",
+      "D": "Hardcoding credentials in the image exposes them in artifacts and does not provide per-pod scoped, rotating access."
+    },
+    "learningObjective": "Use IRSA to grant scoped, credential-free IAM permissions to specific EKS pods.",
+    "topic": "Amazon EKS",
+    "tags": ["EKS", "IRSA", "IAM", "least-privilege", "security"]
+  },
+  {
+    "id": "saa-1795",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a TCP-based application on EC2 instances that must handle millions of requests per second with ultra-low latency and preserve the client source IP for the backend. The load balancer must scale to sudden, extreme traffic without pre-warming. Which load balancing option BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "A Network Load Balancer",
+      "B": "An Application Load Balancer",
+      "C": "A Gateway Load Balancer",
+      "D": "Amazon CloudFront in front of the instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A Network Load Balancer operates at Layer 4, handles millions of requests per second with ultra-low latency, scales instantly to extreme and volatile traffic, and can preserve the client source IP to the targets. This matches the TCP, ultra-low-latency, source-IP-preservation, and instant-scale requirements.",
+    "whyOthersAreWrong": {
+      "B": "An ALB is a Layer 7 HTTP/HTTPS load balancer; it adds latency for pure TCP workloads and by default does not preserve the client source IP to targets in the same way (it terminates HTTP).",
+      "C": "A Gateway Load Balancer is designed to insert third-party virtual appliances (firewalls/IDS) into the traffic path, not to serve as a general TCP application load balancer.",
+      "D": "CloudFront is a content delivery network optimized for HTTP/HTTPS caching, not a Layer 4 load balancer for high-throughput TCP with source-IP preservation."
+    },
+    "learningObjective": "Select a Network Load Balancer for high-throughput, low-latency TCP with source IP preservation.",
+    "topic": "Elastic Load Balancing",
+    "tags": ["NLB", "Layer-4", "low-latency", "source-IP", "load-balancing"]
+  },
+  {
+    "id": "saa-1796",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must retain audit logs in Amazon S3 for 7 years. The logs are written continuously, rarely read after 60 days, and any retrieval after 60 days can tolerate a wait of several hours. The company wants to minimize storage cost over the retention period while automating the transition. Which S3 lifecycle configuration BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Transition objects to S3 Glacier Deep Archive after 60 days and expire them at 7 years",
+      "B": "Keep objects in S3 Standard for the full 7 years",
+      "C": "Transition objects to S3 Standard-Infrequent Access after 60 days and keep them for 7 years",
+      "D": "Transition objects to S3 Glacier Instant Retrieval after 60 days and expire at 7 years"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "S3 Glacier Deep Archive is the lowest-cost storage class, designed for long-term archives that are rarely accessed and where retrieval times of several hours (up to 12) are acceptable. Since logs are rarely read after 60 days and multi-hour retrieval is tolerable, transitioning to Deep Archive after 60 days and expiring at 7 years minimizes cost, automated by a lifecycle rule.",
+    "whyOthersAreWrong": {
+      "B": "Keeping data in S3 Standard for 7 years is the most expensive option for data that is rarely accessed.",
+      "C": "Standard-IA costs more per GB than Deep Archive and is meant for data needing millisecond access, which is unnecessary here.",
+      "D": "Glacier Instant Retrieval is priced for archives needing millisecond retrieval; since several-hour retrieval is acceptable, it is more expensive than needed."
+    },
+    "learningObjective": "Use S3 Glacier Deep Archive lifecycle transitions for lowest-cost long-term retention with multi-hour retrieval.",
+    "topic": "Amazon S3",
+    "tags": ["S3", "Glacier-Deep-Archive", "lifecycle", "compliance", "cost-optimization"]
+  },
+  {
+    "id": "saa-1797",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is deploying a public-facing three-tier web application. The web tier must be internet-facing, the application and database tiers must not be reachable from the internet, and the design must span two Availability Zones. Which network design meets these requirements? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Place the internet-facing load balancer and NAT gateways in public subnets across two Availability Zones",
+      "B": "Place the application and database tiers in private subnets with no route to the internet gateway",
+      "C": "Place the database tier in a public subnet with a restrictive security group",
+      "D": "Use a single Availability Zone to reduce cross-AZ traffic",
+      "E": "Assign public IP addresses to the application tier instances for outbound updates"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Placing the internet-facing load balancer (and NAT gateways for outbound access) in public subnets across two AZs provides internet entry and high availability. Putting the application and database tiers in private subnets with no internet gateway route keeps them unreachable from the internet while still allowing outbound access via the NAT gateways. This creates a secure, highly available three-tier design.",
+    "whyOthersAreWrong": {
+      "C": "A public subnet gives the database a route to the internet gateway, exposing it to inbound internet reachability, which violates the requirement even with a restrictive security group.",
+      "D": "A single AZ eliminates high availability; an AZ failure would take down the application.",
+      "E": "Public IPs on the application tier make it internet-reachable; outbound updates should go through NAT gateways from private subnets instead."
+    },
+    "learningObjective": "Design a multi-AZ public/private subnet layout that isolates app and database tiers from the internet.",
+    "topic": "Amazon VPC",
+    "tags": ["VPC", "subnets", "Multi-AZ", "network-isolation", "NAT-gateway", "security"]
+  },
+  {
+    "id": "saa-1798",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a workflow that coordinates multiple AWS Lambda functions with conditional branching, retries, and a step that must wait for an external approval that can take up to two days. The company wants a managed orchestration service that tracks execution state and requires no custom orchestration code. Which service BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Step Functions modeling the workflow as a state machine with a wait-for-callback task for the approval",
+      "B": "A single Lambda function that loops and sleeps until approval is received",
+      "C": "Amazon SQS passing messages between the Lambda functions",
+      "D": "Amazon EventBridge rules on a fixed schedule to advance the workflow"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Step Functions is a managed orchestration service that models workflows as state machines with built-in branching, retries, and error handling. Its wait-for-callback (task token) pattern can pause a step until an external approval arrives, even for days, while tracking execution state, all without custom orchestration code.",
+    "whyOthersAreWrong": {
+      "B": "A single Lambda cannot run or sleep for two days (15-minute max timeout) and would require building custom state and branching logic.",
+      "C": "SQS decouples messages but provides no built-in workflow state, branching, retry orchestration, or long human-approval wait handling.",
+      "D": "Scheduled EventBridge rules trigger actions on a timetable and do not manage stateful, conditional, approval-gated workflows."
+    },
+    "learningObjective": "Use Step Functions with task tokens to orchestrate long-running, approval-gated workflows without custom code.",
+    "topic": "AWS Step Functions",
+    "tags": ["Step-Functions", "orchestration", "wait-for-callback", "workflow", "Lambda"]
+  },
+  {
+    "id": "saa-1799",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company hosts an internal REST API on Amazon API Gateway. Only workloads inside the company's VPCs should be able to call the API; it must not be reachable from the public internet. Which API Gateway configuration BEST meets this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a private REST API and associate it with an interface VPC endpoint, restricting access with a resource policy",
+      "B": "Create a public regional API and restrict it with an API key",
+      "C": "Create an edge-optimized API and place it behind CloudFront",
+      "D": "Create a public API and rely on IAM authentication only"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A private API Gateway REST API is accessible only through an interface VPC endpoint (powered by AWS PrivateLink), so it is reachable from within connected VPCs and not from the public internet. A resource policy further restricts which VPC endpoints or principals may invoke it, meeting the internal-only requirement.",
+    "whyOthersAreWrong": {
+      "B": "A public regional API is internet-reachable; API keys are for usage identification/throttling, not for preventing internet access.",
+      "C": "An edge-optimized API behind CloudFront is designed for public internet distribution, the opposite of the requirement.",
+      "D": "A public API with IAM auth is still exposed on the internet; the endpoint itself remains publicly reachable."
+    },
+    "learningObjective": "Use a private API Gateway REST API with a VPC endpoint to keep an API internal to VPCs.",
+    "topic": "Amazon API Gateway",
+    "tags": ["API-Gateway", "private-API", "VPC-endpoint", "PrivateLink", "security"]
+  },
+  {
+    "id": "saa-1800",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs an application on EC2 instances that must download software packages from the internet for updates but must not accept any inbound connections from the internet. The instances are in private subnets across two Availability Zones. The company wants a highly available, managed outbound path that continues working if one Availability Zone fails. Which design BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy a NAT gateway in a public subnet in each Availability Zone and route each private subnet to the NAT gateway in its own AZ",
+      "B": "Deploy a single NAT gateway in one Availability Zone and route both private subnets to it",
+      "C": "Assign Elastic IP addresses to the instances for outbound access",
+      "D": "Move the instances to public subnets and use an internet gateway route"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A NAT gateway is managed and highly available within its AZ, but it is a single-AZ resource. Deploying one NAT gateway per Availability Zone and routing each private subnet to the NAT gateway in the same AZ ensures outbound internet access continues even if one AZ fails, and it avoids cross-AZ data charges. Inbound connections from the internet remain blocked.",
+    "whyOthersAreWrong": {
+      "B": "A single NAT gateway is a single point of failure; if its AZ fails, private subnets routed to it lose outbound access.",
+      "C": "Assigning Elastic IPs makes the instances internet-reachable and requires them to be in public subnets, violating the no-inbound requirement.",
+      "D": "Moving instances to public subnets with an internet gateway route exposes them to inbound internet connections, violating the requirement."
+    },
+    "learningObjective": "Deploy per-AZ NAT gateways for highly available, outbound-only internet access from private subnets.",
+    "topic": "Amazon VPC",
+    "tags": ["NAT-gateway", "Multi-AZ", "high-availability", "private-subnet", "networking"]
+  }
+]
