@@ -1,0 +1,469 @@
+[
+  {
+    "id": "saa-1821",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial services company runs a multi-account environment managed by AWS Organizations. A central networking account owns a Transit Gateway and a shared inbound VPC with an AWS Network Firewall for centralized egress inspection. Dozens of workload accounts have VPCs attached to the Transit Gateway. Security requires that all internet-bound traffic from workload VPCs be inspected, and that workload accounts CANNOT create their own internet gateways or NAT gateways to bypass inspection. Which combination of controls BEST enforces this while keeping routing centrally managed? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure workload VPC route tables to send 0.0.0.0/0 to the Transit Gateway, and use the central inspection VPC to route egress through the Network Firewall and a NAT gateway",
+      "B": "Attach a Service Control Policy at the organizational unit that denies ec2:CreateInternetGateway, ec2:AttachInternetGateway, and ec2:CreateNatGateway for workload accounts",
+      "C": "Enable VPC Flow Logs in every workload account and alert when internet-bound traffic is detected",
+      "D": "Place a NAT gateway in each workload VPC and peer every workload VPC directly to the inspection VPC",
+      "E": "Rely on security groups in each workload VPC to block outbound traffic to 0.0.0.0/0"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Centralized egress is achieved by pointing each workload VPC default route at the Transit Gateway, which forwards traffic to the inspection VPC where Network Firewall inspects it before a NAT gateway sends it to the internet (A). To prevent accounts from bypassing inspection, an SCP that denies creating/attaching internet gateways and NAT gateways removes the technical ability to build an alternate egress path regardless of account-level IAM permissions (B). Together they enforce inspected, centrally managed egress.",
+    "whyOthersAreWrong": {
+      "C": "Flow Logs and alerts are detective, not preventive; they do not stop a bypass path from being created or used.",
+      "D": "Per-VPC NAT gateways create decentralized egress that bypasses the central firewall and increases cost, defeating the inspection requirement.",
+      "E": "Security groups are stateful allow-lists per resource and are easily changed by account owners; they cannot centrally guarantee inspection or prevent gateway creation."
+    },
+    "learningObjective": "Combine centralized Transit Gateway egress inspection with SCP guardrails to enforce and prevent bypass of traffic inspection.",
+    "topic": "AWS Organizations",
+    "tags": ["Transit-Gateway", "Network-Firewall", "SCP", "multi-account", "centralized-egress"]
+  },
+  {
+    "id": "saa-1822",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An e-commerce platform runs its checkout service as an Amazon ECS on Fargate service behind an Application Load Balancer. During flash sales the relational Aurora MySQL cluster experiences connection storms: thousands of tasks open new database connections simultaneously, exhausting the cluster's max connections and causing checkout failures, even though CPU and memory on the writer are moderate. The team cannot rewrite the application's connection logic quickly. Which solution MOST directly resolves the connection exhaustion with the least application change?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Put Amazon RDS Proxy in front of the Aurora cluster and point the ECS tasks at the proxy endpoint to pool and reuse connections",
+      "B": "Scale the Aurora writer to a larger instance class to raise the maximum connection limit",
+      "C": "Add Aurora read replicas and send all checkout traffic to the reader endpoint",
+      "D": "Increase the ECS service desired count so each task handles fewer requests"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "The bottleneck is connection count, not compute. RDS Proxy maintains a warm pool of database connections and multiplexes many application connections onto fewer backend connections, absorbing connection storms with a simple endpoint change and no rewrite of the app's connection logic. This directly eliminates connection exhaustion during spikes.",
+    "whyOthersAreWrong": {
+      "B": "A bigger instance raises max_connections somewhat but scales poorly against thousands of tasks and wastes money on idle capacity between sales; it treats a symptom, not the pooling problem.",
+      "C": "Checkout is write traffic; the reader endpoint cannot serve writes, and replicas do not reduce writer connection pressure.",
+      "D": "More tasks open more connections, worsening the storm."
+    },
+    "learningObjective": "Use RDS Proxy to solve database connection exhaustion for spiky, highly concurrent workloads with minimal application change.",
+    "topic": "Amazon RDS",
+    "tags": ["RDS-Proxy", "Aurora-MySQL", "ECS-Fargate", "connection-pooling", "performance"]
+  },
+  {
+    "id": "saa-1823",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company delivers large video-on-demand files from an Amazon S3 bucket through Amazon CloudFront to a global audience. A subset of premium content must only be viewable by authenticated subscribers, links must expire after a short period, and the origin bucket must never be directly reachable from the internet. The company also wants to serve different content to users based on their subscription tier. Which combination of CloudFront features BEST meets these requirements? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Restrict the S3 bucket with Origin Access Control (OAC) so only the CloudFront distribution can read objects",
+      "B": "Use CloudFront signed URLs or signed cookies to grant time-limited access to premium objects",
+      "C": "Make the S3 bucket public and use a bucket policy that allows only CloudFront IP ranges",
+      "D": "Enable S3 Transfer Acceleration on the bucket to secure premium content",
+      "E": "Disable caching on the distribution so every request is authorized at the origin"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Origin Access Control locks the S3 bucket so objects are retrievable only through the CloudFront distribution, keeping the origin private (A). CloudFront signed URLs or signed cookies enforce per-subscriber, time-limited access to premium content and support serving/authorizing content differently per user (B). Together they satisfy private origin plus authenticated, expiring access.",
+    "whyOthersAreWrong": {
+      "C": "Making the bucket public is the opposite of the requirement, and CloudFront IP ranges change and are not a supported access-control mechanism.",
+      "D": "Transfer Acceleration speeds uploads over long distances; it provides no access control and is unrelated to viewer authorization.",
+      "E": "Disabling caching destroys CloudFront's performance/cost benefits and still does not authenticate subscribers or keep the origin private."
+    },
+    "learningObjective": "Secure private CloudFront origins with OAC and enforce time-limited authenticated viewer access with signed URLs/cookies.",
+    "topic": "Amazon CloudFront",
+    "tags": ["CloudFront", "OAC", "signed-URLs", "S3", "content-security"]
+  },
+  {
+    "id": "saa-1824",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A SaaS company hosts a stateless REST API on Amazon ECS on Fargate behind an Application Load Balancer in a single Region across three Availability Zones. Traffic is highly variable with sudden spikes. Requirements: the service must scale out within seconds of a spike, maintain availability if one AZ fails, and minimize cost during quiet periods. The team notices scaling reacts too slowly because it is based only on average CPU. Which changes BEST improve responsiveness and resilience while controlling cost? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure ECS service target-tracking scaling on the ALB request-count-per-target metric in addition to CPU",
+      "B": "Ensure the ECS service spreads tasks across all three AZs using the AZ spread placement strategy",
+      "C": "Switch the service to a single large task per AZ and scale vertically",
+      "D": "Replace the ALB with a Network Load Balancer to make scaling faster",
+      "E": "Set a fixed desired count sized for peak traffic to avoid scaling delays"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Scaling on ALB request-count-per-target reacts to actual incoming load faster and more accurately than lagging CPU averages, improving spike responsiveness (A). Spreading tasks across all three AZs ensures the service survives an AZ failure with balanced capacity (B). Together they deliver fast scale-out, multi-AZ resilience, and scale-in during quiet times to control cost.",
+    "whyOthersAreWrong": {
+      "C": "One large task per AZ cannot scale horizontally to absorb spikes and reduces resilience granularity.",
+      "D": "An NLB does not make ECS scaling faster; the scaling trigger metric, not the load balancer type, is the issue, and NLB lacks request-count metrics for scaling.",
+      "E": "Fixed peak-sized capacity wastes money during quiet periods, violating the cost requirement."
+    },
+    "learningObjective": "Improve ECS scaling responsiveness with request-based target tracking and ensure resilience via multi-AZ task spread.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS-Fargate", "auto-scaling", "ALB", "multi-AZ", "cost-optimization"]
+  },
+  {
+    "id": "saa-1825",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates two VPCs in different accounts that were created independently and now have overlapping CIDR ranges (both 10.0.0.0/16). A small application in VPC-A must call a single internal API exposed by a service in VPC-B. Because of the overlap, VPC peering and Transit Gateway routing between the full CIDRs are not viable, and the company wants to expose only that one service, not the entire VPC-B network. Which approach BEST enables this connectivity?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Expose the service in VPC-B behind a Network Load Balancer as an AWS PrivateLink endpoint service, and create an interface VPC endpoint in VPC-A",
+      "B": "Create a VPC peering connection between VPC-A and VPC-B and add specific host routes",
+      "C": "Re-IP VPC-A to a non-overlapping CIDR and attach both VPCs to a Transit Gateway",
+      "D": "Establish a Site-to-Site VPN between the two VPCs to avoid the CIDR conflict"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS PrivateLink exposes a single service via an endpoint service fronted by an NLB. The consumer creates an interface endpoint that is reached through a private IP/ENI in the consumer VPC, so overlapping CIDRs do not matter and only the one service is exposed—not the whole VPC-B network. This precisely meets the constraints.",
+    "whyOthersAreWrong": {
+      "B": "VPC peering does not support overlapping CIDRs; routing to 10.0.0.0/16 on both sides is ambiguous and disallowed.",
+      "C": "Re-IPing a live VPC is highly disruptive and unnecessary when only one service must be shared.",
+      "D": "A VPN between VPCs still requires non-overlapping routable ranges and exposes networks broadly rather than a single service."
+    },
+    "learningObjective": "Use PrivateLink to share a single service across VPCs with overlapping CIDRs without full network routing.",
+    "topic": "AWS PrivateLink",
+    "tags": ["PrivateLink", "overlapping-CIDR", "NLB", "cross-account", "networking"]
+  },
+  {
+    "id": "saa-1826",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a high-throughput order-processing pipeline. Producers publish order events that must be processed exactly once and strictly in the order they were received per customer, while unrelated customers can be processed in parallel for throughput. Processing is done by a fleet of consumers, and occasional poison-pill messages must not block the pipeline indefinitely. Which design BEST satisfies these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon SQS FIFO queue using the customer ID as the message group ID, with a dead-letter queue and maxReceiveCount configured",
+      "B": "Amazon SQS standard queue with a visibility timeout and a dead-letter queue",
+      "C": "Amazon SNS standard topic fanning out to multiple SQS standard queues",
+      "D": "A single Amazon SQS FIFO queue with one message group for all orders"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "SQS FIFO provides exactly-once processing and strict ordering within a message group. Using the customer ID as the message group ID preserves per-customer order while allowing different groups to be processed in parallel for throughput. A dead-letter queue with maxReceiveCount moves poison-pill messages aside after repeated failures so they don't block the pipeline. This matches every requirement.",
+    "whyOthersAreWrong": {
+      "B": "Standard queues offer best-effort ordering and at-least-once delivery, so they cannot guarantee per-customer order or exactly-once processing.",
+      "C": "SNS to standard SQS provides fanout but neither ordering nor exactly-once semantics.",
+      "D": "A single message group serializes all orders globally, destroying parallel throughput across customers."
+    },
+    "learningObjective": "Design ordered, exactly-once, parallelizable message processing using SQS FIFO message groups and a DLQ.",
+    "topic": "Amazon SQS",
+    "tags": ["SQS-FIFO", "message-group-id", "dead-letter-queue", "ordering", "decoupling"]
+  },
+  {
+    "id": "saa-1827",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A regulated company must ensure that objects written to a compliance S3 bucket cannot be deleted or overwritten by anyone—including the account root user and administrators—for a fixed retention period of seven years. Auditors require that this immutability be provably enforced. Which configuration meets the requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable S3 Object Lock in compliance mode with a seven-year retention period on the bucket",
+      "B": "Enable S3 Object Lock in governance mode with a seven-year retention period",
+      "C": "Apply a restrictive bucket policy denying s3:DeleteObject to all principals",
+      "D": "Enable S3 Versioning and configure a lifecycle policy that never expires objects"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "S3 Object Lock in compliance mode enforces write-once-read-many retention that cannot be shortened or bypassed by any user, including the root account, for the retention period. This provides the provable, tamper-proof immutability auditors require for a seven-year hold.",
+    "whyOthersAreWrong": {
+      "B": "Governance mode allows users with the s3:BypassGovernanceRetention permission (including administrators/root) to override the lock, so it is not tamper-proof.",
+      "C": "A bucket policy can be edited or removed by administrators/root, so it does not provably prevent deletion.",
+      "D": "Versioning plus lifecycle retains versions but does not prevent privileged users from permanently deleting versions; it is not an immutability control."
+    },
+    "learningObjective": "Enforce provable, unbypassable object immutability using S3 Object Lock compliance mode.",
+    "topic": "Amazon S3",
+    "tags": ["S3-Object-Lock", "compliance-mode", "WORM", "data-retention", "security"]
+  },
+  {
+    "id": "saa-1828",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's analytics team queries several terabytes of application logs stored as compressed JSON in Amazon S3. Queries are ad hoc and run a few times per day, scanning large amounts of data and running slowly and expensively. The team wants to reduce both query cost and latency without standing up or managing any servers or clusters. Which combination of actions BEST achieves this? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Convert the log data to a columnar format such as Apache Parquet and partition it by date in S3",
+      "B": "Query the data in place with Amazon Athena",
+      "C": "Load all logs into an always-on Amazon Redshift cluster and query there",
+      "D": "Launch a persistent Amazon EMR cluster to run the queries",
+      "E": "Store the logs in Amazon EFS and grep them from an EC2 instance"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Athena is serverless and queries S3 directly, matching the no-server requirement and pay-per-query model for infrequent ad hoc use (B). Converting to columnar Parquet with date partitioning drastically reduces the bytes scanned per query, cutting both cost and latency because Athena reads only relevant columns and partitions (A). Together they optimize serverless analytics.",
+    "whyOthersAreWrong": {
+      "C": "An always-on Redshift cluster is server-managed infrastructure with continuous cost, contradicting the serverless, infrequent-query requirement.",
+      "D": "A persistent EMR cluster must be provisioned and managed and runs continuously, adding cost and operational overhead.",
+      "E": "EFS plus EC2 grep is not an analytics query engine, requires managed servers, and scales poorly over terabytes."
+    },
+    "learningObjective": "Reduce serverless query cost and latency over S3 data using columnar formats, partitioning, and Athena.",
+    "topic": "Amazon Athena",
+    "tags": ["Athena", "Parquet", "partitioning", "S3", "cost-optimization"]
+  },
+  {
+    "id": "saa-1829",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a containerized microservice on Amazon ECS on Fargate that must read objects from a specific S3 bucket and retrieve a database password from AWS Secrets Manager. Security requires least-privilege credentials scoped to the individual task, no long-lived access keys baked into the image, and no sharing of credentials between different services on the same cluster. Which approach correctly delivers these credentials to the container?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Assign an ECS task IAM role granting only the required S3 and Secrets Manager permissions, and reference the secret in the task definition",
+      "B": "Store an IAM user's access keys as environment variables in the task definition",
+      "C": "Attach the permissions to the EC2 instance profile of the container hosts",
+      "D": "Embed a shared IAM access key in the container image and rotate it monthly"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An ECS task role provides temporary, automatically rotated credentials scoped to the individual task, so different tasks/services get distinct least-privilege permissions with no static keys. Granting only the specific S3 and Secrets Manager actions satisfies least privilege, and referencing the secret in the task definition injects it securely at runtime.",
+    "whyOthersAreWrong": {
+      "B": "Long-lived access keys in environment variables are static, hard to rotate, and visible in the task definition—violating the no-long-lived-key requirement.",
+      "C": "On Fargate there is no customer-managed EC2 host; even on EC2, instance-profile permissions are shared by all tasks on the host, breaking per-task least privilege.",
+      "D": "A shared embedded key is long-lived, shared across services, and exposed in the image—directly violating the requirements."
+    },
+    "learningObjective": "Deliver least-privilege, per-task temporary credentials to Fargate containers using ECS task IAM roles.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS-task-role", "IAM", "Secrets-Manager", "least-privilege", "security"]
+  },
+  {
+    "id": "saa-1830",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A gaming company runs a read-heavy leaderboard service backed by Amazon DynamoDB. During tournaments, a few extremely popular items (top players) receive a disproportionate share of reads, creating a hot partition that throttles requests even though overall provisioned capacity is not exhausted. Read latency must stay in the low single-digit milliseconds during these bursts. Which solution BEST addresses the hot-partition read throttling?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add Amazon DynamoDB Accelerator (DAX) as an in-memory cache in front of the table",
+      "B": "Switch the table to on-demand capacity mode",
+      "C": "Increase the table's provisioned read capacity units substantially",
+      "D": "Add a global secondary index that duplicates the popular items"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "DAX is a DynamoDB-native, in-memory cache delivering microsecond-to-low-millisecond reads. By serving repeated reads of hot items from cache, it absorbs the concentrated read traffic on popular items, eliminating hot-partition throttling and meeting the low-latency target without over-provisioning the table.",
+    "whyOthersAreWrong": {
+      "B": "On-demand mode still partitions data by key; a single hot key can still be throttled by per-partition limits, so it does not solve concentrated reads on a few items.",
+      "C": "Raising total RCUs does not help a single hot partition because per-partition throughput is capped; capacity is spread across partitions.",
+      "D": "A GSI duplicates data but reads to the same popular keys remain concentrated and still hot; it also adds write cost and complexity."
+    },
+    "learningObjective": "Mitigate DynamoDB hot-partition read throttling with DAX in-memory caching for concentrated read patterns.",
+    "topic": "Amazon DynamoDB",
+    "tags": ["DynamoDB", "DAX", "hot-partition", "caching", "performance"]
+  },
+  {
+    "id": "saa-1831",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company hosts a three-tier web application. The web tier runs on EC2 in public subnets behind an ALB; the app tier runs on EC2 in private subnets; the data tier is Amazon RDS in private subnets. The app-tier instances need to download OS security patches from the internet and call the Amazon S3 and Amazon DynamoDB APIs, but must not be reachable from the internet, and the company wants to minimize data-transfer/NAT costs for the AWS API calls. Which combination BEST meets these needs? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Route app-tier outbound internet traffic (for OS patches) through a NAT gateway in a public subnet",
+      "B": "Create S3 and DynamoDB gateway VPC endpoints and route the app tier's S3/DynamoDB traffic through them",
+      "C": "Assign public IP addresses to the app-tier instances so they can reach AWS APIs directly",
+      "D": "Create interface endpoints for S3 and DynamoDB and route all patch downloads through them",
+      "E": "Move the app tier into the public subnets to simplify outbound access"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "A NAT gateway lets private app-tier instances pull OS patches from the internet without being publicly reachable (A). Gateway VPC endpoints for S3 and DynamoDB keep those AWS API calls on the AWS network and avoid NAT/data-processing charges for that traffic, minimizing cost (B). This preserves privacy while optimizing AWS API access cost.",
+    "whyOthersAreWrong": {
+      "C": "Public IPs would make the app tier internet-reachable, violating the security requirement.",
+      "D": "S3 and DynamoDB use gateway endpoints (free), not interface endpoints; interface endpoints would add hourly/data cost, and endpoints do not serve general internet patch downloads.",
+      "E": "Moving the app tier to public subnets exposes it to the internet, breaking the isolation requirement."
+    },
+    "learningObjective": "Combine NAT gateway egress with S3/DynamoDB gateway endpoints to keep private tiers isolated while minimizing AWS API traffic cost.",
+    "topic": "Amazon VPC",
+    "tags": ["VPC-endpoints", "NAT-gateway", "gateway-endpoint", "cost-optimization", "networking"]
+  },
+  {
+    "id": "saa-1832",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating a legacy application that requires a POSIX-compliant shared file system concurrently mounted by dozens of Linux EC2 instances across multiple Availability Zones. Throughput needs grow and shrink automatically with the workload, and the data must remain available if an AZ fails. The team wants minimal operational overhead and no capacity pre-provisioning. Which storage solution BEST fits?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon EFS in Regional (Standard) mode mounted by all instances",
+      "B": "An Amazon EBS io2 volume attached to a primary instance and shared over NFS",
+      "C": "Amazon FSx for Windows File Server mounted by the Linux instances",
+      "D": "Amazon S3 mounted as a file system on each instance"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon EFS is a fully managed, POSIX-compliant, elastic NFS file system that can be concurrently mounted by many instances across multiple AZs. Regional EFS stores data redundantly across AZs for availability, scales throughput and capacity automatically with no pre-provisioning, and requires minimal operations—matching every requirement.",
+    "whyOthersAreWrong": {
+      "B": "A single EBS volume is AZ-bound and (except limited Multi-Attach cases) not designed for broad concurrent multi-AZ POSIX sharing; re-sharing over NFS creates a single point of failure and operational burden.",
+      "C": "FSx for Windows File Server exposes SMB and is intended for Windows workloads, not native POSIX Linux semantics.",
+      "D": "S3 is object storage; mounting it as a file system does not provide true POSIX semantics or concurrent low-latency file locking."
+    },
+    "learningObjective": "Select Amazon EFS for elastic, multi-AZ, concurrently shared POSIX file storage with minimal operations.",
+    "topic": "Amazon EFS",
+    "tags": ["EFS", "POSIX", "shared-storage", "multi-AZ", "elastic"]
+  },
+  {
+    "id": "saa-1833",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates workloads in a central account and needs to grant a partner's separate AWS account temporary, auditable access to a specific set of S3 buckets. The access must not use long-lived credentials, must be revocable, and the partner should only be able to assume the access under a shared secret condition to reduce the risk of the confused-deputy problem. Which approach BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an IAM role in the central account that the partner account can assume via AWS STS, with a trust policy requiring an external ID and scoped S3 permissions",
+      "B": "Create an IAM user for the partner in the central account and share its access keys",
+      "C": "Make the S3 buckets public and share the bucket URLs with the partner",
+      "D": "Add the partner's account root as a full administrator in the central account"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A cross-account IAM role assumed via STS issues temporary credentials, is revocable by editing the role, and can scope permissions to just the required buckets. Requiring an external ID in the trust policy mitigates the confused-deputy problem by ensuring the third party presents the shared secret when assuming the role. This satisfies temporary, auditable, revocable, least-privilege access.",
+    "whyOthersAreWrong": {
+      "B": "IAM user access keys are long-lived and hard to audit/revoke cleanly, violating the temporary-credential requirement.",
+      "C": "Public buckets expose data to everyone and provide no auditability, revocation, or scoping.",
+      "D": "Granting the partner root full administrator access grossly violates least privilege and is not scoped or safely revocable."
+    },
+    "learningObjective": "Grant secure cross-account access with STS role assumption and an external ID to prevent the confused-deputy problem.",
+    "topic": "AWS IAM",
+    "tags": ["cross-account", "STS", "external-id", "confused-deputy", "least-privilege"]
+  },
+  {
+    "id": "saa-1834",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a stateful, latency-sensitive TCP-based multiplayer game server fleet on EC2 behind a load balancer. Players connect from around the world and complain about connection setup latency and about being routed to distant endpoints. The company wants a static set of anycast IP addresses, fast regional failover, and traffic entering the AWS global network as close to the player as possible. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Place AWS Global Accelerator in front of Network Load Balancers in each Region",
+      "B": "Use Amazon CloudFront in front of the game servers",
+      "C": "Use Route 53 latency-based routing to the regional load balancers",
+      "D": "Place an Application Load Balancer with cross-zone load balancing in one Region"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Global Accelerator provides static anycast IP addresses and routes players into the AWS global backbone at the nearest edge, reducing latency and jitter for TCP/UDP workloads. It performs fast health-based failover across Regional endpoints (here, NLBs for TCP), which fits a latency-sensitive, non-HTTP game server fleet with static IP requirements.",
+    "whyOthersAreWrong": {
+      "B": "CloudFront is a CDN optimized for cacheable HTTP(S) content, not raw stateful TCP game sessions.",
+      "C": "Route 53 latency routing relies on DNS and client caching; failover is slower and it does not provide static anycast IPs or entry onto the AWS backbone at the edge.",
+      "D": "A single-Region ALB is HTTP-focused and does not reduce global entry latency or provide cross-Region failover or static IPs."
+    },
+    "learningObjective": "Use AWS Global Accelerator with NLBs for low-latency, static-IP, fast-failover global TCP/UDP workloads.",
+    "topic": "AWS Global Accelerator",
+    "tags": ["Global-Accelerator", "NLB", "anycast", "low-latency", "networking"]
+  },
+  {
+    "id": "saa-1835",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company processes uploaded images. Users upload to an S3 bucket; each upload must trigger a resize job and a metadata-extraction job independently, and additional downstream consumers will be added later without changing the upload path. The pipeline must tolerate bursts of thousands of uploads per minute and must not lose events if a consumer is temporarily down. Which event-driven design BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure S3 event notifications to an Amazon SNS topic that fans out to multiple Amazon SQS queues, one per consumer, each processed independently",
+      "B": "Configure S3 event notifications to directly invoke a single Lambda function that performs all jobs sequentially",
+      "C": "Have each consumer poll the S3 bucket list on a schedule to detect new objects",
+      "D": "Configure S3 event notifications to a single SQS queue shared by all consumers"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "S3 to SNS fanout with one SQS queue per consumer decouples producers from consumers, lets each job process independently and buffer bursts, and makes adding future consumers trivial (subscribe another queue) without touching the upload path. SQS durably retains messages so events aren't lost while a consumer is down, satisfying reliability and extensibility.",
+    "whyOthersAreWrong": {
+      "B": "A single Lambda doing all jobs sequentially couples the jobs, has no per-job buffering/retry isolation, and requires changing the path to add consumers.",
+      "C": "Polling the bucket list is inefficient, does not scale to thousands of uploads/minute, and risks missing or reprocessing objects.",
+      "D": "One shared queue means messages are consumed once by whichever consumer reads them, so multiple independent consumers cannot each get every event."
+    },
+    "learningObjective": "Design durable, extensible, burst-tolerant event fanout using S3 notifications with SNS and per-consumer SQS queues.",
+    "topic": "Application Integration",
+    "tags": ["S3-events", "SNS", "SQS", "fanout", "event-driven"]
+  },
+  {
+    "id": "saa-1836",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's Aurora MySQL cluster serves a reporting application whose heavy analytical read queries are slowing down the transactional writes on the same cluster. The company wants to isolate reporting reads from the transactional workload, keep reporting queries reading reasonably fresh data, and avoid managing replication infrastructure. The reporting app already supports a separate read connection string. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Add Aurora read replicas and point the reporting application at the cluster reader endpoint",
+      "B": "Take nightly snapshots and restore them into a separate Aurora cluster for reporting",
+      "C": "Enable Multi-AZ on the cluster and send reporting queries to the standby",
+      "D": "Export the data to Amazon S3 nightly and run reporting with Athena"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Aurora read replicas share the cluster's storage volume and replicate with very low lag, so the reporting app reading through the reader endpoint gets fresh data while offloading analytical reads away from the writer. Aurora manages the replication, meeting the isolation, freshness, and low-operations requirements; the reader endpoint load-balances across replicas.",
+    "whyOthersAreWrong": {
+      "B": "Nightly snapshot restores produce stale data (up to a day old) and add cluster management overhead.",
+      "C": "The Aurora Multi-AZ standby (replica) is used for failover; but explicitly, an Aurora standby cannot be independently targeted the way this option implies for offloading, and traditional RDS standbys are not readable—read replicas are the correct offload mechanism.",
+      "D": "Nightly S3 export plus Athena yields day-old data and does not keep reporting reasonably fresh."
+    },
+    "learningObjective": "Offload analytical reads from an Aurora writer using low-lag read replicas and the reader endpoint.",
+    "topic": "Amazon Aurora",
+    "tags": ["Aurora-MySQL", "read-replica", "reader-endpoint", "read-scaling", "performance"]
+  },
+  {
+    "id": "saa-1837",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must run a nightly batch of tens of thousands of short, independent, fault-tolerant compute jobs. Total runtime should be minimized and cost should be as low as possible; interruptions are acceptable because jobs can be retried. The team does not want to manage a scheduler, queue, or scaling logic. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Batch with a compute environment using EC2 Spot Instances",
+      "B": "A fixed fleet of On-Demand EC2 instances started by a cron job",
+      "C": "A single large On-Demand EC2 instance running jobs sequentially",
+      "D": "Reserved Instances sized for peak nightly load running continuously"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS Batch fully manages job queuing, scheduling, and dynamic scaling of the compute environment. Backing it with Spot Instances minimizes cost for interruption-tolerant, retryable jobs, and Batch parallelizes tens of thousands of jobs to minimize total runtime—all without the team building schedulers or scaling logic.",
+    "whyOthersAreWrong": {
+      "B": "A fixed On-Demand fleet with cron requires custom scaling/queue logic, costs more than Spot, and may under- or over-provision.",
+      "C": "One instance running jobs sequentially maximizes runtime and is the opposite of parallel cost/time optimization.",
+      "D": "Continuously running Reserved Instances waste money outside the nightly window and still require self-managed orchestration."
+    },
+    "learningObjective": "Run large, interruption-tolerant batch workloads cost-effectively with AWS Batch on Spot Instances.",
+    "topic": "AWS Batch",
+    "tags": ["AWS-Batch", "Spot-Instances", "batch-processing", "cost-optimization", "scaling"]
+  },
+  {
+    "id": "saa-1838",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company centralizes encryption using AWS KMS. A data-producer application in Account A writes objects to an S3 bucket encrypted with a customer managed KMS key that lives in a central security Account S. A data-consumer application in Account B must decrypt and read those objects. Access must be least privilege and centrally governed. Which combination of permissions is required for Account B to successfully decrypt the objects? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "The KMS key policy in Account S must grant Account B (or its role) permission to use the key for decryption",
+      "B": "Account B's IAM role must have an identity policy allowing kms:Decrypt on the key and s3:GetObject on the bucket",
+      "C": "Account B must create its own copy of the KMS key material and import it locally",
+      "D": "Account A must disable default encryption on the bucket so Account B can read plaintext",
+      "E": "The KMS key must be made a public AWS managed key so any account can use it"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Cross-account KMS access requires both sides: the key policy in the owning Account S must explicitly allow the Account B principal to use the key (A), and Account B's IAM identity policy must grant kms:Decrypt plus the S3 read permission (B). KMS evaluates both the resource (key) policy and the caller's IAM policy, so both are necessary for least-privilege, centrally governed decryption.",
+    "whyOthersAreWrong": {
+      "C": "You cannot copy or import someone else's KMS key material to bypass cross-account authorization; access is granted via policy, not duplication.",
+      "D": "Disabling encryption is insecure and does not grant decryption of already-encrypted objects.",
+      "E": "There is no mechanism to make a customer managed key publicly usable by all accounts, and doing so would violate least privilege."
+    },
+    "learningObjective": "Configure cross-account KMS decryption by combining a permissive key policy with the consumer's least-privilege IAM policy.",
+    "topic": "AWS KMS",
+    "tags": ["KMS", "cross-account", "key-policy", "S3-encryption", "least-privilege"]
+  },
+  {
+    "id": "saa-1839",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a public API on Amazon API Gateway backed by AWS Lambda. It is experiencing bursts of malicious traffic: credential-stuffing attempts, SQL-injection-style payloads, and volumetric floods from specific countries. The company wants to block common web exploits and abusive request patterns at the edge, rate-limit abusive IPs, and geo-block certain countries, with minimal changes to the backend. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Associate an AWS WAF web ACL with managed rule groups, a rate-based rule, and a geo-match rule to the API Gateway stage",
+      "B": "Add input validation in the Lambda function to reject malicious payloads",
+      "C": "Use security groups on the API Gateway to block the malicious IP ranges",
+      "D": "Enable Amazon GuardDuty to automatically block the malicious requests"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS WAF integrates directly with API Gateway. Managed rule groups block common exploits like SQL injection, a rate-based rule throttles abusive IPs, and a geo-match rule blocks specified countries—all enforced before requests reach Lambda, requiring no backend changes. This precisely maps to the stated threats.",
+    "whyOthersAreWrong": {
+      "B": "Lambda-side validation still incurs invocation cost for every malicious request and cannot geo-block or rate-limit at the edge.",
+      "C": "API Gateway does not use security groups; security groups also cannot inspect payloads, rate-limit, or geo-block.",
+      "D": "GuardDuty is a threat-detection service that generates findings; it does not inline-block web requests."
+    },
+    "learningObjective": "Protect API Gateway with AWS WAF managed, rate-based, and geo-match rules to block web exploits and abuse at the edge.",
+    "topic": "AWS WAF",
+    "tags": ["WAF", "API-Gateway", "rate-limiting", "geo-blocking", "security"]
+  },
+  {
+    "id": "saa-1840",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application stores user session data and frequently accessed reference data in a relational database, but read latency for these small, repeated lookups is too high and the database is overloaded by repetitive identical queries. The team wants a managed in-memory cache to offload these reads. Reference data changes rarely; session data must survive a cache node failure without forcing users to log in again. Which caching approach BEST meets both needs? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use Amazon ElastiCache for Redis with replication and Multi-AZ for the session data so it persists across node failure",
+      "B": "Cache the rarely changing reference data with a lazy-loading strategy and a reasonable TTL",
+      "C": "Store session data in Amazon ElastiCache for Memcached and accept data loss on node failure",
+      "D": "Disable caching and add more read replicas to the relational database instead",
+      "E": "Write all reference data to the cache only and never to the database"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "ElastiCache for Redis supports replication and Multi-AZ with automatic failover, so session data survives a node failure and users stay logged in (A). Lazy-loading the rarely changing reference data with a TTL populates the cache on demand and offloads repeated identical reads from the database while keeping data reasonably fresh (B). Together they meet durability for sessions and efficient offload for reference lookups.",
+    "whyOthersAreWrong": {
+      "C": "Memcached has no persistence or replication, so a node failure loses session data and forces re-login, violating the requirement.",
+      "D": "Removing caching pushes repetitive reads back onto the database; read replicas alone do not deliver in-memory low-latency lookups or session durability.",
+      "E": "Caching reference data only in the cache with no database source of truth risks permanent data loss if the cache is cleared."
+    },
+    "learningObjective": "Choose Redis with Multi-AZ for durable session caching and lazy-loading with TTL for read-heavy reference data.",
+    "topic": "Amazon ElastiCache",
+    "tags": ["ElastiCache", "Redis", "Multi-AZ", "lazy-loading", "caching"]
+  }
+]

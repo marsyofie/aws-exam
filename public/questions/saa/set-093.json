@@ -1,0 +1,468 @@
+[
+  {
+    "id": "saa-1841",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a microservices platform on Amazon ECS on Fargate across three Availability Zones. One service, the payments service, must be reachable only by two other internal services and must never be exposed to the internet or to other services in the cluster. Service-to-service calls use HTTP. The team wants fine-grained, identity-independent network isolation with minimal operational overhead and no public load balancer. Which approach BEST enforces this isolation?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Place the payments service behind an internal Application Load Balancer and use a security group that only allows inbound traffic from the security groups of the two authorized services",
+      "B": "Place the payments service behind an internet-facing ALB and restrict access with a WAF IP allow-list",
+      "C": "Give each payments task a public IP and control access with a NACL on the subnet",
+      "D": "Expose the payments service through API Gateway with an API key shared with the two services"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An internal ALB keeps the service off the internet, and referencing the two authorized services' security groups as the allowed sources creates identity-independent, fine-grained network isolation that automatically covers all tasks in those services regardless of IP. This is low-overhead and self-adjusting as tasks scale, meeting every constraint.",
+    "whyOthersAreWrong": {
+      "B": "An internet-facing ALB exposes the service publicly; WAF IP allow-lists are brittle for dynamic Fargate task IPs and still leave a public endpoint.",
+      "C": "Public IPs expose tasks to the internet; NACLs are coarse, stateless, and hard to maintain for dynamic task IPs.",
+      "D": "API Gateway plus shared API keys adds a public surface and shared-secret management, not network-level isolation between internal services."
+    },
+    "learningObjective": "Enforce internal service-to-service isolation using an internal ALB with security-group referencing.",
+    "topic": "Amazon VPC",
+    "tags": ["security-groups", "internal-ALB", "ECS-Fargate", "network-isolation", "microservices"]
+  },
+  {
+    "id": "saa-1842",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a write-heavy IoT ingestion workload on Amazon DynamoDB. Traffic is unpredictable with sudden 20x spikes. The team currently uses provisioned capacity with auto scaling but still sees throttling at the start of spikes because auto scaling reacts too slowly, and they over-provision to compensate, raising cost. They want to eliminate spike throttling and pay only for what they use, without capacity planning. Which change BEST addresses both throttling and cost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Switch the table to on-demand capacity mode",
+      "B": "Increase the provisioned write capacity to the anticipated peak permanently",
+      "C": "Add a DynamoDB global secondary index to spread writes",
+      "D": "Enable DynamoDB Streams to buffer the spikes"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "On-demand capacity mode instantly accommodates traffic without pre-provisioning or auto-scaling lag, absorbing sudden 20x spikes and eliminating the reaction-delay throttling. It bills per request, so the company pays only for actual usage and avoids over-provisioning—resolving both the throttling and the cost concern for spiky, unpredictable workloads.",
+    "whyOthersAreWrong": {
+      "B": "Permanently provisioning for peak eliminates throttling but wastes money during the majority of low-traffic time.",
+      "C": "A GSI adds another table structure with its own capacity and does not solve write throttling on the base table during spikes.",
+      "D": "DynamoDB Streams captures change records for downstream processing; it does not buffer or increase write capacity for ingestion."
+    },
+    "learningObjective": "Use DynamoDB on-demand mode to eliminate spike throttling and pay-per-use for unpredictable write workloads.",
+    "topic": "Amazon DynamoDB",
+    "tags": ["DynamoDB", "on-demand", "throttling", "spiky-traffic", "cost-optimization"]
+  },
+  {
+    "id": "saa-1843",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an on-premises data center connected to AWS. It needs a private, consistent, high-bandwidth connection to a VPC for a latency-sensitive data replication job, and a backup path that maintains connectivity if the primary path fails. Cost is a concern, so the backup should not duplicate the expensive dedicated connection. Which architecture BEST balances performance, resilience, and cost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Direct Connect as the primary connection and a Site-to-Site VPN over the internet as the backup",
+      "B": "Use two AWS Direct Connect connections from the same provider in the same location",
+      "C": "Use a single Site-to-Site VPN over the internet for both primary and backup",
+      "D": "Use AWS Direct Connect for the primary and a second Direct Connect at a different location for backup"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Direct Connect delivers the private, consistent, high-bandwidth, low-latency primary path the replication job needs. A Site-to-Site VPN over the internet provides a much cheaper backup that maintains connectivity if Direct Connect fails, without duplicating the costly dedicated link. This is the standard cost-balanced resilient hybrid design.",
+    "whyOthersAreWrong": {
+      "B": "Two Direct Connects in the same location share a failure domain and both incur high cost, weakening resilience and cost goals.",
+      "C": "A VPN-only design cannot provide the consistent low-latency, high-bandwidth performance the replication job requires.",
+      "D": "A second Direct Connect at another location maximizes resilience but duplicates the expensive connection, violating the cost constraint."
+    },
+    "learningObjective": "Design a cost-balanced resilient hybrid network with Direct Connect primary and VPN backup.",
+    "topic": "AWS Direct Connect",
+    "tags": ["Direct-Connect", "Site-to-Site-VPN", "hybrid", "resilience", "cost-optimization"]
+  },
+  {
+    "id": "saa-1844",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a public web application on an Auto Scaling group of EC2 instances behind an ALB. Sessions are currently stored in instance memory, so when the Auto Scaling group scales in or an instance is replaced, users are logged out and lose cart contents. The company wants a horizontally scalable, resilient way to persist session state with the lowest latency for frequent reads and writes, and minimal application refactoring. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store session state in Amazon ElastiCache for Redis accessed by all instances",
+      "B": "Enable ALB sticky sessions so users always return to the same instance",
+      "C": "Store session state in an Amazon RDS database shared by all instances",
+      "D": "Write session state to an Amazon EFS file system mounted on all instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Externalizing sessions to ElastiCache for Redis gives all instances a shared, low-latency in-memory store, so scaling events or instance replacement no longer drop sessions. Redis is purpose-built for fast, frequent key reads/writes like session state and scales horizontally, delivering resilience and performance with minimal refactoring beyond changing the session store target.",
+    "whyOthersAreWrong": {
+      "B": "Sticky sessions still lose state when the target instance is terminated during scale-in, so it does not solve resilience.",
+      "C": "RDS adds relational overhead and higher latency than an in-memory store for high-frequency session reads/writes.",
+      "D": "EFS is file storage with higher latency than in-memory caching and is not ideal for high-rate small session operations."
+    },
+    "learningObjective": "Externalize session state to an in-memory store to make stateless instances resilient to scaling events.",
+    "topic": "Amazon ElastiCache",
+    "tags": ["ElastiCache", "Redis", "session-state", "Auto-Scaling", "stateless"]
+  },
+  {
+    "id": "saa-1845",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must comply with a policy that all Amazon EBS volumes and all new Amazon S3 buckets across every account in its AWS Organization are encrypted, and that any non-compliant resource is automatically flagged and, where possible, remediated. The security team wants centralized, continuous evaluation across accounts without deploying custom scripts per account. Which combination of services BEST implements this governance? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use AWS Config with an organization aggregator and managed rules to continuously evaluate encryption compliance across accounts, with automatic remediation actions",
+      "B": "Apply Service Control Policies that deny creating unencrypted EBS volumes and S3 buckets across the organization",
+      "C": "Manually audit each account monthly using the console",
+      "D": "Enable Amazon Macie in one account to scan all other accounts' resources for encryption",
+      "E": "Turn on CloudTrail data events and read the logs to find unencrypted resources"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "AWS Config with an organization-wide aggregator continuously evaluates resources against managed encryption rules across all accounts and can trigger automatic remediation, satisfying centralized detection/remediation (A). SCPs proactively deny the creation of unencrypted EBS volumes and S3 buckets org-wide, preventing non-compliance at the source (B). Detective plus preventive controls together enforce the policy without per-account scripts.",
+    "whyOthersAreWrong": {
+      "C": "Manual monthly audits are not continuous, are error-prone, and do not auto-remediate.",
+      "D": "Macie discovers and classifies sensitive data in S3; it is not a cross-account encryption-compliance evaluator for EBS and does not remediate.",
+      "E": "CloudTrail data events record API activity but do not continuously evaluate resource compliance or remediate it."
+    },
+    "learningObjective": "Enforce org-wide encryption compliance using AWS Config (detective/remediation) plus SCP guardrails (preventive).",
+    "topic": "AWS Config",
+    "tags": ["AWS-Config", "SCP", "Organizations", "encryption-compliance", "governance"]
+  },
+  {
+    "id": "saa-1846",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company orchestrates a long-running order-fulfillment workflow with many steps: validate payment, reserve inventory, arrange shipping, and send notifications. Steps must run in a defined order with conditional branching, automatic retries with backoff on transient failures, and clear visibility into where a given order is in the process. Some steps call Lambda; others wait for a human approval that can take hours. The team wants minimal custom orchestration code. Which service BEST fits?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Step Functions with a state machine coordinating the steps",
+      "B": "A single large AWS Lambda function that calls each step in sequence",
+      "C": "Amazon SQS with a chain of queues, one per step",
+      "D": "Amazon EventBridge rules triggering each step on a schedule"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Step Functions provides managed workflow orchestration with ordered execution, conditional branching, built-in retry/backoff, and visual tracking of each execution's current state. It supports long waits and human-approval patterns (e.g., callback tasks that pause for hours) and integrates with Lambda, minimizing custom orchestration code—matching all requirements.",
+    "whyOthersAreWrong": {
+      "B": "A single Lambda cannot wait hours for human approval (it has a max timeout) and forces you to hand-code retries, branching, and state tracking.",
+      "C": "Chained SQS queues can pass work along but offer no built-in branching, ordered visibility, or managed retry/backoff orchestration.",
+      "D": "EventBridge triggers events but does not maintain per-execution workflow state, ordering, branching, or human-approval waits."
+    },
+    "learningObjective": "Use Step Functions to orchestrate long-running, branching workflows with retries and human-approval waits with minimal code.",
+    "topic": "AWS Step Functions",
+    "tags": ["Step-Functions", "orchestration", "workflow", "retries", "serverless"]
+  },
+  {
+    "id": "saa-1847",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company stores 500 TB of data in Amazon S3. Access analysis shows: 20% of objects are read frequently, 30% are read a few times per month with unpredictable timing, and 50% are almost never accessed but must be retrievable within minutes when needed for occasional audits. The company wants to minimize storage cost without adding operational overhead of manually moving objects and without risking retrieval delays of hours. Which approach BEST optimizes cost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store all objects in S3 Intelligent-Tiering and let it move data across access tiers automatically",
+      "B": "Move the 50% cold objects to S3 Glacier Deep Archive and keep the rest in S3 Standard",
+      "C": "Keep everything in S3 Standard to guarantee fast access",
+      "D": "Move the 30% unpredictable objects to S3 Standard-IA and the 50% cold objects to S3 Glacier Flexible Retrieval"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "S3 Intelligent-Tiering automatically moves objects among frequent, infrequent, and archive-instant-access tiers based on actual access patterns, with no operational overhead and no retrieval latency for the instant-access tiers (retrieval in milliseconds). Given unpredictable access and a minutes-level retrieval requirement, it optimizes cost across all three access patterns without manual lifecycle management.",
+    "whyOthersAreWrong": {
+      "B": "Glacier Deep Archive retrieval typically takes hours, violating the minutes-level retrieval requirement for audit data.",
+      "C": "All-Standard storage is the most expensive option and ignores the large cold and infrequent portions.",
+      "D": "This requires manually classifying and moving objects (operational overhead), and Glacier Flexible Retrieval standard retrieval is in minutes-to-hours; unpredictable access makes fixed IA placement risky for cost."
+    },
+    "learningObjective": "Use S3 Intelligent-Tiering for unpredictable access patterns needing low-overhead cost optimization with fast retrieval.",
+    "topic": "Amazon S3",
+    "tags": ["S3-Intelligent-Tiering", "storage-classes", "lifecycle", "cost-optimization", "access-patterns"]
+  },
+  {
+    "id": "saa-1848",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a critical Amazon RDS for PostgreSQL database supporting a customer-facing app. Requirements: automatic failover to another AZ within a couple of minutes if the primary fails, no data loss on failover, and the ability to offload read-only reporting queries to reduce load on the primary. The team wants to meet all three with managed features and minimal custom work. Which combination BEST satisfies these requirements? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Enable RDS Multi-AZ so a synchronous standby can take over automatically on primary failure",
+      "B": "Create one or more RDS read replicas and direct reporting queries to them",
+      "C": "Schedule frequent manual snapshots and restore them if the primary fails",
+      "D": "Run reporting queries against the synchronous Multi-AZ standby instance",
+      "E": "Use a single larger instance and rely on automated backups for recovery"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "RDS Multi-AZ maintains a synchronous standby in another AZ and fails over automatically within minutes with no committed-data loss, meeting the failover and no-data-loss requirements (A). Read replicas provide readable copies to offload reporting queries from the primary (B). These are managed features requiring minimal custom work and together satisfy all three requirements.",
+    "whyOthersAreWrong": {
+      "C": "Manual snapshot restore is slow (well beyond a couple of minutes) and can lose data since the last snapshot.",
+      "D": "The classic RDS Multi-AZ standby is not readable; you cannot run reporting queries against it, so read replicas are required for offload.",
+      "E": "A single larger instance provides no automatic failover, and backup-based recovery does not meet the fast-failover or no-data-loss goals."
+    },
+    "learningObjective": "Combine RDS Multi-AZ for automatic no-data-loss failover with read replicas for read offload.",
+    "topic": "Amazon RDS",
+    "tags": ["RDS", "Multi-AZ", "read-replica", "high-availability", "read-scaling"]
+  },
+  {
+    "id": "saa-1849",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a Windows-based enterprise application on EC2 that requires a shared file system supporting the SMB protocol, Windows NTFS permissions, and Active Directory integration. The file system must be highly available across two Availability Zones and provide consistent low-latency performance. Which storage solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon FSx for Windows File Server in a Multi-AZ deployment",
+      "B": "Amazon EFS mounted on the Windows instances",
+      "C": "Amazon S3 with the objects accessed via the S3 API",
+      "D": "Amazon EBS Multi-Attach volumes shared between the instances"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon FSx for Windows File Server natively provides SMB, NTFS permissions, and Active Directory integration, with a Multi-AZ deployment for high availability across two AZs and consistent low-latency performance. It is purpose-built for Windows workloads, meeting every stated requirement.",
+    "whyOthersAreWrong": {
+      "B": "EFS uses NFS and does not natively support SMB, NTFS ACLs, or Windows AD integration.",
+      "C": "S3 is object storage accessed via API, not an SMB file share with NTFS permissions.",
+      "D": "EBS Multi-Attach is block storage limited to specific setups within a single AZ and does not provide an SMB file service or AD-integrated NTFS permissions."
+    },
+    "learningObjective": "Select Amazon FSx for Windows File Server for SMB/NTFS/AD-integrated highly available Windows file storage.",
+    "topic": "Amazon FSx",
+    "tags": ["FSx-Windows", "SMB", "Active-Directory", "Multi-AZ", "Windows"]
+  },
+  {
+    "id": "saa-1850",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company wants to reduce the cost of its production EC2 fleet. The fleet has a stable baseline of compute that runs 24/7 for at least the next three years, plus variable daytime capacity that scales up and down, plus a nightly batch of fault-tolerant jobs that can be interrupted. The company wants the lowest overall cost while keeping the baseline and daytime capacity always available. Which purchasing strategy BEST optimizes cost? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Cover the stable 24/7 baseline with a Compute Savings Plan or Reserved Instances",
+      "B": "Run the interruption-tolerant nightly batch on EC2 Spot Instances",
+      "C": "Run the entire fleet, including baseline, on Spot Instances to maximize savings",
+      "D": "Cover the variable daytime capacity with three-year Reserved Instances",
+      "E": "Run the baseline on On-Demand Instances to keep it flexible"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "A Savings Plan or Reserved Instances gives the deepest discount for the predictable 24/7 baseline that will run for years, while keeping it always available (A). Spot Instances give the largest savings for the fault-tolerant, interruptible nightly batch (B). This matches each workload to the lowest-cost purchasing model that still meets its availability needs.",
+    "whyOthersAreWrong": {
+      "C": "Running the always-available baseline on Spot risks interruption, violating the availability requirement.",
+      "D": "Three-year RIs for variable capacity locks in commitment for capacity that fluctuates, wasting money when it scales down; On-Demand or Savings Plans flexibility suits variable load better.",
+      "E": "On-Demand for a stable multi-year baseline is far more expensive than a Savings Plan/RI commitment."
+    },
+    "learningObjective": "Match EC2 purchasing models to workload patterns: commitments for baseline, Spot for interruptible batch.",
+    "topic": "Amazon EC2",
+    "tags": ["Savings-Plans", "Reserved-Instances", "Spot-Instances", "cost-optimization", "purchasing-models"]
+  },
+  {
+    "id": "saa-1851",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application in a private subnet must resolve DNS names for on-premises resources over a Direct Connect link, while on-premises systems must resolve records hosted in a private Route 53 hosted zone in the VPC. The company wants managed, bidirectional DNS resolution without running custom DNS servers on EC2. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use Route 53 Resolver inbound and outbound endpoints with forwarding rules for on-premises domains",
+      "B": "Run BIND DNS servers on EC2 in the VPC and configure conditional forwarding manually",
+      "C": "Use a public Route 53 hosted zone for both the VPC and on-premises records",
+      "D": "Configure the VPC DHCP option set to point to the on-premises DNS servers only"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Route 53 Resolver endpoints provide managed hybrid DNS: outbound endpoints with forwarding rules send queries for on-premises domains to on-premises DNS servers, and inbound endpoints let on-premises systems resolve records in the private hosted zone. This delivers bidirectional resolution over Direct Connect without operating custom DNS servers.",
+    "whyOthersAreWrong": {
+      "B": "Self-managed BIND on EC2 adds operational overhead and is exactly what the requirement wants to avoid.",
+      "C": "Public hosted zones expose records on the internet and do not provide private bidirectional resolution for internal names.",
+      "D": "Pointing DHCP only at on-premises DNS breaks resolution of AWS/private-hosted-zone records and is not bidirectional."
+    },
+    "learningObjective": "Enable managed bidirectional hybrid DNS with Route 53 Resolver inbound/outbound endpoints and forwarding rules.",
+    "topic": "Amazon Route 53",
+    "tags": ["Route-53-Resolver", "hybrid-DNS", "Direct-Connect", "forwarding-rules", "networking"]
+  },
+  {
+    "id": "saa-1852",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a public-facing application on EC2 behind an ALB. Recently it suffered a large layer 3/4 DDoS flood and application-layer HTTP flood that caused downtime. The company wants proactive DDoS protection with 24/7 access to the AWS response team, cost protection against scaling charges caused by attacks, and layer 7 mitigation. Which combination BEST provides this protection? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Subscribe to AWS Shield Advanced for the application resources",
+      "B": "Deploy AWS WAF rules to mitigate the layer 7 HTTP flood",
+      "C": "Rely solely on AWS Shield Standard, which is automatically enabled",
+      "D": "Put the application behind a NAT gateway to absorb the attack traffic",
+      "E": "Increase the ALB idle timeout to handle flood connections"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Shield Advanced provides enhanced layer 3/4 DDoS protection, 24/7 access to the Shield Response Team, and DDoS cost protection against attack-driven scaling charges (A). AWS WAF mitigates the layer 7 HTTP flood with rate-based and managed rules (B). Together they cover the network and application layers plus the response and cost-protection requirements.",
+    "whyOthersAreWrong": {
+      "C": "Shield Standard provides only basic automatic protection with no SRT access, no cost protection, and no advanced layer 7 tooling.",
+      "D": "A NAT gateway is for outbound connectivity of private instances, not DDoS absorption.",
+      "E": "Raising the ALB idle timeout does nothing to mitigate a flood and could worsen resource exhaustion."
+    },
+    "learningObjective": "Combine Shield Advanced and AWS WAF for layered DDoS protection with response-team access and cost protection.",
+    "topic": "AWS Shield",
+    "tags": ["Shield-Advanced", "WAF", "DDoS", "layer-7", "security"]
+  },
+  {
+    "id": "saa-1853",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company processes streaming clickstream data that arrives continuously at high volume. It must be delivered to Amazon S3 in near real time, buffered and converted to Parquet on the way, and made queryable by analysts, with no servers to manage and automatic scaling to the incoming rate. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Ingest the stream with Amazon Data Firehose, enable format conversion to Parquet, and deliver to S3 for querying with Athena",
+      "B": "Have producers write records directly to S3 using the S3 API, then run a nightly EMR job to convert to Parquet",
+      "C": "Send the stream to an Amazon SQS queue and process it with a fixed EC2 consumer fleet writing to S3",
+      "D": "Load the stream into an always-on Amazon Redshift cluster and export to S3 hourly"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Amazon Data Firehose is a fully managed, automatically scaling delivery stream that buffers incoming records, can convert them to Parquet in flight, and delivers to S3 in near real time with no servers to manage. Analysts then query the Parquet data with Athena. This matches the serverless, auto-scaling, near-real-time, format-conversion requirements exactly.",
+    "whyOthersAreWrong": {
+      "B": "Direct producer writes plus a nightly EMR job is not near real time and requires managing an EMR cluster.",
+      "C": "A fixed EC2 consumer fleet must be managed and sized manually and does not auto-scale to the incoming rate.",
+      "D": "An always-on Redshift cluster is managed infrastructure with continuous cost and hourly export is not near real time for S3 delivery."
+    },
+    "learningObjective": "Use Amazon Data Firehose for serverless, auto-scaling near-real-time delivery to S3 with in-flight Parquet conversion.",
+    "topic": "Amazon Data Firehose",
+    "tags": ["Data-Firehose", "streaming", "Parquet", "S3", "Athena"]
+  },
+  {
+    "id": "saa-1854",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company deploys a new version of its containerized service on Amazon ECS multiple times per day. Requirements: releases must shift traffic gradually to the new version, automatically roll back if error rates rise, and cause zero downtime. The team also wants to test the new version's health before sending production traffic. Which ECS deployment approach BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use an ECS blue/green deployment with an Application Load Balancer, shifting traffic between two target groups with automated rollback on alarm",
+      "B": "Use an ECS rolling update that replaces tasks in place with the new version",
+      "C": "Stop all tasks and start the new version to guarantee a clean cutover",
+      "D": "Deploy the new version to a separate cluster and change DNS with a long TTL"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "An ECS blue/green deployment stands up the new version in a separate target group behind the ALB, lets you validate its health before shifting production traffic, shifts traffic gradually, and automatically rolls back to the original target group if a CloudWatch alarm on error rates fires—delivering zero-downtime, testable, auto-rollback releases.",
+    "whyOthersAreWrong": {
+      "B": "Rolling updates replace tasks in place with limited pre-production validation and no clean, instant rollback to a fully separate known-good version.",
+      "C": "Stopping all tasks causes downtime, violating the zero-downtime requirement.",
+      "D": "DNS cutover with a long TTL is slow, hard to roll back quickly, and does not gradually shift or auto-roll-back traffic."
+    },
+    "learningObjective": "Use ECS blue/green deployments with ALB target groups for testable, gradual, auto-rollback, zero-downtime releases.",
+    "topic": "Amazon ECS",
+    "tags": ["ECS", "blue-green", "ALB", "zero-downtime", "deployment"]
+  },
+  {
+    "id": "saa-1855",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must retain database backups for seven years to meet compliance, but the backups are rarely, if ever, restored. Restores, when needed, can tolerate a retrieval time of up to 12 hours. Automated RDS snapshots are increasing storage cost as they accumulate. The company wants the lowest-cost long-term retention while keeping the ability to restore. Which approach BEST minimizes cost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Export RDS snapshots to Amazon S3 and use a lifecycle policy to transition them to S3 Glacier Deep Archive",
+      "B": "Keep all automated RDS snapshots for seven years with an extended retention setting",
+      "C": "Copy the snapshots to another Region and keep them in standard snapshot storage",
+      "D": "Store the backups in S3 Standard for the full seven years"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "Exporting snapshots to S3 and lifecycling them to S3 Glacier Deep Archive provides the lowest-cost long-term storage class, which is appropriate because restores are rare and a 12-hour retrieval time is acceptable. This meets the seven-year retention and restore requirement at minimal cost.",
+    "whyOthersAreWrong": {
+      "B": "Retaining seven years of automated snapshots in standard snapshot storage is far more expensive than Deep Archive.",
+      "C": "Cross-Region standard snapshot storage adds transfer cost and still uses expensive snapshot storage, not the cheapest archive tier.",
+      "D": "S3 Standard is far costlier than Glacier Deep Archive for data that is rarely accessed and tolerates long retrieval."
+    },
+    "learningObjective": "Minimize long-term backup cost by archiving snapshots to S3 Glacier Deep Archive when retrieval latency is tolerable.",
+    "topic": "Amazon S3 Glacier",
+    "tags": ["Glacier-Deep-Archive", "RDS-snapshots", "long-term-retention", "cost-optimization", "compliance"]
+  },
+  {
+    "id": "saa-1856",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a multi-account AWS Organization. A platform team maintains a set of standard VPC subnets in a shared services account and wants application teams in other accounts to launch resources into those subnets without duplicating networking in each account, while keeping the subnets centrally owned and managed. Which AWS capability BEST enables this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Resource Access Manager (RAM) to share the VPC subnets with the other accounts in the organization",
+      "B": "Create VPC peering connections between every application account and the shared services account",
+      "C": "Copy the VPC and subnets into each application account with CloudFormation",
+      "D": "Grant application accounts IAM permissions to create ENIs in the shared account's subnets via cross-account roles"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "AWS RAM lets the platform team share subnets from the shared services account's VPC with other accounts in the organization. Application teams can then launch resources directly into the centrally owned, centrally managed subnets without duplicating networking, which is exactly the VPC sharing model RAM provides.",
+    "whyOthersAreWrong": {
+      "B": "VPC peering connects separate VPCs for routing; it does not let other accounts launch resources into centrally owned subnets.",
+      "C": "Copying the VPC into each account duplicates networking, the opposite of the requirement, and fragments management.",
+      "D": "Cross-account ENI creation is not how VPC subnet sharing works; RAM is the supported, managed mechanism for sharing subnets."
+    },
+    "learningObjective": "Share centrally owned VPC subnets across accounts using AWS Resource Access Manager (VPC sharing).",
+    "topic": "AWS Resource Access Manager",
+    "tags": ["RAM", "VPC-sharing", "Organizations", "multi-account", "networking"]
+  },
+  {
+    "id": "saa-1857",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application uploads and downloads large objects (multiple GB each) between clients worldwide and a single Amazon S3 bucket in us-east-1. Users far from the Region complain about slow, unreliable uploads. The company wants to accelerate long-distance transfers to the existing bucket without changing the bucket's Region and without building its own edge infrastructure. Which solution BEST addresses this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable S3 Transfer Acceleration on the bucket and have clients use the accelerated endpoint",
+      "B": "Create S3 buckets in every Region and replicate data between them",
+      "C": "Put the bucket behind an Application Load Balancer in each Region",
+      "D": "Increase the client's multipart upload part size to the maximum"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "S3 Transfer Acceleration routes client transfers through nearby CloudFront edge locations and over the optimized AWS backbone to the bucket, speeding up long-distance uploads/downloads to the existing us-east-1 bucket with no Region change and no custom edge infrastructure. This directly targets the long-distance transfer problem.",
+    "whyOthersAreWrong": {
+      "B": "Multi-Region buckets with replication add cost and complexity and change the single-bucket architecture the company wants to keep.",
+      "C": "S3 is not fronted by ALBs; ALBs balance traffic to compute targets, not S3 object transfers.",
+      "D": "Larger multipart parts do not overcome long-distance latency/packet loss and can reduce parallelism; it does not accelerate the network path."
+    },
+    "learningObjective": "Use S3 Transfer Acceleration to speed long-distance transfers to an existing bucket without new infrastructure.",
+    "topic": "Amazon S3",
+    "tags": ["S3-Transfer-Acceleration", "CloudFront-edge", "large-objects", "performance", "global"]
+  },
+  {
+    "id": "saa-1858",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a monolithic application on a single large EC2 instance. During predictable business-hours peaks it becomes overloaded, while at night it is nearly idle, wasting money. The application is stateless per request but currently keeps configuration in memory at startup. The company wants to handle peaks automatically, cut nighttime cost, and improve resilience, with a moderate refactor. Which architecture BEST meets these goals? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Run the application in an EC2 Auto Scaling group behind an Application Load Balancer across multiple AZs",
+      "B": "Configure target-tracking scaling policies (and/or scheduled scaling for the known business-hours peak)",
+      "C": "Move the application to a single larger instance type to handle the peak at all times",
+      "D": "Replace the ALB with a fixed Elastic IP pointing at one instance",
+      "E": "Keep one instance running but add a nightly manual shutdown script"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Placing the app in an Auto Scaling group behind an ALB across multiple AZs adds resilience and lets capacity grow and shrink with demand (A). Target-tracking scaling reacts to load automatically, and scheduled scaling can pre-scale for the known business-hours peak and scale in at night to cut cost (B). Together they handle peaks, reduce nighttime spend, and improve availability with a moderate refactor.",
+    "whyOthersAreWrong": {
+      "C": "A single larger instance runs at peak size 24/7, wasting money at night and remaining a single point of failure.",
+      "D": "A fixed EIP on one instance provides no scaling, no load distribution, and no multi-AZ resilience.",
+      "E": "One instance with a nightly shutdown still cannot scale for peaks and remains a single point of failure during the day."
+    },
+    "learningObjective": "Re-architect a monolith into an Auto Scaling group behind an ALB with target-tracking/scheduled scaling for elasticity and resilience.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": ["Auto-Scaling", "ALB", "target-tracking", "scheduled-scaling", "resilience"]
+  },
+  {
+    "id": "saa-1859",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company must migrate 200 TB of data from an on-premises NAS to Amazon S3 within a strict two-week window. The on-premises internet link is modest and also carries production traffic that cannot be saturated. After the bulk migration, an ongoing incremental sync of changed files to S3 must continue over the network. Which combination BEST meets the deadline and the ongoing sync requirement? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Use an AWS Snowball Edge device to ship the initial 200 TB bulk data set to AWS",
+      "B": "Use AWS DataSync over the network to perform the ongoing incremental synchronization to S3",
+      "C": "Upload all 200 TB directly over the existing internet link using the S3 CLI",
+      "D": "Set up a Site-to-Site VPN and copy the data with rsync over it",
+      "E": "Mail external hard drives to an AWS office for manual upload"
+    },
+    "correctAnswers": ["A", "B"],
+    "explanation": "Shipping the 200 TB bulk data on a Snowball Edge device avoids saturating the constrained internet link and meets the tight window, since transferring that volume over a modest shared link would take far too long (A). After the bulk load, AWS DataSync efficiently performs scheduled incremental synchronization of changed files to S3 over the network with managed transfer, validation, and throttling (B).",
+    "whyOthersAreWrong": {
+      "C": "Uploading 200 TB over a modest shared link would exceed the two-week window and risks saturating production traffic.",
+      "D": "A VPN plus rsync still sends all data over the same constrained link with the same time and saturation problems, plus manual effort.",
+      "E": "Mailing arbitrary personal hard drives is not a supported AWS ingestion path and offers no security, tracking, or SLA."
+    },
+    "learningObjective": "Combine Snowball for large offline bulk transfer with DataSync for ongoing network-based incremental sync.",
+    "topic": "AWS Snow Family",
+    "tags": ["Snowball-Edge", "DataSync", "migration", "S3", "hybrid"]
+  },
+  {
+    "id": "saa-1860",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's security policy requires that an EC2-based application retrieve a third-party API key at runtime, that the key be encrypted at rest, that access be auditable, and that the solution cost as little as possible given the key changes only a few times a year and does not require automatic rotation. Which service BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store the API key as a SecureString parameter in AWS Systems Manager Parameter Store",
+      "B": "Store the API key in AWS Secrets Manager with automatic rotation enabled",
+      "C": "Store the API key in an encrypted S3 object and download it at startup",
+      "D": "Place the API key in an EC2 user data script at launch"
+    },
+    "correctAnswers": ["A"],
+    "explanation": "A SecureString parameter in SSM Parameter Store encrypts the value at rest with KMS, is retrievable at runtime via the instance role, and logs access through CloudTrail for auditability. Because the key rarely changes and needs no automatic rotation, Parameter Store SecureString is effectively free for standard parameters, making it the lowest-cost fit versus Secrets Manager's per-secret charge.",
+    "whyOthersAreWrong": {
+      "B": "Secrets Manager charges per secret and is designed for automatic rotation, which is unneeded here—so it costs more than necessary.",
+      "C": "An encrypted S3 object requires managing bucket policies and object encryption yourself and is a less standard, less auditable secret store for this use case.",
+      "D": "User data is visible in instance metadata and the launch configuration and is not an encrypted, auditable secret store."
+    },
+    "learningObjective": "Choose SSM Parameter Store SecureString for low-cost, encrypted, auditable secrets that need no automatic rotation.",
+    "topic": "AWS Systems Manager",
+    "tags": ["Parameter-Store", "SecureString", "Secrets-Manager", "cost-optimization", "security"]
+  }
+]
