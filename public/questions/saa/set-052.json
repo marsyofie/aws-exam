@@ -12,19 +12,18 @@
       "D": "Deploy all tiers in public subnets and use IAM policies to restrict communication between tiers."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B Using a single VPC with separate subnets and security groups is the most operationally efficient approach. Security groups are stateful and can reference each other, making them ideal for controlling inter-tier communication. The presentation tier goes in a public subnet (with an ALB), while business logic and database tiers go in private subnets with no direct internet access. A adds unnecessary complexity with multiple VPCs and peering. C misunderstands AZs as isolation boundaries. D incorrectly uses IAM (which controls API calls, not network traffic) and exposes all tiers publicly.",
+    "explanation": "Deploying all tiers in a single VPC with dedicated subnets and security groups is the most operationally efficient architecture. Security groups are stateful and can reference each other by security group ID to control tier-to-tier communication without manual IP tracking. Placing the business logic and database tiers in private subnets ensures they cannot be reached directly from the internet.",
     "whyOthersAreWrong": {
-      "B": "This approach (Deploy all tiers in a single VPC with three subnets. Use security groups to restrict traffic flow between tiers and place the business logic and database tiers in private subnets.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "Network ACLs are stateless and apply to entire subnet CIDR blocks; they cannot dynamically reference instance security groups or maintain stateful connection tracking.",
-      "D": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks."
+      "A": "Deploying each tier in a separate VPC connected via VPC peering introduces unnecessary routing complexity, peering connection limits, and higher operational overhead compared to multi-tier subnetting within a single VPC.",
+      "C": "Availability Zones represent physical fault isolation boundaries for high availability, not network access security tiers, and stateless Network ACLs are much harder to maintain than stateful security groups.",
+      "D": "Placing all tiers in public subnets exposes backend application logic and databases directly to the public internet, and IAM policies control AWS API operations rather than network packet flow."
     },
-    "learningObjective": "Design a solution using Amazon VPC that minimizes ongoing operational maintenance.",
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
-      "IAM",
       "Security",
       "Networking"
     ]
@@ -42,22 +41,21 @@
       "D": "Use a NAT gateway in the public subnet to allow the EC2 instances in the private subnet to access S3."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B A VPC gateway endpoint for S3 allows private connectivity to S3 without requiring an internet gateway, NAT device, or public IP. Traffic stays on the AWS network and never traverses the internet. A violates the security policy.",
+    "explanation": "A Gateway VPC endpoint for S3 creates a private route within the VPC route table directly to S3. Traffic remains entirely on the private AWS network without traversing an internet gateway or NAT device, perfectly complying with the strict security policy prohibiting internet-bound traffic.",
     "whyOthersAreWrong": {
-      "C": "S3 primarily uses gateway endpoints (free) rather than interface endpoints (which have hourly costs). D routes traffic through a NAT gateway which still requires an internet gateway, violating the no-internet policy.",
-      "B": "This approach (Create a VPC gateway endpoint for S3 and update the route table of the subnet to point S3 traffic through the endpoint.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks."
+      "A": "Assigning public IP addresses and routing through an Internet Gateway directly violates the security policy that prohibits internet-bound traffic from the instances.",
+      "C": "While Interface VPC endpoints (PrivateLink) exist for S3, they incur hourly and data processing charges, whereas Gateway endpoints for S3 are free and route traffic privately through standard subnet route tables.",
+      "D": "Using a NAT gateway routes outbound traffic through an internet gateway over the public internet, violating the prohibition against internet-bound traffic."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
       "S3",
-      "EC2",
-      "IAM",
-      "Security"
+      "Security",
+      "Networking"
     ]
   },
   {
@@ -73,21 +71,20 @@
       "D": "Hard-code the credentials in the Lambda function and update the function code every 30 days."
     },
     "correctAnswers": [
-      "A"
+      "C"
     ],
-    "explanation": "Nswer: C AWS Secrets Manager is purpose-built for secrets like database credentials and natively supports automatic rotation with Lambda rotation functions. It integrates directly with RDS and other databases. A does not support automatic rotation. B \u2014 Parameter Store SecureString supports encryption but does NOT natively support automatic rotation.",
+    "explanation": "AWS Secrets Manager natively supports automatic credential rotation (e.g. every 30 days) using pre-built or custom Lambda rotation functions. It provides secure storage, fine-grained IAM permissions, and automated secret lifecycle management with minimal operational effort.",
     "whyOthersAreWrong": {
-      "D": "D is a security anti-pattern. Secrets Manager is the correct choice when rotation is a requirement.",
-      "B": "AWS Systems Manager Parameter Store does not natively support automated scheduled rotation with built-in Lambda templates for RDS credentials.",
-      "C": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
+      "A": "Lambda environment variables do not support automated, scheduled secret rotation; updating credentials requires code modifications and redeploying the function.",
+      "B": "Systems Manager Parameter Store SecureString parameters store encrypted secrets, but do not provide native built-in scheduled credential rotation like Secrets Manager.",
+      "D": "Hardcoding credentials into application source code is a severe security vulnerability that risks credential leaks and requires manual code deployments every 30 days."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Implement secure architectural controls and access policies with AWS Secrets Manager.",
+    "topic": "AWS Secrets Manager",
     "tags": [
+      "Secrets Manager",
       "Lambda",
-      "Systems Manager",
-      "RDS",
-      "DynamoDB",
+      "KMS",
       "Security"
     ]
   },
@@ -104,20 +101,19 @@
       "D": "Use a VPC interface endpoint to connect to the third-party API."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B A NAT gateway allows instances in private subnets to initiate outbound internet connections while preventing inbound connections from the internet. VPC flow logs capture all network traffic metadata for monitoring and auditing. A exposes instances directly. C adds unnecessary operational overhead compared to NAT Gateway.",
+    "explanation": "Deploying a managed NAT gateway in a public subnet allows private subnet EC2 instances to initiate outbound HTTPS requests to external APIs while blocking inbound internet connections. Enabling VPC Flow Logs on the subnets captures IP traffic metadata for comprehensive logging and auditing.",
     "whyOthersAreWrong": {
-      "D": "VPC endpoints only work for AWS services, not arbitrary third-party APIs.",
-      "B": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks.",
-      "C": "This approach (Use a NAT instance with port forwarding and enable VPC flow logs.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Placing instances in a public subnet with public IP addresses exposes them to direct inbound internet access, violating the security requirement.",
+      "C": "A self-managed NAT instance requires manual patching, OS maintenance, and custom failover configurations, introducing high operational overhead compared to a managed NAT Gateway.",
+      "D": "VPC Interface endpoints (AWS PrivateLink) only connect to AWS services or PrivateLink-enabled SaaS endpoints, not arbitrary external third-party public HTTPS APIs."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
       "EC2",
-      "PrivateLink",
       "Security",
       "Networking"
     ]
@@ -126,8 +122,8 @@
     "id": "saa-1025",
     "exam": "AWS Certified Solutions Architect - Associate",
     "question": "A company needs to grant an EC2 instance running in Account A access to an S3 bucket in Account B. The S3 bucket must remain private (no public access). Which steps are required to implement this securely?",
-    "answerType": "single",
-    "answerInstruction": "Choose the correct answer.",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
     "options": {
       "A": "Create an IAM role in Account A with an S3 access policy and attach it to the EC2 instance.",
       "B": "Create a bucket policy in Account B that grants the IAM role from Account A access to the bucket.",
@@ -136,22 +132,20 @@
       "E": "Create a VPC peering connection between Account A and Account B."
     },
     "correctAnswers": [
-      "A"
+      "A",
+      "B"
     ],
-    "explanation": "Nswers: A, B Cross-account S3 access requires configuration in BOTH accounts. In Account A, create an IAM role with an S3 access policy and attach it to the EC2 instance . In Account B, create a bucket policy that explicitly grants the IAM role ARN from Account A access to the bucket .",
+    "explanation": "Cross-account access to S3 requires permissions in both accounts: Account A must create an IAM role with an identity-based policy allowing S3 actions attached to the EC2 instance profile, and Account B must update its S3 bucket policy to explicitly grant access to Account A's IAM role principal.",
     "whyOthersAreWrong": {
-      "C": "C is a security anti-pattern (embedding access keys).",
-      "D": "D is for replication, not access delegation.",
-      "E": "E is for VPC network connectivity, not S3 access.",
-      "B": "This approach (Create a bucket policy in Account B that grants the IAM role from Account A access to the bucket.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Creating an IAM user in Account B and distributing static long-term access keys to an EC2 instance violates AWS security best practices regarding role-based temporary credentials.",
+      "D": "S3 Cross-Region Replication copies objects asynchronously between buckets for disaster recovery; it does not grant runtime read/write access for applications in another account.",
+      "E": "VPC peering connects VPC networks at the IP layer, but Amazon S3 is a public regional service accessed via AWS IAM and bucket policies rather than VPC-to-VPC routing."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
     "topic": "AWS IAM",
     "tags": [
       "IAM",
       "S3",
-      "VPC",
-      "EC2",
       "Security"
     ]
   },
@@ -168,27 +162,25 @@
       "D": "Use CloudFront with Origin Access Identity (OAI) to upload objects to S3."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B Pre-signed URLs allow the application server to generate temporary, time-limited URLs that grant specific permissions (like PutObject) without exposing long-term credentials or making the bucket public. A is a major security risk. C creates unscalable IAM users and exposes long-term credentials. D \u2014 OAI is used for read access through CloudFront, not for client uploads.",
+    "explanation": "S3 pre-signed URLs allow the application server to generate cryptographically signed, time-limited URLs that grant temporary PutObject permission. The client browser uploads directly to S3 without exposing AWS credentials or requiring application servers to proxy large payloads.",
     "whyOthersAreWrong": {
-      "B": "This approach (Use S3 pre-signed URLs generated by the application server to allow the client to upload directly to S3.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "Using static IAM user credentials or long-lived access keys violates AWS security best practices; temporary IAM roles and AWS STS should always be preferred.",
-      "D": "This approach (Use CloudFront with Origin Access Identity (OAI) to upload objects to S3.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Making the S3 bucket public allows unrestricted, anonymous uploads, creating severe security risks, potential data overwrites, and unbounded storage costs.",
+      "C": "Creating individual IAM users for each application end-user is unscalable, hits AWS account IAM user limits, and requires distributing long-term AWS credentials to untrusted clients.",
+      "D": "CloudFront with Origin Access Identity (OAI) or Origin Access Control (OAC) is designed to restrict read access from S3 origins through CloudFront, not to facilitate direct user write uploads."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with AWS CloudFront.",
-    "topic": "AWS CloudFront",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
+    "topic": "Amazon S3",
     "tags": [
-      "CloudFront",
       "S3",
-      "IAM",
       "Security"
     ]
   },
   {
     "id": "saa-1027",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A Solutions Architect is designing a system where multiple Lambda functions need to access an Amazon RDS database. The database credentials must be encrypted at rest and the Lambda functions must authenticate without hard-coded passwords. Which approach meets these requirements?",
+    "question": "A Solutions Architect is designing a system where multiple Lambda functions need to access an Amazon RDS database. The company requires that no database credentials be stored in code or configuration files, and credentials must not require manual rotation. Which solution meets these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
@@ -198,20 +190,19 @@
       "D": "Use AWS Secrets Manager to store the credentials and reference them in the Lambda functions using the execution role."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B IAM database authentication for RDS (available for MySQL and PostgreSQL) allows Lambda functions to authenticate using IAM tokens instead of passwords. The Lambda execution role generates an authentication token, eliminating the need to store credentials at all. D (Secrets Manager) is also viable, but IAM DB authentication is more secure because there are no credentials to store or rotate. A and C involve managing credentials in files or S3, which is less secure and more complex.",
+    "explanation": "AWS IAM database authentication allows Lambda functions to authenticate to Amazon RDS MySQL or PostgreSQL using temporary IAM authentication tokens generated by the AWS SDK. This eliminates the need to manage, store, or rotate database passwords entirely.",
     "whyOthersAreWrong": {
-      "B": "This approach (Use IAM database authentication for RDS and grant the Lambda execution role the necessary IAM permissions.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Store credentials in S3 encrypted with SSE-KMS and retrieve them at runtime.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Use AWS Secrets Manager to store the credentials and reference them in the Lambda functions using the execution role.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Packaging database credentials into deployment zip files risks exposing sensitive secrets in source control and requires repackaging and redeploying every function when credentials change.",
+      "C": "Storing credentials in S3 requires custom runtime retrieval logic, extra latency on cold starts, and manual credential rotation management.",
+      "D": "AWS Secrets Manager is a valid credential storage service, but IAM database authentication is more secure for RDS because it replaces persistent passwords with short-lived tokens, eliminating credential rotation overhead."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
     "topic": "AWS IAM",
     "tags": [
       "IAM",
       "RDS",
-      "S3",
       "Lambda",
       "Security"
     ]
@@ -229,22 +220,20 @@
       "D": "Use a CloudFront signed URL and make the S3 bucket public."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B Origin Access Control (OAC) \u2014 the successor to Origin Access Identity (OAI) \u2014 creates a special CloudFront principal that the S3 bucket policy can reference. The bucket policy allows access only from the specific CloudFront distribution, preventing direct S3 access. A is fragile because CloudFront IP ranges change. C does not prevent direct S3 access. D makes the bucket public, defeating the purpose.",
+    "explanation": "CloudFront Origin Access Control (OAC) allows you to securely restrict access to an S3 bucket so that objects are only accessible when requested through CloudFront. The S3 bucket policy explicitly allows read operations only from the designated CloudFront distribution principal.",
     "whyOthersAreWrong": {
-      "B": "This approach (Use Origin Access Control (OAC) on the CloudFront distribution and update the S3 bucket policy to only allow access from the CloudFront distribution.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
-      "D": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks."
+      "A": "Restricting bucket access by CloudFront IP ranges is brittle and unmaintainable because CloudFront's global edge IP ranges change dynamically and frequently.",
+      "C": "S3 Transfer Acceleration speeds up uploads over long distances via AWS edge locations, but does not provide access control or restrict direct S3 bucket access.",
+      "D": "Making the S3 bucket public allows anyone on the internet to bypass CloudFront and access files directly via S3 URLs, defeating access control requirements."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
-    "topic": "AWS CloudFront",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon CloudFront.",
+    "topic": "Amazon CloudFront",
     "tags": [
       "CloudFront",
       "S3",
-      "IAM",
-      "Security",
-      "High Availability"
+      "Security"
     ]
   },
   {
@@ -260,22 +249,20 @@
       "D": "Require all applications to encrypt objects client-side before uploading."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B When default encryption is enabled on an S3 bucket with SSE-S3, all new objects uploaded are automatically encrypted at rest, regardless of whether the upload request specifies encryption. No additional bucket policy is needed. SSE-S3 uses AWS managed keys at no additional cost. A is redundant and would actually break uploads that do not include the header. C adds KMS costs unnecessarily. D adds complexity and relies on application compliance.",
+    "explanation": "Enabling S3 default encryption with SSE-S3 automatically encrypts all new objects written to the bucket using Amazon S3-managed keys. It requires zero application modifications, incurs no additional KMS charges, and enforces server-side encryption seamlessly.",
     "whyOthersAreWrong": {
-      "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "C": "This approach (Enable default encryption on the S3 bucket with SSE-KMS using a customer-managed CMK.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Require all applications to encrypt objects client-side before uploading.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Explicitly denying PutObject requests without the encryption header is redundant and legacy behavior because S3 default encryption automatically encrypts all uploads, and such a policy breaks clients that rely on default bucket encryption.",
+      "C": "SSE-KMS with a customer managed key provides additional key management controls but incurs ongoing AWS KMS API request costs, which violates the requirement to minimize cost.",
+      "D": "Enforcing client-side encryption shifts the burden of key management and encryption logic to client applications, adding operational complexity and potential compliance inconsistencies."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
     "topic": "Amazon S3",
     "tags": [
       "S3",
-      "IAM",
       "KMS",
-      "Security",
-      "Cost Optimization"
+      "Security"
     ]
   },
   {
@@ -291,19 +278,19 @@
       "D": "Use CloudFormation StackSets to deploy IAM deny policies to all accounts."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B Service Control Policies (SCPs) in AWS Organizations provide centralized, preventive guardrails applied across organizational units or the entire organization. They are the most efficient way to enforce service restrictions at scale. A and D require per-account configuration and can be bypassed.",
+    "explanation": "Service Control Policies (SCPs) in AWS Organizations provide centralized, preventive governance guardrails across all accounts in an organization or organizational unit (OU). They set hard permission boundaries that even account root users and administrators cannot exceed.",
     "whyOthersAreWrong": {
-      "C": "C is detective (not preventive). SCPs are the AWS-recommended best practice.",
-      "B": "Service Control Policies (SCPs) act as permission guardrails that restrict the maximum permissions available in an account; they do not grant permissions or configure resource-level behaviors directly.",
-      "D": "Developing and maintaining custom automation scripts introduces significant operational overhead and failure points compared to using native, fully managed AWS services."
+      "A": "Managing individual IAM policies across dozens or hundreds of accounts creates configuration drift, high operational overhead, and can be overridden by local account administrators.",
+      "C": "AWS Config rules provide detective controls that evaluate compliance after resources are created, failing to prevent unauthorized service usage proactively.",
+      "D": "CloudFormation StackSets deploy IAM policies to member accounts, but local administrators can still modify or detach those policies unless governed by an overarching SCP."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
-    "topic": "AWS IAM",
+    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Organizations.",
+    "topic": "AWS Organizations",
     "tags": [
-      "IAM",
       "Organizations",
+      "IAM",
       "Security"
     ]
   },
@@ -320,21 +307,19 @@
       "D": "AWS Network Firewall"
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B AWS WAF protects web applications from common web exploits like SQL injection and XSS by inspecting HTTP/HTTPS requests. A (Shield Advanced) protects against DDoS attacks, not application-layer attacks like SQL injection. C (GuardDuty) is a threat detection service, not a preventive firewall. D (Network Firewall) operates at Layer 3/4 and does not inspect HTTP payloads for SQL injection patterns.",
+    "explanation": "AWS WAF inspects HTTP/HTTPS requests at Layer 7 and uses managed rule groups (such as Core Rule Set and SQL database rules) to block common web application vulnerabilities, including SQL injection (SQLi) and cross-site scripting (XSS).",
     "whyOthersAreWrong": {
-      "B": "This approach (AWS WAF with appropriate rule groups) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon GuardDuty) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Network Firewall) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS Shield Advanced provides comprehensive DDoS protection for Layer 3, Layer 4, and Layer 7 DDoS attacks, but is not designed for granular inspection and blocking of SQL injection payloads.",
+      "C": "Amazon GuardDuty is an asynchronous threat detection service that analyzes log feeds; it does not sit inline to block active web application exploits.",
+      "D": "AWS Network Firewall operates primarily at Layers 3 through 7 for VPC stateful packet and domain filtering, but does not provide specialized web application firewall (WAF) rule sets for SQL injection inspection."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS WAF.",
+    "learningObjective": "Implement secure architectural controls and access policies with AWS WAF.",
     "topic": "AWS WAF",
     "tags": [
       "WAF",
-      "VPC",
-      "Security",
-      "Networking"
+      "Security"
     ]
   },
   {
@@ -350,19 +335,19 @@
       "D": "AWS STS with AssumeRoleWithWebIdentity"
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B Amazon Cognito User Pools handle user sign-up, sign-in, and social federation (Google, Facebook, etc.). Identity Pools (federated identities) provide AWS credentials to access AWS resources, supporting both authenticated and unauthenticated (guest) roles. A is for enterprise SAML federation.",
+    "explanation": "Amazon Cognito User Pools handle user directory management, registration, and social identity federation (Google, Facebook, Apple). Cognito Identity Pools exchange authentication tokens for temporary AWS credentials to access AWS services, supporting both authenticated users and unauthenticated guest profiles.",
     "whyOthersAreWrong": {
-      "C": "C is for Active Directory integration.",
-      "D": "D is the low-level API that Cognito uses internally \u2014 using it directly would require significant custom development.",
-      "B": "This approach (Amazon Cognito with user pools and identity pools) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "IAM SAML 2.0 federation is designed for enterprise single sign-on (SSO) with identity providers like Okta or Active Directory, and does not support consumer mobile social logins or guest access.",
+      "C": "AWS Directory Service AD Connector proxies directory requests to an existing on-premises Active Directory, which is unrelated to social logins for public mobile app users.",
+      "D": "AWS STS AssumeRoleWithWebIdentity is a lower-level API call used behind the scenes; configuring it manually requires building custom user management and token exchange infrastructure compared to Cognito."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
-    "topic": "AWS IAM",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon Cognito.",
+    "topic": "Amazon Cognito",
     "tags": [
+      "Cognito",
       "IAM",
-      "S3",
       "Security"
     ]
   },
@@ -370,8 +355,8 @@
     "id": "saa-1033",
     "exam": "AWS Certified Solutions Architect - Associate",
     "question": "A company wants to implement encryption in transit for all API calls made to AWS services from their VPC. Which actions contribute to achieving this goal?",
-    "answerType": "single",
-    "answerInstruction": "Choose the correct answer.",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
     "options": {
       "A": "Ensure all API calls use HTTPS endpoints.",
       "B": "Enable VPC flow logs for all subnets.",
@@ -380,20 +365,19 @@
       "E": "Create a Network ACL that denies port 80 traffic."
     },
     "correctAnswers": [
-      "A"
+      "A",
+      "C"
     ],
-    "explanation": "Nswers: A, C Encryption in transit is achieved by using HTTPS (TLS) for all API calls and enforcing a minimum TLS version to avoid weak protocols. B (flow logs) captures metadata but does not encrypt anything. D (SSE-S3) is encryption at rest, not in transit. E blocks HTTP but does not enforce encryption \u2014 it could just block traffic entirely without providing an encrypted alternative.",
+    "explanation": "Ensuring all AWS API calls use HTTPS endpoints encrypts the data in transit via TLS. Enforcing TLS 1.2 or higher as the minimum protocol version prevents vulnerabilities associated with outdated SSL and early TLS ciphers.",
     "whyOthersAreWrong": {
-      "B": "This approach (Enable VPC flow logs for all subnets.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Enforce TLS 1.2 as the minimum protocol version in security policies.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Use S3 server-side encryption with SSE-S3.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "Network ACLs are stateless and apply to entire subnet CIDR blocks; they cannot dynamically reference instance security groups or maintain stateful connection tracking."
+      "B": "VPC Flow Logs capture metadata about network traffic (source, destination, port, action), but do not encrypt data packets in transit.",
+      "D": "S3 server-side encryption (SSE-S3) protects data at rest within storage volumes, not data in transit across the network.",
+      "E": "A Network ACL denying port 80 blocks unencrypted HTTP traffic, but does not configure or enforce TLS encryption protocols or cipher standards."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
-      "S3",
       "Security",
       "Networking"
     ]
@@ -411,13 +395,13 @@
       "D": "Create an IAM group, add the instance to the group, and assign permissions to the group."
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B IAM instance profiles allow EC2 instances to assume an IAM role and receive temporary, automatically-rotated credentials via the instance metadata service. No long-term credentials are embedded. A embeds long-term credentials, which is a security risk. C requires manual credential management. D \u2014 IAM groups cannot contain EC2 instances; groups contain only IAM users.",
+    "explanation": "Attaching an IAM role to an EC2 instance profile allows the instance metadata service (IMDS) to automatically supply temporary, regularly rotated AWS credentials to the EC2 instance without hardcoding long-term credentials anywhere.",
     "whyOthersAreWrong": {
-      "B": "This approach (Create an IAM role with the required permissions and attach it to the EC2 instance profile.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "Using static IAM user credentials or long-lived access keys violates AWS security best practices; temporary IAM roles and AWS STS should always be preferred.",
-      "D": "This approach (Create an IAM group, add the instance to the group, and assign permissions to the group.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Storing static IAM access keys in user data scripts stores plaintext credentials on the instance, which can be viewed by anyone with ec2:DescribeInstances permissions.",
+      "C": "Embedding temporary STS credentials directly into application source code requires manual rotation logic and risks credential expiration while the application is running.",
+      "D": "IAM groups can only contain IAM user principals; EC2 instances and IAM roles cannot be added to IAM groups."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
     "topic": "AWS IAM",
@@ -442,17 +426,17 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Nswer: A IAM policies with resource-level permissions can explicitly deny or allow actions on specific VPC resources like route tables. This is the standard approach to preventing specific users/roles from modifying route tables. B (VPC sharing with RAM) enables sharing subnets but does not inherently prevent route table modification. C (SCPs) would prevent ALL users including the networking team from modifying route tables.",
+    "explanation": "Using IAM policies with resource-level permissions allows administrators to grant application teams permissions to deploy compute resources into shared subnets while explicitly denying them the ec2:CreateRoute, ec2:DeleteRoute, and ec2:ReplaceRoute actions on route tables.",
     "whyOthersAreWrong": {
-      "D": "D is nonsensical \u2014 NACLs control network traffic, not API access to AWS resources.",
-      "B": "This approach (VPC sharing with AWS Resource Access Manager (RAM) and appropriate IAM permissions) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS Service Control Policies that deny route table modifications) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "VPC sharing via AWS RAM shares subnets across accounts, but RAM does not manage or enforce fine-grained IAM action permissions on route tables within participant accounts.",
+      "C": "Applying an SCP that denies route table modifications affects all users and roles within the account (including the central networking team), preventing legitimate network maintenance.",
+      "D": "Network ACLs inspect and filter data packet traffic entering and leaving subnets; they cannot control or block AWS management API calls like route table modifications."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
-    "topic": "Amazon VPC",
+    "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
+    "topic": "AWS IAM",
     "tags": [
-      "VPC",
       "IAM",
+      "VPC",
       "Security",
       "Networking"
     ]
@@ -472,17 +456,17 @@
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Nswer: A EBS encryption by default is an account-level setting that ensures all new EBS volumes in a region are encrypted regardless of whether encryption is specified at creation time. This is the simplest and most operationally efficient approach. B blocks instance launches but is complex.",
+    "explanation": "Configuring EBS encryption by default is a regional, account-level setting that automatically encrypts all newly created EBS volumes and snapshot copies using the specified KMS key, requiring zero effort or configuration from developers.",
     "whyOthersAreWrong": {
-      "C": "C is reactive (detects after creation) and involves copying data. D only works when CloudFormation is used.",
-      "B": "This approach (Create an IAM policy that denies the ec2:RunInstances action if the encryption flag is not set.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "Developing and maintaining custom automation scripts introduces significant operational overhead and failure points compared to using native, fully managed AWS services."
+      "B": "Creating an IAM deny policy on unencrypted volumes adds operational friction by failing instance launches and requires maintaining complex condition keys across multiple policies.",
+      "C": "Using AWS Config to detect and remediate unencrypted volumes is a reactive detective control that allows unencrypted data to be written before remediation copies are created.",
+      "D": "CloudFormation templates only enforce encryption for resources provisioned through templates, failing to prevent unencrypted volumes launched via the AWS console, CLI, or SDK."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
-    "topic": "AWS IAM",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon EBS.",
+    "topic": "Amazon EBS",
     "tags": [
-      "IAM",
-      "EC2",
+      "EBS",
+      "KMS",
       "Security"
     ]
   },
@@ -499,19 +483,18 @@
       "D": "S3 Server-Side Encryption with KMS (SSE-KMS)"
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B S3 Object Lock in Compliance mode prevents any user, including the root user, from deleting or modifying objects during the retention period. It provides Write Once Read Many (WORM) protection for compliance requirements. A (MFA Delete) requires MFA for version deletion but the bucket owner can still disable it. C (CRR) provides durability across regions but does not prevent deletion. D (SSE-KMS) provides encryption at rest but not deletion protection.",
+    "explanation": "Amazon S3 Object Lock in Compliance mode enforces Write-Once-Read-Many (WORM) storage. During the retention period, objects cannot be overwritten or deleted by any IAM user or even the AWS account root user, satisfying strict regulatory compliance requirements.",
     "whyOthersAreWrong": {
-      "B": "This approach (S3 Object Lock in Compliance mode) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (S3 Cross-Region Replication) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (S3 Server-Side Encryption with KMS (SSE-KMS)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "S3 Versioning with MFA Delete requires multi-factor authentication to delete an object version, but the account root user or an administrator with root access can still disable MFA Delete and delete objects.",
+      "C": "S3 Cross-Region Replication duplicates objects to another region for disaster recovery, but does not prevent deletion or modification in either bucket.",
+      "D": "Server-side encryption with KMS (SSE-KMS) protects object contents at rest, but does not prevent principals with s3:DeleteObject permissions from deleting objects."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
     "topic": "Amazon S3",
     "tags": [
       "S3",
-      "KMS",
       "Security"
     ]
   },
@@ -528,20 +511,19 @@
       "D": "Direct Connect"
     },
     "correctAnswers": [
-      "A"
+      "B"
     ],
-    "explanation": "Nswer: B AWS PrivateLink creates private connectivity between VPCs without requiring VPC peering and without overlapping CIDR issues, as traffic flows through elastic network interfaces in the consumer VPC rather than routing directly between CIDR blocks. VPC peering does NOT support overlapping CIDRs \u2014 this is a hard limitation. C and D also require non-overlapping CIDRs for proper routing.",
+    "explanation": "AWS PrivateLink exposes services privately via an Interface VPC Endpoint (ENI) using IP addresses from the consumer VPC's subnet. Because PrivateLink does not route between VPC CIDR blocks, it works seamlessly even when consumer and provider VPCs have overlapping CIDR ranges.",
     "whyOthersAreWrong": {
-      "B": "This approach (AWS PrivateLink (VPC interface endpoint)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "A NAT Gateway must reside in a public subnet, incurs hourly and data processing fees, and routes traffic out to public DynamoDB endpoints.",
-      "D": "Assigning public IPs and routing through an Internet Gateway directly violates the requirement for traffic to remain private within the AWS network."
+      "A": "VPC peering strictly prohibits overlapping or matching CIDR blocks between the two VPCs; route tables cannot route packets when destination CIDRs conflict.",
+      "C": "AWS Site-to-Site VPN establishes IPsec tunnels that rely on IP routing, which fails and causes routing collisions when both networks use overlapping IP address spaces.",
+      "D": "AWS Direct Connect provides dedicated physical network connections between on-premises data centers and AWS VPCs, and cannot route between VPCs with overlapping CIDRs without complex NAT."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
     "tags": [
       "VPC",
       "PrivateLink",
-      "Direct Connect",
       "Networking"
     ]
   },
@@ -558,21 +540,20 @@
       "D": "Use AWS Config with a custom rule to detect the API call and send notifications."
     },
     "correctAnswers": [
-      "A"
+      "C"
     ],
-    "explanation": "Nswer: C CloudTrail integrated with EventBridge provides near-real-time event delivery. An EventBridge rule can pattern-match specific API calls and immediately invoke an SNS topic for alerting \u2014 this is the fastest approach. A (S3 event notifications) has higher latency because CloudTrail delivers logs to S3 approximately every 5 minutes. B adds unnecessary intermediary steps. D (Config) evaluates on a schedule and is not designed for real-time API call monitoring.",
+    "explanation": "AWS CloudTrail delivers management events directly to Amazon EventBridge in near-real time (typically within seconds). An EventBridge rule can immediately detect specific API patterns (such as ec2:TerminateInstances) and trigger an SNS topic for immediate alerting.",
     "whyOthersAreWrong": {
-      "B": "Scheduling a daily Lambda script introduces up to 24 hours of delay, failing the near-real-time alerting requirement.",
-      "C": "AWS CloudTrail provides an audit log of API management events; it does not actively block API calls or perform automated threat prevention on its own.",
-      "D": "AWS Trusted Advisor provides periodic best-practice checks rather than near-real-time event-driven alerts for individual API calls."
+      "A": "CloudTrail batches and writes log files to S3 every 5 to 15 minutes, introducing significant latency before S3 event notifications can trigger alerting.",
+      "B": "Streaming CloudTrail to CloudWatch Logs and evaluating metric filter alarms introduces metric evaluation delays (typically 1-minute to 5-minute alarm intervals), making it slower than EventBridge.",
+      "D": "AWS Config evaluates resource configurations periodically or upon configuration changes, which is slower and not designed for immediate real-time API call notifications."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon CloudWatch.",
-    "topic": "Amazon CloudWatch",
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon EventBridge.",
+    "topic": "Amazon EventBridge",
     "tags": [
-      "CloudWatch",
-      "Lambda",
-      "S3",
-      "EC2",
+      "EventBridge",
+      "CloudTrail",
+      "SNS",
       "Security"
     ]
   },
@@ -580,8 +561,8 @@
     "id": "saa-1040",
     "exam": "AWS Certified Solutions Architect - Associate",
     "question": "A Solutions Architect is designing a defense-in-depth strategy for a web application. Which of the following are valid layers of defense for protecting the application?",
-    "answerType": "single",
-    "answerInstruction": "Choose the correct answer.",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
     "options": {
       "A": "Security groups on EC2 instances allowing only necessary inbound traffic from the ALB",
       "B": "IAM policies that grant ec2:* permissions to all users",
@@ -590,22 +571,20 @@
       "E": "Making all S3 buckets publicly accessible for convenience"
     },
     "correctAnswers": [
-      "A"
+      "A",
+      "C"
     ],
-    "explanation": "Nswers: A, C Defense-in-depth involves multiple security layers. Security groups provide network-level access control at the instance level. WAF provides application-layer filtering. B, D, and E are all security anti-patterns that weaken security posture, not strengthen it.",
+    "explanation": "Defense-in-depth incorporates multiple layers of security controls: security groups provide stateful network access control restricting instance traffic to the ALB, while AWS WAF provides Layer 7 application inspection to block web exploits.",
     "whyOthersAreWrong": {
-      "B": "This approach (IAM policies that grant ec2:* permissions to all users) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (WAF rules on the Application Load Balancer blocking malicious request patterns) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Storing database credentials in plaintext in application source code) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (Making all S3 buckets publicly accessible for convenience) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Granting ec2:* permissions to all users severely violates the principle of least privilege and increases the blast radius of accidental or malicious disruption.",
+      "D": "Storing plaintext credentials in source code exposes sensitive database secrets to anyone with code repository access, creating critical security risks.",
+      "E": "Making S3 buckets publicly accessible exposes private assets to the open internet, completely undermining data confidentiality and security."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
-    "topic": "Amazon S3",
+    "learningObjective": "Implement secure architectural controls and access policies with AWS WAF.",
+    "topic": "AWS WAF",
     "tags": [
-      "S3",
-      "EC2",
-      "IAM",
       "WAF",
+      "Security Groups",
       "Security"
     ]
   }

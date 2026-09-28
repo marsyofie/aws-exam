@@ -16,9 +16,9 @@
     ],
     "explanation": "S3 Event Notifications natively and efficiently trigger services like Lambda, SQS, or SNS when specific events (like object creation) occur in a bucket.",
     "whyOthersAreWrong": {
-      "B": "This approach (Use CloudWatch Logs to parse S3 access logs and trigger Lambda) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Parsing S3 access logs via CloudWatch Logs introduces log delivery latency, log ingestion costs, and unnecessary complex log filtering overhead.",
       "C": "Developing and maintaining custom automation scripts introduces significant operational overhead and failure points compared to using native, fully managed AWS services.",
-      "D": "This approach (Use AWS CloudTrail to monitor API calls and trigger Lambda via EventBridge) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "CloudTrail data events routed through EventBridge introduce additional service hops, latency, and event evaluation costs compared to direct native S3 Event Notifications."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -46,9 +46,9 @@
     ],
     "explanation": "AWS KMS with Customer Managed Keys (CMKs) allows the company to manage their own encryption keys while natively integrating with EBS for data-at-rest encryption.",
     "whyOthersAreWrong": {
-      "B": "This approach (Use AWS CloudHSM to encrypt the EC2 instance OS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Encrypt the data using application-level encryption before writing to EBS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Enable default AWS managed encryption on the EBS volume) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "AWS CloudHSM is an expensive dedicated hardware security module that does not directly manage native EBS volume block encryption.",
+      "C": "Application-level encryption requires custom code changes, CPU overhead on the instance, and does not encrypt the underlying EBS boot or root volumes natively.",
+      "D": "Default AWS managed KMS keys (aws/ebs) are created, managed, and rotated by AWS rather than customer-managed keys (CMKs) where the company controls key rotation and policies."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon EC2.",
     "topic": "Amazon EC2",
@@ -75,9 +75,9 @@
     ],
     "explanation": "Spot Instances offer the deepest discounts (up to 90%) for workloads that are fault-tolerant and can handle interruptions.",
     "whyOthersAreWrong": {
-      "A": "This approach (On-Demand Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Reserved Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Dedicated Hosts) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "On-Demand Instances provide flexible pay-as-you-go compute but offer no discounts, making them far more expensive than Spot Instances.",
+      "B": "Reserved Instances require a 1- or 3-year steady-state commitment, which is wasteful for an easily interruptible workload that can take advantage of deep Spot discounts.",
+      "D": "Dedicated Hosts allocate an entire physical server for compliance or BYOL licensing, incurring the highest compute cost possible."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -103,8 +103,8 @@
     ],
     "explanation": "Data Lifecycle Manager (DLM) is a native, easy-to-use feature for automating the creation, retention, and deletion of EBS snapshots.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS Backup) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS Lambda triggered by Amazon EventBridge) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "AWS Backup is a comprehensive backup service, but Amazon Data Lifecycle Manager (DLM) is the native, purpose-built, and simplest feature for automating EBS snapshot lifecycles and retention.",
+      "C": "A custom Lambda function triggered by EventBridge requires writing, maintaining, and monitoring custom snapshot management and cleanup code, increasing operational overhead.",
       "D": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
@@ -133,8 +133,8 @@
     ],
     "explanation": "For large datasets over slow connections, physical transport using AWS Snowball Edge avoids network bottlenecks and easily meets the timeline.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS DataSync) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS Storage Gateway) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "AWS DataSync relies on network bandwidth and would take many weeks or months to transfer 100 TB over a slow internet connection.",
+      "C": "AWS Storage Gateway is a hybrid cloud storage appliance that requires substantial network bandwidth for data transmission and is not suited for rapid 1-week offline bulk transfer.",
       "D": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
@@ -164,8 +164,8 @@
     "explanation": "CloudFront caches content at edge locations globally (including Australia), and replicating the bucket to an Australian region physically moves the origin closer to the users.",
     "whyOthersAreWrong": {
       "B": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
-      "D": "This approach (Use AWS Global Accelerator) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (Deploy an ALB in front of the S3 bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "AWS Global Accelerator optimizes TCP/UDP routing using anycast IP addresses, but does not cache large video media files at edge locations like CloudFront does.",
+      "E": "Deploying an Application Load Balancer in us-east-1 does not reduce the physical distance or network transit latency across the Pacific for users in Australia."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon S3.",
     "topic": "Amazon S3",
@@ -192,9 +192,9 @@
     ],
     "explanation": "ALB Access Logs capture detailed information about requests sent to the load balancer, which can be stored in S3 and easily analyzed using Athena.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS CloudTrail) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (VPC Flow Logs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Trusted Advisor) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS CloudTrail records management plane API calls (such as CreateLoadBalancer or DescribeInstances), not user HTTP request/response codes or 503 error logs.",
+      "B": "VPC Flow Logs capture IP-level traffic flows (IP addresses, ports, protocols, and packet counts) at network interfaces, but cannot capture Layer 7 HTTP status codes.",
+      "D": "AWS Trusted Advisor provides best practice recommendations across cost, security, and performance, but does not perform real-time HTTP error log analysis."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -223,7 +223,7 @@
     ],
     "explanation": "Public subnets have a route to the Internet Gateway for external access. Private subnets do not, providing network-level isolation for backend systems like databases.",
     "whyOthersAreWrong": {
-      "A": "This approach (Web tier in a private subnet, Database tier in a private subnet with a NAT Gateway) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Placing the web tier in a private subnet prevents internet users from directly accessing public web endpoints without an internet-facing load balancer or proxy.",
       "C": "Allowing inbound traffic from 0.0.0.0/0 exposes the database port to the entire public internet, creating a critical security vulnerability.",
       "D": "Allowing the entire VPC CIDR permits any resource in the VPC to access the database, violating the principle of least privilege."
     },
@@ -252,9 +252,9 @@
     ],
     "explanation": "SSM Parameter Store (using SecureString) provides a secure, KMS-encrypted, and IAM- controlled way to store and retrieve configuration data and secrets.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon S3 with SSE-KMS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Hardcode in Lambda environment variables) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS CloudHSM) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Storing individual credentials as S3 objects with SSE-KMS introduces unnecessary object retrieval overhead and is harder to integrate seamlessly with Lambda compared to SSM Parameter Store.",
+      "C": "Hardcoding credentials in Lambda environment variables exposes plaintext secrets to console viewers and IAM users who have permissions to view function configurations.",
+      "D": "AWS CloudHSM is a high-cost dedicated hardware appliance designed for strict compliance (FIPS 140-2 Level 3), representing excessive cost and operational complexity for simple credential storage."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS Systems Manager.",
     "topic": "AWS Systems Manager",
@@ -284,8 +284,8 @@
     "explanation": "RDS supports Cross-Region Read Replicas natively, providing asynchronous, continuous replication for disaster recovery purposes.",
     "whyOthersAreWrong": {
       "A": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "B": "This approach (Use AWS DMS for continuous replication) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Export RDS data to S3 and replicate the bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "AWS DMS is designed for database migrations and homogeneous/heterogeneous change-data-capture, but cross-region read replicas provide native, managed, and automated continuous replication for RDS PostgreSQL.",
+      "D": "Exporting data to S3 and replicating the bucket is a batch file export process with high RPO/RTO that does not provide automated, continuous database transaction replication."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon RDS.",
     "topic": "Amazon RDS",
@@ -313,8 +313,8 @@
     "explanation": "API Gateway has built-in features for Usage Plans and API Keys, allowing administrators to throttle, quota, and securely expose APIs to external developers.",
     "whyOthersAreWrong": {
       "A": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "C": "This approach (Use Amazon Cognito User Pools for authentication) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Implement an AWS WAF rule to validate keys) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Cognito User Pools authenticate end users via JWT tokens, but API Gateway usage plans and rate limits natively require API keys for external developer tracking.",
+      "D": "AWS WAF inspects web traffic and can inspect headers, but does not natively provide API Gateway usage plans, quota tracking, or developer API key association."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -342,9 +342,9 @@
     ],
     "explanation": "A Dead-Letter Queue (DLQ) is designed to capture messages that fail to process after a defined number of retries (maxReceiveCount), isolating them for manual debugging.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the visibility timeout of the queue) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Increasing the visibility timeout merely delays when failed messages become visible to workers again, causing repeated processing failures and queue head-of-line blocking.",
       "C": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (Write failed messages to an S3 bucket from the EC2 instance) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Writing failed messages to an S3 bucket requires writing custom error-handling and storage logic in worker code, whereas an SQS DLQ handles poison message isolation automatically."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
     "topic": "Amazon SQS",
@@ -372,9 +372,9 @@
     ],
     "explanation": "DMS provides continuous data replication for minimal downtime migrations, and SCT assists with schema conversion if migrating between different database engines (though not strictly required for PG to PG, it's the standard combo).",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS DataSync and AWS Snowball) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (RDS native snapshots) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (pg_dump and pg_restore) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS DataSync and Snowball are file/object transport tools and cannot perform live schema migration or transactional change data capture for an active database.",
+      "C": "RDS native snapshots require stopping or pausing writes to achieve consistency, leading to significant cutover downtime for a 50 TB database.",
+      "D": "pg_dump and pg_restore take many hours or days for a 50 TB database, causing extended downtime and failing the near-zero downtime requirement."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon Aurora.",
     "topic": "Amazon Aurora",
@@ -401,8 +401,8 @@
     "explanation": "Enabling 'EBS Encryption by Default' is a one-click account-level setting that automatically encrypts all new EBS volumes without needing custom policies or scripts.",
     "whyOthersAreWrong": {
       "A": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "C": "This approach (Create an IAM policy denying 'ec2:CreateVolume' if encryption is not specified) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Write a Lambda function triggered by CloudTrail to encrypt unencrypted volumes) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "An IAM deny policy blocks unencrypted volume creation requests, causing failures for users and automated deployments rather than automatically ensuring all volumes are created encrypted.",
+      "D": "A Lambda function triggered by CloudTrail acts reactively after volume creation, requiring complex logic to stop instances, snapshot volumes, recreate them with encryption, and reattach them."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
     "topic": "AWS IAM",
@@ -433,7 +433,7 @@
     "whyOthersAreWrong": {
       "A": "Step scaling requires manual configuration of metric thresholds and step adjustments, which is more operationally complex than target tracking scaling.",
       "C": "Vertically scaling compute or database instances does not resolve distributed latency bottlenecks and results in higher idle costs during off-peak periods.",
-      "D": "This approach (Reduce the Health Check Grace Period) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Reducing the health check grace period causes the load balancer to mark new instances unhealthy before their 5-minute bootstrapping finishes, causing an infinite termination and recreation loop."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -461,8 +461,8 @@
     ],
     "explanation": "S3 Versioning preserves deleted/overwritten objects, allowing recovery. CloudTrail data events log object-level API activity (like GetObject, PutObject) within the bucket.",
     "whyOthersAreWrong": {
-      "B": "This approach (S3 Object Lock) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon Macie) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "S3 Object Lock enforces WORM (write once, read many) retention to prevent object deletion, but does not track API calls made to the bucket.",
+      "D": "Amazon Macie uses machine learning to discover and protect sensitive data (such as PII) in S3, but does not track API calls or provide object deletion recovery.",
       "E": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
@@ -520,9 +520,9 @@
     ],
     "explanation": "Using SQS decouples the ingestion from the processing tier. An ASG can independently scale based on queue depth, ensuring high availability and scalability for long-running transcoding tasks.",
     "whyOthersAreWrong": {
-      "A": "This approach (S3 Event Notification triggers an EC2 instance to process the video) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (S3 triggers an AWS Lambda function that synchronously transcodes the video) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (S3 Event Notification triggers AWS Step Functions directly) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Triggering a single EC2 instance directly from S3 lacks queue buffering, elasticity, and auto-scaling, risking dropped jobs or worker overload during upload spikes.",
+      "C": "AWS Lambda has a maximum execution timeout of 15 minutes and limited compute/memory, making it inappropriate for long-running, CPU-intensive video transcoding.",
+      "D": "S3 Event Notifications cannot trigger Step Functions state machines directly without an intermediary service like EventBridge, Lambda, or SNS."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -552,8 +552,8 @@
     "explanation": "SSE-KMS with a CMK allows the company to fully manage, audit, and rotate the encryption keys through AWS Key Management Service.",
     "whyOthersAreWrong": {
       "A": "SSE-S3 uses AWS-managed encryption keys where rotation and key policies are fully controlled by AWS, failing requirements for customer key lifecycle control and CloudTrail auditability.",
-      "C": "This approach (SSE-C (Server-Side Encryption with Customer-Provided Keys)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Client-side encryption) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "SSE-C requires the client application to store, manage, and transmit the encryption keys with every single S3 API request, introducing substantial operational overhead and transmission risks.",
+      "D": "Client-side encryption requires all encryption and decryption logic to be managed within the application code before sending data to S3, rather than utilizing native AWS managed server-side encryption."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with AWS KMS.",
     "topic": "AWS KMS",
@@ -582,9 +582,9 @@
     ],
     "explanation": "ElastiCache (Redis or Memcached) is an in-memory caching layer ideal for storing the results of repetitive database queries, offloading the RDS instance and lowering latency.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon CloudFront) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Amazon CloudFront is a Content Delivery Network for HTTP/HTTPS web assets, not an in-memory cache for query results returned from an RDS relational database.",
       "C": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints.",
-      "D": "This approach (Amazon RDS Read Replicas) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "RDS Read Replicas relieve read load on the primary DB, but repeated identical queries still hit the database engine with disk and CPU overhead, unlike in-memory sub-millisecond ElastiCache caching."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon ElastiCache.",
     "topic": "Amazon ElastiCache",

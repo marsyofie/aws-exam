@@ -45,8 +45,8 @@
     "explanation": "S3 Glacier Deep Archive is AWS's lowest-cost storage class, designed for data accessed rarely (roughly once a year or less) with a retrieval time of standard 12 hours (or a cheaper bulk-tier option), which comfortably matches both the access pattern and the retrieval-time tolerance described. S3 Standard is far more expensive than needed for rarely accessed data, Standard-IA costs more than Deep Archive for this access pattern, and deleting the logs early would violate the stated seven-year compliance retention requirement.",
     "whyOthersAreWrong": {
       "B": "S3 Standard-IA incurs per-GB data retrieval fees, which become expensive when access patterns are unpredictable or frequently queried.",
-      "C": "This approach (Delete the logs after one year to save cost) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Keep the logs in S3 Standard for the full seven years) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Deleting logs after one year violates the strict compliance requirement to retain data for seven years.",
+      "D": "Keeping rarely accessed archive logs in S3 Standard for seven years incurs unnecessarily high storage costs ($0.023/GB vs $0.00099/GB in Deep Archive)."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
     "topic": "Amazon S3",
@@ -73,9 +73,9 @@
     ],
     "explanation": "Compute Optimizer analyzes historical utilization metrics using machine learning and produces specific rightsizing recommendations (for example, recommending a smaller or differently-sized instance type, volume type, or Lambda memory setting) across EC2, EBS, Lambda, and other supported resource types. AWS Budgets tracks and alerts on spend against a threshold but doesn't analyze utilization, Cost Explorer visualizes and analyzes historical cost/usage but doesn't generate resource-level rightsizing recommendations on its own, and CloudWatch Logs Insights is a log query tool, not a rightsizing engine.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS Budgets) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon CloudWatch Logs Insights) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Cost Explorer only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS Budgets tracks overall spending and alerts against predefined thresholds, but cannot analyze CPU/memory utilization or produce instance rightsizing recommendations.",
+      "C": "CloudWatch Logs Insights is an interactive log analytics tool for querying log data, not an automated machine-learning optimization tool for resource rightsizing.",
+      "D": "AWS Cost Explorer visualizes historical spending trends and high-level cost drivers, but does not provide machine-learning-based compute and storage rightsizing recommendations."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon CloudWatch.",
     "topic": "Amazon CloudWatch",
@@ -135,9 +135,9 @@
     ],
     "explanation": "Scheduling automatic stop/start of non-production instances outside business hours (via EventBridge scheduled rules invoking Lambda, Systems Manager Automation, or the AWS Instance Scheduler solution) can reduce this environment's compute cost by roughly 60% or more for a standard 9-to-6 weekday pattern, since stopped instances don't incur compute charges. Reserved Instances make sense for continuous, predictable usage, not intermittent dev/test usage; a larger instance type increases cost; and changing region has no inherent relationship to a usage-schedule cost problem.",
     "whyOthersAreWrong": {
-      "A": "This approach (Move the environment to a different AWS region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Moving the environment to another AWS Region does not resolve the issue of non-production instances running idle and incurring compute costs outside business hours.",
       "B": "Vertically scaling compute or database instances does not resolve distributed latency bottlenecks and results in higher idle costs during off-peak periods.",
-      "D": "This approach (Purchase Reserved Instances for the dev/test environment to reduce hourly cost) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Purchasing Reserved Instances requires a 1- or 3-year commitment for continuously running capacity, which is cost-inefficient for dev/test resources that only run 45 hours a week."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -166,9 +166,9 @@
     ],
     "explanation": "Aurora Serverless v2 scales database capacity up and down automatically in fine-grained increments based on actual load, and cost is based on the capacity consumed, making it well suited to sporadic, unpredictable, low-average-utilization workloads like this one. Any continuously running provisioned instance -- whether sized for peak or average load -- incurs cost during the long idle periods regardless of actual usage, and adding a second always-on Multi-AZ instance increases cost further without addressing the underlying idle-capacity waste.",
     "whyOthersAreWrong": {
-      "A": "This approach (Multi-AZ Aurora with two always-on provisioned instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (A provisioned Aurora instance sized for peak load, running continuously) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (A provisioned Aurora instance sized for average load, running continuously) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Deploying Multi-AZ Aurora with two provisioned instances doubles compute costs and leaves idle resources running continuously, failing the requirement to pay only for consumed capacity.",
+      "C": "Sizing a provisioned instance for peak load results in paying for expensive, unutilized capacity during extended low-traffic and idle periods.",
+      "D": "Sizing for average load causes performance degradation during traffic surges while still billing for idle compute during quiet hours."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Aurora.",
     "topic": "Amazon Aurora",
@@ -197,8 +197,8 @@
     ],
     "explanation": "S3 Storage Class Analysis observes an object's access patterns over time and provides data-driven recommendations on when it makes sense to transition data to Standard-IA, letting the team validate potential savings before committing to a lifecycle rule. Versioning and Object Lock are unrelated to access-pattern analysis (they address recovery and immutability, respectively), and manual sampling doesn't scale to a large bucket and isn't statistically reliable.",
     "whyOthersAreWrong": {
-      "A": "This approach (Enable S3 Object Lock) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Enable S3 Versioning and review the version history) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "S3 Object Lock enforces WORM immutability to prevent deletion or overwriting, and does not evaluate or report on access patterns.",
+      "B": "S3 Versioning preserves previous object states for data recovery, but provides no analytics or recommendations regarding object access frequency.",
       "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
@@ -229,8 +229,8 @@
     "explanation": "Data Lifecycle Manager automates the creation, retention count/duration, and deletion of EBS snapshots based on defined policies, eliminating unbounded accumulation and its cost. For cold data that doesn't need block-storage performance, moving it to S3 (and further to Glacier tiers via lifecycle policy if it becomes archival) is typically far cheaper than EBS. Never deleting snapshots is the described problem, not a solution; increasing volume size increases cost without addressing access pattern; and defaulting to gp2 for everything ignores that gp3 is generally both cheaper and more flexible for most general-purpose workloads today.",
     "whyOthersAreWrong": {
       "B": "Vertically scaling compute or database instances does not resolve distributed latency bottlenecks and results in higher idle costs during off-peak periods.",
-      "C": "This approach (Never delete any snapshot, in case it is needed later) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Use only the gp2 volume type for every workload regardless of access pattern, since it is the default) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Retaining snapshots indefinitely with no lifecycle policy causes storage costs to grow unbounded, directly compounding the customer's problem.",
+      "D": "Defaulting to gp2 for all workloads misses out on the lower baseline cost and independent IOPS/throughput tuning offered by newer gp3 volumes, and doesn't address archival cold data."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
     "topic": "Amazon S3",
@@ -258,9 +258,9 @@
     ],
     "explanation": "A self-managed NAT instance has no NAT Gateway hourly charge or per-GB data processing fee -- cost is just the underlying EC2 instance price -- which can be cheaper for genuinely low-throughput use cases, at the cost of the customer having to patch, scale, and manage high availability themselves, matching what the question explicitly says the startup is willing to accept. Adding a second NAT Gateway or increasing bandwidth both increase cost rather than reduce it, and making the subnet public would remove the private-subnet security posture entirely, which isn't a cost-optimization technique -- it's an architecture change with security implications.",
     "whyOthersAreWrong": {
-      "A": "This approach (Move the subnet to be fully public instead) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Increase the NAT Gateway's provisioned bandwidth) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Add a second NAT Gateway in a different AZ for redundancy) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Moving private instances to a public subnet exposes internal workloads directly to the internet, compromising network security isolation.",
+      "C": "Increasing provisioned bandwidth increases AWS networking costs and does nothing to reduce baseline fixed hourly NAT Gateway fees.",
+      "D": "Adding a second NAT Gateway in another AZ adds another hourly charge and is unnecessary for a low-throughput single-subnet workload where cost reduction is prioritized."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon VPC to satisfy workload requirements.",
     "topic": "Amazon VPC",
@@ -290,7 +290,7 @@
     "explanation": "AWS Budgets lets you define a cost budget and configure alerts triggered by either actual spend or AWS's forecasted spend crossing a percentage threshold, sending proactive notifications (for example via SNS or email) before the month closes. Cost Explorer and the Cost and Usage Report are both retrospective analysis/reporting tools that require someone to manually review them -- they don't push proactive alerts on their own -- and Trusted Advisor's cost checks flag specific optimization opportunities (like idle resources) rather than forecasted budget overruns.",
     "whyOthersAreWrong": {
       "A": "The AWS Cost and Usage Report delivers raw CSV billing data to S3 and requires custom reporting or querying tools without automated proactive threshold alerting.",
-      "B": "This approach (AWS Trusted Advisor cost-optimization checks only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "AWS Trusted Advisor cost checks flag specific idle or underutilized resources, but do not provide configurable proactive alerting on forecasted month-end budget thresholds.",
       "C": "Reviewing Cost Explorer manually once a month is a reactive, after-the-fact process that cannot proactively alert teams before budget overruns occur."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SNS.",
@@ -351,8 +351,8 @@
     "explanation": "A and C are correct. Amazon SQS provides a highly scalable message queue to decouple the image upload process from the processing logic. AWS Lambda can be triggered directly by the SQS queue to process the images concurrently as they arrive. SNS is for pub/sub, not queueing tasks for workers. Kinesis is for streaming data, which is overkill here.",
     "whyOthersAreWrong": {
       "B": "Amazon SNS is a pub/sub fan-out notification service and lacks message queuing, buffering, and persistent backpressure handling on its own.",
-      "D": "This approach (Amazon Kinesis Data Streams) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (AWS Step Functions) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Amazon Kinesis Data Streams is optimized for high-throughput continuous stream processing and ordering, adding unnecessary shard provisioning complexity for asynchronous image processing jobs.",
+      "E": "AWS Step Functions coordinates multi-step distributed state machines; while useful for workflows, it does not provide an asynchronous decoupling queue to buffer worker tasks."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SNS.",
     "topic": "Amazon SNS",
@@ -382,7 +382,7 @@
     "whyOthersAreWrong": {
       "A": "A is object storage. B (EBS) is block storage and by default can only be attached to a single instance in a single AZ (Multi-Attach has limitations).",
       "D": "D is for Windows, but the scenario specifies Linux instances.",
-      "B": "This approach (Amazon EBS Provisioned IOPS SSD (io2)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Amazon EBS Provisioned IOPS SSD (io2) is block storage bound to a single Availability Zone (or limited Multi-Attach on a single AZ), and cannot serve as a shared multi-AZ Linux file server."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon EFS.",
     "topic": "Amazon EFS",
@@ -412,7 +412,7 @@
     "whyOthersAreWrong": {
       "C": "C is highly insecure.",
       "D": "It specifies standard String parameters; SecureString would be required for sensitive data.",
-      "A": "This approach (Store the credentials in an Amazon S3 bucket and assign an IAM role to the EC2 instances to read the bucket.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Storing plaintext API keys in an S3 bucket lacks built-in automatic secret rotation, versioning, and programmatic secret retrieval controls provided by Secrets Manager."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon EC2.",
     "topic": "Amazon EC2",
@@ -442,8 +442,8 @@
     "explanation": "D is correct. Amazon DLM provides an automated, built-in way to manage the lifecycle of EBS snapshots without requiring custom scripts or additional services. B (AWS Backup) is also valid but DLM is purpose-built and often simpler for just EBS snapshots. Wait, AWS Backup is centralized, but DLM is strictly for EBS/AMI lifecycle and highly efficient. Both B and D are good, but DLM is specifically designed for EBS snapshot lifecycle policies with minimal overhead. Actually, DLM is the most direct approach for pure EBS lifecycle.",
     "whyOthersAreWrong": {
       "A": "Developing and maintaining custom automation scripts introduces significant operational overhead and failure points compared to using native, fully managed AWS services.",
-      "B": "This approach (Use AWS Backup to create a backup plan with a daily schedule and a retention period of 30 days.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Use Amazon CloudWatch Events to trigger an AWS Lambda function that creates EBS snapshots daily.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "AWS Backup is a comprehensive centralized backup solution, but configuring DLM provides the most lightweight, direct, and purpose-built native control for EBS volume snapshot lifecycles.",
+      "C": "Using CloudWatch Events and Lambda functions requires developing, testing, maintaining, and monitoring custom scripts, which introduces unnecessary operational overhead compared to native DLM."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -473,8 +473,8 @@
     "explanation": "B is correct. A NAT gateway must be deployed in a public subnet (with a route to an IGW) to allow instances in a private subnet to initiate outbound IPv4 traffic to the internet while preventing inbound internet connections.",
     "whyOthersAreWrong": {
       "A": "Exposing backend application or database instances directly to public subnets or assigning public IPs violates network isolation requirements and introduces unacceptable security risks.",
-      "C": "This approach (Set up a NAT gateway in the private subnet and route internet-bound traffic to it.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Assign Elastic IP addresses to the database servers.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "A NAT Gateway must reside in a public subnet with a default route to an Internet Gateway; placing it in a private subnet prevents it from reaching the internet.",
+      "D": "Assigning Elastic IP addresses directly to database servers exposes internal databases directly to the public internet, violating private subnet security requirements."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
     "topic": "Amazon VPC",
@@ -530,7 +530,7 @@
     "whyOthersAreWrong": {
       "A": "SNS does not queue messages if the subscriber is down.",
       "B": "A Standard Queue does not guarantee strict ordering.",
-      "D": "This approach (Amazon Kinesis Data Firehose) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Amazon Kinesis Data Firehose is designed for streaming data ingestion and automated delivery into data lakes like S3, Redshift, or OpenSearch, not for ordered point-to-point microservice communication."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
     "topic": "Amazon SQS",
@@ -557,7 +557,7 @@
     ],
     "explanation": "B is correct. Amazon Aurora automatically handles failover. If the primary instance fails, Aurora will automatically fail over to an existing Aurora Replica in the cluster. C and D are manual/custom implementations not needed for Aurora.",
     "whyOthersAreWrong": {
-      "A": "This approach (Aurora automatically provisions a standby instance in another AWS Region.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Aurora automatic failover operates within the same cluster across Availability Zones in the primary region; it does not automatically provision or fail over to a standby instance in another AWS Region.",
       "C": "Route 53 DNS failover operates at the public or private DNS level with TTL caching delays and is not the native mechanism used by Aurora cluster endpoints.",
       "D": "Configuring custom Lambda functions to trigger replica promotion introduces unnecessary custom code and latency, bypassing Aurora's built-in automatic failover engine."
     },
@@ -589,8 +589,8 @@
     "explanation": "B is correct. The Kinesis family is explicitly designed for streaming data. Kinesis Data Streams captures the high-throughput data, Kinesis Data Analytics can process it in real-time (e.g., for anomalies), and Kinesis Data Firehose buffers and delivers it to S3.",
     "whyOthersAreWrong": {
       "A": "Amazon SQS provides discrete message queuing, but is not designed for continuous high-throughput real-time stream processing with multiple concurrent consumers.",
-      "C": "This approach (Amazon API Gateway for capturing, Amazon SNS for processing, and Amazon S3 for storage.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Snowball for capturing, Amazon EMR for processing, and Amazon S3 for storage.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Amazon SNS is a lightweight pub/sub push notification service that does not buffer or process high-volume real-time clickstream data, and API Gateway introduces high per-request overhead for raw telemetry streams.",
+      "D": "AWS Snowball is a physical data transport appliance used for offline batch data migration, not for real-time online clickstream ingestion."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
     "topic": "Amazon Kinesis",

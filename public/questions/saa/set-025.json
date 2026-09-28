@@ -11,7 +11,9 @@
       "C": "Store session data in S3 with Cross-Region Replication enabled. Configure the application to read sessions from S3 instead of Redis.",
       "D": "Configure the ALB to use sticky sessions with cookie-based affinity. The session cookie ensures the user returns to the same Region."
     },
-    "correctAnswers": ["B"],
+    "correctAnswers": [
+      "B"
+    ],
     "explanation": "B is correct because DynamoDB Global Tables provide fully managed, multi-Region, active-active replication that is ideal for session storage in a multi-Region deployment. Global Tables replicate data across Regions with sub-second replication latency, ensuring that session data created in us-east-1 is available in eu-west-1 nearly immediately. During a failover, the eu-west-1 application reads session data from the local DynamoDB table — no promotion or failover action is needed because both tables are always writable (active-active). DynamoDB provides single-digit millisecond read and write latency for session lookups, comparable to Redis. Global Tables handle conflict resolution automatically (last-writer-wins), which is appropriate for session data where the most recent update is always the correct state. DynamoDB also eliminates the operational overhead of managing Redis cluster scaling, patching, and backup.",
     "whyOthersAreWrong": {
       "A": "ElastiCache Global Datastore for Redis provides cross-Region replication, but the secondary cluster is read-only until promoted. During normal operations, the DR Region cannot write session data. If the DR Region needs to handle traffic during testing or gradual migration (active-active), the read-only secondary creates limitations. Promotion of the secondary to primary requires a manual action and takes several minutes, during which new sessions created in the DR Region cannot be stored. DynamoDB Global Tables provide active-active capability in both Regions without promotion, offering a smoother failover experience.",
@@ -20,7 +22,14 @@
     },
     "learningObjective": "Design cross-Region session persistence using DynamoDB Global Tables for multi-Region active-active session replication.",
     "topic": "Amazon DynamoDB",
-    "tags": ["DynamoDB", "Global-Tables", "session-management", "multi-region", "disaster-recovery", "active-active"]
+    "tags": [
+      "DynamoDB",
+      "Global-Tables",
+      "session-management",
+      "multi-region",
+      "disaster-recovery",
+      "active-active"
+    ]
   },
   {
     "id": "saa-025-02",
@@ -34,16 +43,25 @@
       "C": "Purchase a 1-year Reserved Instance for the r5.8xlarge to reduce costs while keeping the single-instance architecture.",
       "D": "Deploy the application on four r5.2xlarge instances behind an ALB in two AZs. Configure Auto Scaling with minimum 2, desired 4, and maximum 6."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because it provides high availability across two AZs while right-sizing the compute resources. Two r5.4xlarge instances provide the same total compute capacity as one r5.8xlarge (each r5.4xlarge has 16 vCPUs, 128 GB RAM; combined: 32 vCPUs, 256 GB RAM — matching the r5.8xlarge's 32 vCPUs, 256 GB RAM). The ALB distributes traffic across both instances, and if one instance fails, the other handles the full load (at the same capacity as the current single-instance setup). The Auto Scaling group with maximum 4 instances allows scaling during peak hours. Since the application is stateless (sessions in ElastiCache), requests can be served by any instance. Cost reduction comes from scaling: during off-peak hours (15% utilization), Auto Scaling can scale to the minimum of 2 instances rather than running a single large instance. The distributed architecture eliminates the single point of failure.",
     "whyOthersAreWrong": {
-      "B": "A standby instance in a different AZ provides failover capability, but the standby sits idle during normal operations — doubling the cost without benefit. Route 53 health check-based failover adds DNS TTL delay (up to 60 seconds) during failover, causing brief unavailability. This approach also does not reduce cost — it increases cost by running two r5.4xlarge instances where one is always idle. The ALB-based approach (option A) uses both instances actively for load distribution, providing both high availability and better resource utilization.",
+      "B": "Active-passive failover via Route 53 with single large instances provides slower recovery time and does not actively utilize both instances compared to an ALB distributing traffic.",
       "C": "A Reserved Instance reduces the hourly rate by approximately 40% for a 1-year commitment, but it does not address the single point of failure. If the r5.8xlarge instance fails (hardware failure, AZ outage), the application is completely unavailable until a replacement instance is launched. The company explicitly wants to improve availability, which a Reserved Instance does not address. Additionally, running a single large instance at 15% utilization during off-peak is wasteful — Auto Scaling provides more efficient resource utilization.",
       "D": "Four r5.2xlarge instances provide 32 vCPUs and 128 GB RAM total — but the application has memory spikes requiring 256 GB RAM. If the memory spike occurs on a single instance (which it will, since the application is monolithic and memory allocation is per-process), no r5.2xlarge instance has sufficient RAM (each has 64 GB). The application's memory requirements cannot be split across multiple instances unless the application is refactored into microservices. Using r5.4xlarge instances (128 GB RAM each) ensures that any single instance can handle the memory spikes."
     },
     "learningObjective": "Improve application availability and cost efficiency by distributing a monolithic application across multiple right-sized instances with Auto Scaling.",
     "topic": "Amazon EC2 Auto Scaling",
-    "tags": ["Auto-Scaling", "high-availability", "right-sizing", "ALB", "cost-optimization", "EC2"]
+    "tags": [
+      "Auto-Scaling",
+      "high-availability",
+      "right-sizing",
+      "ALB",
+      "cost-optimization",
+      "EC2"
+    ]
   },
   {
     "id": "saa-025-03",
@@ -57,16 +75,25 @@
       "C": "Create IAM roles in each source account that the analytics account can assume. Use Lambda functions in the analytics account to extract data from each source account and load it into a local data store.",
       "D": "Deploy Amazon Redshift in the analytics account and use Redshift Spectrum with cross-account S3 access to query data in all accounts."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because AWS Glue Data Catalog sharing combined with Athena federated queries enables seamless cross-account analytics without data movement. The Glue Data Catalog in each source account (production, staging) is shared with the analytics account using Glue resource policies that grant cross-account access to specific databases and tables. In the analytics account, the team registers the external catalogs and creates Athena data source connections. Athena federated queries use connector Lambda functions (such as the DynamoDB connector and S3 connector) to query data directly in the source accounts without copying it. The data team can write SQL queries in Athena that JOIN a DynamoDB table in the production account with S3 data in the staging account, with data accessed in real-time from the source accounts. This eliminates stale data issues, manual export processes, and redundant storage costs.",
     "whyOthersAreWrong": {
       "B": "S3 Cross-Region Replication copies data from source buckets to the analytics account's bucket, creating duplicate copies. This addresses S3 data but does not help with DynamoDB data — the production DynamoDB tables cannot be replicated to S3 using CRR. The team would still need a separate mechanism to export DynamoDB data. Replication also consumes additional storage in the analytics account (doubling the S3 storage costs for replicated data) and introduces replication lag. The question specifically asks for an approach without manual data copies, and CRR is automated but still creates physical copies.",
-      "C": "Using Lambda functions to extract and load data is essentially building a custom ETL pipeline — the same manual export process but automated. This approach creates data copies in the analytics account (additional storage costs), introduces data staleness (data is only as fresh as the last extraction), and requires building, maintaining, and monitoring the extraction Lambda functions. Cross-account IAM roles provide the access, but the data movement pattern is the same as the current manual process. Athena federated queries (option A) eliminate the need for data movement entirely.",
+      "C": "Using custom cross-account IAM roles and Lambda functions to extract data requires massive custom code and is not scalable compared to native AWS Organizations and S3 centralized logging.",
       "D": "Amazon Redshift with Spectrum can query S3 data across accounts using cross-account S3 access, but Redshift requires provisioning and managing a cluster (or Redshift Serverless), which adds cost and operational overhead. Redshift Spectrum does not directly query DynamoDB tables — the production DynamoDB data would still need to be exported to S3 or a Redshift table. Athena with federated queries can query both S3 and DynamoDB directly using connectors, providing a more complete cross-account query solution without requiring a Redshift cluster."
     },
     "learningObjective": "Enable cross-account data analytics using Glue Data Catalog sharing and Athena federated queries without data movement.",
     "topic": "Amazon Athena",
-    "tags": ["Athena", "Glue", "cross-account", "federated-query", "data-catalog", "analytics"]
+    "tags": [
+      "Athena",
+      "Glue",
+      "cross-account",
+      "federated-query",
+      "data-catalog",
+      "analytics"
+    ]
   },
   {
     "id": "saa-025-04",
@@ -80,7 +107,9 @@
       "C": "Create an RDS read replica dedicated to search queries. Run full-text search queries on the replica to offload from the primary.",
       "D": "Migrate the entire database to Amazon Aurora MySQL, which provides better full-text search performance than standard RDS MySQL."
     },
-    "correctAnswers": ["B"],
+    "correctAnswers": [
+      "B"
+    ],
     "explanation": "B is correct because Amazon OpenSearch Service is purpose-built for full-text search with relevance ranking, providing the search capabilities that relational databases cannot match. OpenSearch uses inverted indexes optimized for text search, supports natural language processing features (tokenization, stemming, synonym expansion, fuzzy matching, relevance scoring), and returns results in milliseconds even across millions of documents. The architecture uses change data capture (CDC) from RDS — such as reading the MySQL binlog via a Lambda function, AWS DMS, or a Debezium connector — to continuously synchronize product descriptions, reviews, and FAQ content to OpenSearch. Search queries are routed to OpenSearch, while transactional operations (reads, writes, updates) continue on RDS MySQL. This separation ensures search queries do not impact production database performance. OpenSearch auto-scales to handle search query volume independently of the RDS workload.",
     "whyOthersAreWrong": {
       "A": "MySQL's built-in FULLTEXT indexes with MATCH AGAINST provide basic full-text search, but they have significant limitations for natural language search at scale: limited relevance ranking algorithms, no support for synonyms or fuzzy matching, poor performance on large datasets (millions of rows), and full-text queries compete for CPU and I/O with transactional queries. On a production database handling 5,000 reads/second, adding heavy full-text search queries would degrade transactional performance. MySQL full-text search is adequate for simple keyword matching but insufficient for natural language queries with relevance ranking across millions of documents.",
@@ -89,7 +118,14 @@
     },
     "learningObjective": "Add full-text search capability to a relational database workload using Amazon OpenSearch Service with change data capture synchronization.",
     "topic": "Amazon OpenSearch",
-    "tags": ["OpenSearch", "full-text-search", "RDS", "CDC", "search", "architecture"]
+    "tags": [
+      "OpenSearch",
+      "full-text-search",
+      "RDS",
+      "CDC",
+      "search",
+      "architecture"
+    ]
   },
   {
     "id": "saa-025-05",
@@ -103,7 +139,9 @@
       "C": "Enable DynamoDB Streams to detect concurrent modifications and use a Lambda function to compensate for any overdrafts.",
       "D": "Use DynamoDB optimistic locking by adding a version number attribute to each item and including a condition check on the version number in each update."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because DynamoDB Transactions (TransactWriteItems) provide ACID transaction guarantees across multiple items. A TransactWriteItems call can include multiple Put, Update, Delete, and ConditionCheck actions that execute atomically — all actions succeed or all fail. For a fund transfer: the transaction includes an Update on the source account (debit) with a ConditionExpression that checks balance >= withdrawalAmount, and an Update on the destination account (credit). If the source balance is insufficient, the entire transaction fails including the credit. If two concurrent transfers attempt to debit the same source account, DynamoDB serializes the transactions — the second transaction sees the updated balance from the first and either succeeds (if sufficient funds remain) or fails the condition check. This eliminates the race condition because the balance check and update are within a single atomic operation that DynamoDB serializes against concurrent modifications.",
     "whyOthersAreWrong": {
       "B": "Separate conditional UpdateItem calls for the debit and credit do not provide atomicity across both operations. If the debit succeeds but the credit fails (due to a throttling error, network issue, or another condition), the money is debited from one account but never credited to the other — an inconsistent state. While ConditionExpression on the debit prevents overdraft on a single item, it does not ensure that both the debit and credit succeed together. Only DynamoDB Transactions group multiple operations into a single atomic unit.",
@@ -112,7 +150,14 @@
     },
     "learningObjective": "Implement atomic multi-item operations in DynamoDB using Transactions with conditional expressions for financial consistency guarantees.",
     "topic": "Amazon DynamoDB",
-    "tags": ["DynamoDB", "transactions", "ACID", "conditional-update", "financial", "consistency"]
+    "tags": [
+      "DynamoDB",
+      "transactions",
+      "ACID",
+      "conditional-update",
+      "financial",
+      "consistency"
+    ]
   },
   {
     "id": "saa-025-06",
@@ -126,7 +171,9 @@
       "C": "Amazon FSx for Lustre linked to an S3 bucket for high-throughput parallel file system access.",
       "D": "Amazon EFS with Provisioned Throughput mode configured for 500 MB/s."
     },
-    "correctAnswers": ["B"],
+    "correctAnswers": [
+      "B"
+    ],
     "explanation": "B is correct because EFS Elastic Throughput mode automatically scales throughput up and down based on actual workload demand, charging only for the throughput consumed. During the 4-hour processing window when 500 MB/s is needed, Elastic Throughput scales up to meet demand. During the 20 idle hours, throughput scales to near-zero, and the company pays only for the minimal data access that occurs. Elastic Throughput supports up to 10 GB/s for reads and 3 GB/s for writes, well above the 500 MB/s requirement. EFS provides NFS compatibility (NFSv4.1), fully managed operation, and supports concurrent access from multiple ECS tasks across Availability Zones. With 1 TB of data, combining Elastic Throughput with EFS Intelligent Tiering (which automatically moves infrequently accessed files to the IA storage class) further reduces storage costs during idle periods.",
     "whyOthersAreWrong": {
       "A": "EFS Bursting Throughput mode provides a baseline throughput proportional to the file system size (50 KB/s per GB of Standard storage). For 1 TB of data, the baseline throughput is approximately 50 MB/s, with the ability to burst to 100 MB/s. The 500 MB/s requirement during processing windows exceeds the burst capability for a 1 TB file system. Bursting uses burst credits that accumulate during idle periods and are consumed during bursts — but if the processing window requires sustained 500 MB/s for 4 hours, the burst credits may be insufficient. Bursting Throughput is designed for workloads with modest throughput needs relative to storage size.",
@@ -135,7 +182,14 @@
     },
     "learningObjective": "Select the appropriate Amazon EFS throughput mode for bursty workloads to optimize performance and cost using Elastic Throughput.",
     "topic": "Amazon EFS",
-    "tags": ["EFS", "Elastic-Throughput", "NFS", "ECS", "shared-storage", "cost-optimization"]
+    "tags": [
+      "EFS",
+      "Elastic-Throughput",
+      "NFS",
+      "ECS",
+      "shared-storage",
+      "cost-optimization"
+    ]
   },
   {
     "id": "saa-025-07",
@@ -149,16 +203,25 @@
       "C": "Install Oracle on Amazon EC2 instances and use Oracle Data Guard to replicate from on-premises to EC2. Perform a manual cutover.",
       "D": "Use AWS DMS to migrate the Oracle database to Amazon DynamoDB, refactoring the data model to a NoSQL design."
     },
-    "correctAnswers": ["B"],
+    "correctAnswers": [
+      "B"
+    ],
     "explanation": "B is correct because migrating from Oracle on-premises to Amazon RDS for Oracle is a homogeneous migration that preserves complete Oracle compatibility. All PL/SQL stored procedures, Oracle-specific data types, materialized views, and Oracle SQL syntax work without modification on RDS for Oracle. AWS DMS performs the migration with minimal downtime — initial full load followed by continuous replication (CDC) until cutover. The migration can be completed within weeks, well within the 3-month deadline. RDS for Oracle provides the fully managed capabilities the company requires: automated backups with point-in-time recovery, automated minor version patching, Multi-AZ deployment for high availability, and storage auto-scaling. The company can plan a future migration to Aurora PostgreSQL as a separate project without the pressure of the data center decommission deadline.",
     "whyOthersAreWrong": {
       "A": "Migrating from Oracle to Aurora PostgreSQL is a heterogeneous migration that requires converting Oracle-specific features to PostgreSQL equivalents. While AWS SCT can automatically convert some PL/SQL to PostgreSQL functions, complex stored procedures, Oracle-specific data types, and Oracle SQL syntax often require manual conversion and extensive testing. The company has already estimated this refactoring would take 18 months — attempting to complete it in 3 months would likely result in incomplete conversion, bugs, and a failed migration. The safe approach is to migrate to RDS for Oracle first (3-month timeline) and refactor later.",
-      "C": "Installing Oracle on EC2 instances is not a fully managed solution — the company must manage OS patching, Oracle software updates, backup configuration, storage management, and high availability setup (Data Guard configuration and maintenance). This approach provides maximum control but contradicts the requirement for fully managed automated backups, patching, and Multi-AZ. RDS for Oracle provides all Oracle compatibility with managed operations. EC2-based Oracle also requires managing Oracle licenses (either bring-your-own-license or license-included), adding complexity.",
+      "C": "Installing Oracle on EC2 requires manual OS patching, database management, and licensing overhead, defeating the purpose of migrating to a fully managed RDS service.",
       "D": "Migrating from Oracle to DynamoDB requires a complete data model redesign from relational (tables, joins, foreign keys, stored procedures) to NoSQL (key-value, denormalized, single-table design). This is the most complex migration path — it requires redesigning the data model, rewriting all data access layer code, eliminating stored procedures, and replacing SQL queries with DynamoDB API calls. This refactoring effort significantly exceeds 18 months and is far beyond the 3-month deadline. DynamoDB is an excellent service, but migrating a complex Oracle application to it requires extensive application redesign."
     },
     "learningObjective": "Plan a time-constrained database migration using homogeneous migration to RDS for Oracle before heterogeneous refactoring to a different engine.",
     "topic": "AWS DMS",
-    "tags": ["DMS", "Oracle", "RDS", "migration", "homogeneous", "database"]
+    "tags": [
+      "DMS",
+      "Oracle",
+      "RDS",
+      "migration",
+      "homogeneous",
+      "database"
+    ]
   },
   {
     "id": "saa-025-08",
@@ -172,7 +235,9 @@
       "C": "Configure S3 Event Notification to trigger an ECS Fargate task for all uploads. The task processes the CSV file regardless of size.",
       "D": "Configure two S3 Event Notification rules with prefix-based filtering: one for small files (processed by Lambda) and one for large files (processed by ECS Fargate)."
     },
-    "correctAnswers": ["B"],
+    "correctAnswers": [
+      "B"
+    ],
     "explanation": "B is correct because it provides a single entry point (Lambda triggered by S3) with adaptive processing based on file size. For small files (under 100 MB), direct Lambda processing is fast and efficient — reading, transforming, and writing a 100 MB CSV completes well within the 15-minute Lambda timeout and the 2-minute requirement. For large files (over 100 MB), the Lambda function initiates a Step Functions workflow that uses a Map state to process the file in parallel chunks. The orchestrator Lambda reads the file size and calculates chunk ranges (e.g., byte ranges), then Step Functions Map state invokes parallel Lambda functions, each processing one chunk independently. Multiple concurrent Lambda invocations process the 5 GB file significantly faster than a single sequential process — 50 parallel invocations processing 100 MB each can complete within minutes rather than the 30-minute budget. This architecture is fully serverless, uses a single trigger mechanism, and adapts processing strategy based on file characteristics.",
     "whyOthersAreWrong": {
       "A": "Lambda with 10,240 MB memory and 15-minute timeout can process moderate files, but 5 GB CSV files present challenges. Lambda has a /tmp storage limit of 10 GB (configurable), which can hold the file, but reading and processing 5 GB sequentially takes significant time. At typical CSV processing speeds (including DynamoDB write throughput), processing 5 GB may exceed the 15-minute timeout. Additionally, processing the entire file in a single Lambda invocation does not utilize parallel processing — a 5 GB file with millions of rows could take 30-60 minutes sequentially, exceeding Lambda's maximum timeout.",
@@ -181,7 +246,14 @@
     },
     "learningObjective": "Design an adaptive serverless file processing architecture that scales processing strategy based on input file size using Lambda and Step Functions.",
     "topic": "AWS Lambda",
-    "tags": ["Lambda", "Step-Functions", "S3", "serverless", "file-processing", "adaptive-architecture"]
+    "tags": [
+      "Lambda",
+      "Step-Functions",
+      "S3",
+      "serverless",
+      "file-processing",
+      "adaptive-architecture"
+    ]
   },
   {
     "id": "saa-025-09",
@@ -195,7 +267,9 @@
       "C": "Deploy dedicated RDS instances for Enterprise tenants (database-per-tenant isolation). Use a shared RDS instance with separate PostgreSQL schemas per Standard tenant (schema-per-tenant isolation). Use a shared RDS instance with row-level security for Free tenants (shared-schema with RLS isolation).",
       "D": "Use Amazon DynamoDB with partition key-based isolation for all tenants, regardless of tier."
     },
-    "correctAnswers": ["C"],
+    "correctAnswers": [
+      "C"
+    ],
     "explanation": "C is correct because it applies a tiered isolation strategy that matches the isolation requirements and cost constraints of each tenant tier. Enterprise tenants (10 total) receive dedicated RDS instances — each tenant has their own database server with independent compute resources, storage, backup schedules, and network isolation. This provides the strongest isolation for compliance requirements and allows per-tenant performance tuning, maintenance windows, and encryption keys. The cost is justified for Enterprise customers who pay premium pricing. Standard tenants (100 total) share an RDS instance but each has a dedicated PostgreSQL schema. Schemas provide logical separation of tables, indexes, and sequences — a Standard tenant cannot access another tenant's schema without explicit grants. Shared compute resources reduce per-tenant costs while maintaining strong logical isolation. Free tenants (1,000 total) share both the RDS instance and database schema, with row-level security (RLS) policies enforcing data isolation at the row level using a tenant_id column. This maximizes resource sharing and minimizes per-tenant cost, appropriate for the free tier.",
     "whyOthersAreWrong": {
       "A": "A single RDS instance with shared schema and RLS for all tenants does not meet Enterprise tenants' strict compliance requirements. Enterprise tenants often require dedicated resources (for performance guarantees), separate encryption keys, independent backup and maintenance schedules, and the ability to prove physical data isolation for regulatory audits. RLS provides logical isolation but shares compute, storage, and network resources. A vulnerability in the RLS policy could expose data across all tenants. For Enterprise compliance, dedicated instances provide stronger isolation guarantees.",
@@ -204,7 +278,15 @@
     },
     "learningObjective": "Design a tiered multi-tenant database isolation strategy using dedicated instances, schema-level, and row-level security based on tenant requirements.",
     "topic": "Multi-Tenant Architecture",
-    "tags": ["multi-tenant", "RDS", "PostgreSQL", "isolation", "SaaS", "architecture", "RLS"]
+    "tags": [
+      "multi-tenant",
+      "RDS",
+      "PostgreSQL",
+      "isolation",
+      "SaaS",
+      "architecture",
+      "RLS"
+    ]
   },
   {
     "id": "saa-025-10",
@@ -218,7 +300,9 @@
       "C": "Deploy the website on AWS Amplify Hosting by connecting the website's Git repository. Amplify automatically provisions hosting, CDN, and SSL.",
       "D": "Host the website in an S3 bucket with static website hosting. Create a Route 53 alias record pointing www.example.com directly to the S3 website endpoint."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because S3 + CloudFront + ACM provides the lowest cost, highest performance, and least operational overhead for a static website with global reach and HTTPS. S3 static website hosting stores and serves the website files with 99.999999999% durability and virtually unlimited scalability. CloudFront caches the content at 400+ edge locations worldwide, providing sub-100ms load times for users globally and easily handling 10,000+ concurrent users. ACM provides free SSL/TLS certificates for the custom domain, and CloudFront terminates HTTPS at the edge. The estimated monthly cost for 50 MB of S3 storage plus modest CloudFront data transfer is well under $10. There are no servers to manage, patch, or scale — the entire stack is serverless. Route 53 alias records to CloudFront are free (no per-query charges for alias records).",
     "whyOthersAreWrong": {
       "B": "An EC2 t3.micro instance can serve a static website, but it introduces operational overhead: OS patching, NGINX configuration, SSL certificate renewal (Let's Encrypt certificates expire every 90 days), monitoring, and capacity management. A single t3.micro may struggle with 10,000 concurrent connections. The instance serves content from a single AWS Region, so global users experience higher latency than CloudFront's edge caching. The t3.micro costs approximately $8.50/month On-Demand (which is within budget), but the operational overhead of managing a web server for a static website is unnecessary when S3 + CloudFront provides the same capability with zero server management.",
@@ -227,7 +311,15 @@
     },
     "learningObjective": "Deploy a cost-effective, globally distributed static website using S3, CloudFront, and ACM with Route 53 DNS.",
     "topic": "Static Website Hosting",
-    "tags": ["S3", "CloudFront", "ACM", "Route-53", "static-website", "HTTPS", "cost-optimization"]
+    "tags": [
+      "S3",
+      "CloudFront",
+      "ACM",
+      "Route-53",
+      "static-website",
+      "HTTPS",
+      "cost-optimization"
+    ]
   },
   {
     "id": "saa-025-11",
@@ -241,7 +333,9 @@
       "C": "Create a DynamoDB Global Secondary Index optimized for the enrichment query pattern to reduce read capacity consumption.",
       "D": "Switch the DynamoDB table from provisioned to on-demand capacity mode to reduce costs during low-traffic periods."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because DAX provides an in-memory cache that dramatically reduces DynamoDB read costs while providing microsecond read latency. The enrichment process reads the same reference data items repeatedly — different IoT sensor records are enriched with the same reference data (e.g., device metadata, location data, calibration parameters). DAX caches these frequently accessed items in memory after the first read, serving subsequent reads from cache without consuming DynamoDB read capacity units. With 50 GB of reference data that changes only 100 times per day, the cache hit ratio will be extremely high — virtually all reads will be served from DAX cache. At 20,000 reads per second, shifting most reads from DynamoDB (single-digit millisecond latency, $0.00000025 per RCU) to DAX (microsecond latency, no per-read DynamoDB charge) significantly reduces costs. The DAX cluster cost (approximately $200-500/month depending on node type) is far less than the current $3,500/month in DynamoDB reads.",
     "whyOthersAreWrong": {
       "B": "Exporting to S3 and using S3 Select introduces higher latency compared to DynamoDB or DAX. S3 Select queries take 50-200ms depending on file size and query complexity — far above the sub-millisecond requirement. S3 Select also does not support key-value lookups optimized for the enrichment pattern (looking up a specific device's metadata by device ID). The daily export introduces data staleness — reference data changes 100 times per day, but the export only refreshes once. For real-time enrichment at 20,000 reads per second, S3 Select cannot match DynamoDB or DAX performance.",
@@ -250,7 +344,14 @@
     },
     "learningObjective": "Reduce DynamoDB read costs for reference data lookups using DAX caching in a high-throughput data enrichment pipeline.",
     "topic": "Amazon DynamoDB",
-    "tags": ["DynamoDB", "DAX", "caching", "cost-optimization", "IoT", "ML-pipeline"]
+    "tags": [
+      "DynamoDB",
+      "DAX",
+      "caching",
+      "cost-optimization",
+      "IoT",
+      "ML-pipeline"
+    ]
   },
   {
     "id": "saa-025-12",
@@ -264,16 +365,25 @@
       "C": "Delete unused ENIs and release unattached Elastic IP addresses in the existing VPC to free up IP addresses.",
       "D": "Resize the existing VPC CIDR from /16 to /15 to double the available IP addresses."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because AWS VPCs support adding secondary CIDR blocks without affecting the existing primary CIDR or any existing subnets. The secondary CIDR (e.g., 10.1.0.0/16) provides 65,536 additional IP addresses. New subnets are created in the secondary CIDR range, and the 200 new EC2 instances are launched in these new subnets. Existing subnets, route tables, security groups, and workloads are completely unaffected — the secondary CIDR extends the VPC's IP space without modifying any existing configuration. Instances in the new subnets can communicate with instances in the original subnets because they are all within the same VPC. A VPC can have up to 5 CIDR blocks (adjustable), providing substantial expansion capability. This is the simplest, least disruptive solution for IP address exhaustion in an existing VPC.",
     "whyOthersAreWrong": {
       "B": "Creating a new VPC with VPC peering works but introduces additional complexity. VPC peering requires configuring route tables in both VPCs to route traffic to each other, updating security groups to reference the peered VPC's CIDR, and managing two VPCs instead of one. DNS resolution across peered VPCs requires enabling DNS resolution support on the peering connection. Some services (like VPC endpoints) are not shared across peered VPCs, requiring duplicate configuration. Adding a secondary CIDR to the existing VPC (option A) avoids all of this complexity while providing the same IP address expansion.",
-      "C": "Releasing unused ENIs and Elastic IPs may free up a small number of IP addresses, but in a VPC where the full /16 range (65,536 IPs) is exhausted across production subnets, releasing a handful of ENIs provides negligible capacity. 200 new instances need 200 IP addresses plus buffer, and finding that many unused IPs in an exhausted VPC is unlikely. This approach also requires identifying and verifying that each ENI is truly unused, which is risky in a production environment — detaching an ENI that appears unused but is actually in use would disrupt workloads.",
+      "C": "Deleting unused ENIs and releasing unattached Elastic IPs is a temporary band-aid and does not permanently resolve the fundamental VPC CIDR exhaustion for a growing workload.",
       "D": "VPC CIDR blocks cannot be resized after creation. The VPC CIDR is immutable — you cannot change a /16 to a /15 or any other size. The only option for expanding the IP space is adding secondary CIDR blocks (option A). Additionally, expanding from /16 to /15 would overlap with the existing 10.0.0.0/16 range, creating conflicts. AWS VPC does not support CIDR modification — only CIDR addition."
     },
     "learningObjective": "Expand VPC IP address capacity by adding secondary CIDR blocks without disrupting existing workloads.",
     "topic": "Amazon VPC",
-    "tags": ["VPC", "CIDR", "networking", "IP-address", "capacity-planning", "subnets"]
+    "tags": [
+      "VPC",
+      "CIDR",
+      "networking",
+      "IP-address",
+      "capacity-planning",
+      "subnets"
+    ]
   },
   {
     "id": "saa-025-13",
@@ -287,16 +397,25 @@
       "C": "Create a Lambda container image that includes the library. Use the same container image for all 8 functions with different handler entry points.",
       "D": "Store the library in an S3 bucket and have each Lambda function download it to /tmp at the start of each invocation."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because Lambda Layers are specifically designed for sharing common code and libraries across multiple Lambda functions. A Layer is a ZIP archive containing the shared library that is extracted to the /opt directory in the Lambda execution environment. By packaging the 200 MB image processing library as a Layer, each Lambda function's deployment package only contains the function-specific code (typically a few KB to a few MB), dramatically reducing package sizes. All 8 functions reference the same Layer version, ensuring consistency. When the library needs updating, a new Layer version is published, and each function is updated to reference the new version — this can be done incrementally (function by function) or all at once. Layers support versioning, so the company can roll back to a previous library version if issues are detected. Each Lambda function can use up to 5 layers, and the total unzipped deployment (function + layers) can be up to 250 MB.",
     "whyOthersAreWrong": {
       "B": "Mounting EFS in Lambda functions provides shared storage, but EFS access adds latency to Lambda invocations — the first access to a file on EFS requires a network round trip. For a 200 MB library that needs to be loaded into memory, EFS read latency (10-50ms per file read) would significantly increase cold start times. EFS also requires VPC configuration for the Lambda functions (ENI in a VPC subnet), adding networking complexity. Lambda Layers are loaded as part of the execution environment initialization and are cached locally, providing faster access. EFS is better suited for large datasets that change frequently, not for static shared libraries.",
       "C": "Lambda container images can include the library in a base image shared across functions, and container images support up to 10 GB. However, using container images requires maintaining a container build pipeline (Dockerfile, ECR repository, image builds), which adds operational overhead compared to Layer management. Container images are advantageous for very large dependencies (over 250 MB unzipped limit of Layers) or when the team has existing container workflows, but for a 200 MB shared library, Layers are simpler and more idiomatic for Lambda. Different handler entry points in the same image also limit independent function configuration (memory, timeout, environment variables per function).",
-      "D": "Downloading the library from S3 at each invocation adds latency to every cold and warm start. A 200 MB download from S3 takes approximately 1-5 seconds depending on network throughput, significantly increasing function latency. The /tmp directory has a limited size (10 GB, but shared across invocations in the same execution environment), and the download must be repeated for each new execution environment. This approach wastes compute time (downloading the same library repeatedly), increases S3 request costs, and degrades user experience. Lambda Layers are loaded once when the execution environment is initialized and persist across invocations."
+      "D": "Downloading a library from S3 on every Lambda invocation adds significant cold-start latency and increases S3 GET request costs compared to native Lambda Layers."
     },
     "learningObjective": "Share common libraries across multiple Lambda functions using Lambda Layers for reduced deployment size and centralized version management.",
     "topic": "AWS Lambda",
-    "tags": ["Lambda", "Layers", "shared-libraries", "deployment", "serverless", "code-sharing"]
+    "tags": [
+      "Lambda",
+      "Layers",
+      "shared-libraries",
+      "deployment",
+      "serverless",
+      "code-sharing"
+    ]
   },
   {
     "id": "saa-025-14",
@@ -311,7 +430,10 @@
       "D": "Create a Lambda function that scans all EBS volumes using the DescribeVolumes API and sends alerts for unencrypted volumes.",
       "E": "Create an IAM policy that denies ec2:AttachVolume for unencrypted EBS volumes."
     },
-    "correctAnswers": ["A", "C"],
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
     "explanation": "A is correct because enabling EBS encryption by default is the simplest and most effective preventive control. When enabled in an AWS account for a specific Region, all new EBS volumes and snapshots created in that Region are automatically encrypted using the specified default KMS key — developers do not need to specify encryption parameters during volume creation. This applies to volumes created through the Console, CLI, API, and by AWS services (like Auto Scaling creating volumes from launch templates). The setting is per-Region and per-account, so it must be enabled in each Region where the account operates. C is correct because the AWS Config managed rule encrypted-volumes continuously evaluates all existing EBS volumes against the encryption requirement. Each EBS volume is assessed, and unencrypted volumes are flagged as NON_COMPLIANT in the Config dashboard. This provides the detection capability for existing unencrypted volumes that were created before encryption by default was enabled. The Config rule also evaluates newly created volumes, providing an additional detection layer. Config can trigger SNS notifications or Lambda remediation when non-compliant volumes are detected.",
     "whyOthersAreWrong": {
       "B": "An SCP denying ec2:CreateVolume without the encrypted parameter addresses new volume creation but is more complex than enabling EBS encryption by default. The SCP approach requires crafting condition keys correctly and testing that it doesn't break legitimate operations. EBS encryption by default (option A) is a simpler, purpose-built setting that achieves the same result without SCP complexity. SCPs also cannot detect existing unencrypted volumes — they only control future API calls. Additionally, an SCP may interfere with service-linked roles or AWS services that create volumes on behalf of the user.",
@@ -320,7 +442,14 @@
     },
     "learningObjective": "Enforce EBS encryption for new volumes using default encryption and detect existing unencrypted volumes using AWS Config rules.",
     "topic": "Amazon EBS",
-    "tags": ["EBS", "encryption", "Config", "security", "compliance", "preventive-control"]
+    "tags": [
+      "EBS",
+      "encryption",
+      "Config",
+      "security",
+      "compliance",
+      "preventive-control"
+    ]
   },
   {
     "id": "saa-025-15",
@@ -334,7 +463,9 @@
       "C": "Store all data in the memory store for 2 years to ensure consistent query performance across all time windows.",
       "D": "Set the memory store retention to 1 hour and the magnetic store retention to 2 years. Cache recent data in ElastiCache for real-time monitoring queries."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because Timestream is purpose-built for time-series data with automatic tiered storage management. Setting the memory store retention to 30 days keeps recent data in a high-performance in-memory tier optimized for low-latency queries — real-time monitoring queries (last 1 hour) and trend analysis queries (last 7 days) all read from the memory store with sub-millisecond to millisecond response times. Data older than 30 days is automatically moved to the magnetic store, which provides cost-effective storage for the remaining 2 years of data. The magnetic store is optimized for larger time-range queries (seasonal patterns over 6 months) and provides good query performance for aggregation operations. Timestream's query engine transparently handles queries that span both stores — a query over the last 6 months reads recent data from the memory store and older data from the magnetic store, combining results seamlessly. No manual data management, archiving, or store selection is needed. This configuration balances performance (30 days of hot data in memory) with cost optimization (2 years of cold data in magnetic storage).",
     "whyOthersAreWrong": {
       "B": "Reducing memory store retention to 7 days saves on memory storage costs, but queries for the last 30 days (a common operational window) would partially read from the magnetic store, increasing query latency. Scheduled queries for pre-aggregation are useful for dashboards but add operational complexity — the company must define, manage, and monitor scheduled queries, maintain a separate aggregation table, and handle failures in the aggregation pipeline. The 30-day memory retention (option A) is more straightforward and avoids the need for pre-aggregation by keeping operational data in the fast memory tier.",
@@ -343,7 +474,14 @@
     },
     "learningObjective": "Configure Amazon Timestream's tiered storage model to optimize query performance and storage cost for time-series analytics workloads.",
     "topic": "Amazon Timestream",
-    "tags": ["Timestream", "time-series", "tiered-storage", "IoT", "analytics", "cost-optimization"]
+    "tags": [
+      "Timestream",
+      "time-series",
+      "tiered-storage",
+      "IoT",
+      "analytics",
+      "cost-optimization"
+    ]
   },
   {
     "id": "saa-025-16",
@@ -358,7 +496,10 @@
       "D": "Enable S3 Block Public Access on the bucket to prevent unauthorized access.",
       "E": "Configure a VPC endpoint for S3 and use a VPC endpoint policy to restrict bucket access to the EC2 instance's VPC."
     },
-    "correctAnswers": ["A", "C"],
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
     "explanation": "A is correct because IAM instance profiles provide temporary credentials to EC2 instances without storing long-term credentials. The EC2 instance assumes the attached IAM role and receives temporary security credentials (access key, secret key, session token) that are automatically rotated. The IAM role's policy grants the necessary S3 permissions (s3:GetObject, s3:PutObject on the bucket ARN). The application on the instance uses the AWS SDK, which automatically discovers and uses these temporary credentials from the instance metadata service. No access keys are stored on the instance, satisfying the no-long-term-credentials requirement. C is correct because an S3 bucket policy with a principal condition restricts bucket access to only the specific IAM role. The bucket policy includes an Allow statement for the role ARN and a Deny statement for all other principals (using aws:PrincipalArn condition with a NotPrincipalArn or explicit deny). This ensures that even if another IAM user or role in the account has broad S3 permissions, they cannot access this specific bucket — the bucket policy's explicit deny overrides their IAM allow. This creates a tight binding between the bucket and the EC2 instance's role.",
     "whyOthersAreWrong": {
       "B": "IAM user access keys stored in environment variables are long-term credentials — they persist until manually rotated or deleted. This directly violates the requirement for no long-term credentials on the instance. If the instance is compromised, the access keys are exposed. Environment variables are visible to all processes on the instance and can be logged accidentally. IAM instance profiles (option A) provide temporary, automatically-rotated credentials that are more secure.",
@@ -367,7 +508,14 @@
     },
     "learningObjective": "Implement credential-less EC2 authentication to S3 using instance profiles with bucket policy restrictions for exclusive access.",
     "topic": "AWS IAM",
-    "tags": ["IAM", "instance-profile", "S3", "bucket-policy", "security", "least-privilege"]
+    "tags": [
+      "IAM",
+      "instance-profile",
+      "S3",
+      "bucket-policy",
+      "security",
+      "least-privilege"
+    ]
   },
   {
     "id": "saa-025-17",
@@ -381,7 +529,9 @@
       "C": "Store secrets in a file on Amazon EFS. Mount the EFS volume in the ECS task and read secrets from the file.",
       "D": "Store secrets as encrypted S3 objects. Download and decrypt them in a container init script."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because the ECS task definition's secrets section with valueFrom provides the most integrated and secure method for delivering secrets to containers. When configured this way, ECS fetches the secret value from Secrets Manager at task launch time and injects it as an environment variable inside the container. The secret ARN in the task definition is a reference, not the secret value — the actual secret is never stored in the task definition, container image, or visible in the ECS console. Secrets Manager provides encryption at rest using KMS, automatic rotation using Lambda functions, and fine-grained IAM access control (the ECS task execution role must have secretsmanager:GetSecretValue permission). However, one important nuance: the secret IS injected as an environment variable inside the container, which may be visible through /proc inspection. Despite this, this is the AWS-recommended approach for ECS Fargate secrets delivery and meets the stated requirements — the secret is not visible in the task definition, image, or ECS-level environment variables configuration.",
     "whyOthersAreWrong": {
       "B": "Calling the SSM API from application code at startup requires the application to implement secret retrieval logic, handle API errors, and manage caching. Hard-coding parameter names in application code creates a coupling between the application and the parameter store structure. If parameter names change, the application code must be updated and redeployed. The ECS native secrets integration (option A) separates secret references from application code — secrets are configured in the task definition and injected into the container, keeping the application code agnostic to the secret storage mechanism.",
@@ -390,7 +540,14 @@
     },
     "learningObjective": "Securely deliver secrets to ECS Fargate containers using Secrets Manager with the ECS task definition's native secrets integration.",
     "topic": "AWS Secrets Manager",
-    "tags": ["Secrets-Manager", "ECS", "Fargate", "security", "secrets", "containers"]
+    "tags": [
+      "Secrets-Manager",
+      "ECS",
+      "Fargate",
+      "security",
+      "secrets",
+      "containers"
+    ]
   },
   {
     "id": "saa-025-18",
@@ -404,7 +561,9 @@
       "C": "Replace VPC peering with AWS PrivateLink between all VPC pairs to expose services as endpoints.",
       "D": "Consolidate all workloads into a single large VPC with separate subnets for each workload tier."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because AWS Transit Gateway provides a centralized hub-and-spoke networking model that simplifies multi-VPC connectivity. Instead of creating pairwise peering connections (which grow as N×(N-1)/2 for N VPCs), all VPCs attach to a single Transit Gateway. With 3 VPCs, peering requires 3 connections; with 10 VPCs, peering requires 45 connections. Transit Gateway requires only N attachments (1 per VPC). Transit Gateway route tables control which VPCs can communicate with each other — the network team can create route table associations and propagations to allow or restrict inter-VPC traffic. Adding a new VPC requires only one Transit Gateway attachment and route table updates, not peering connections to every existing VPC. Transit Gateway also supports VPN connections, Direct Connect, and inter-Region peering, providing a unified networking hub for the company's growing infrastructure.",
     "whyOthersAreWrong": {
       "B": "Route 53 private hosted zones provide DNS-based service discovery across peered VPCs, making it easier for applications to find services by name rather than IP. However, this does not simplify the network topology — the three VPC peering connections and their associated route table entries still exist and must be managed. As new VPCs are added, new peering connections are still needed. Private hosted zones solve the service discovery problem but not the network management scalability problem.",
@@ -413,7 +572,14 @@
     },
     "learningObjective": "Simplify multi-VPC network topology using AWS Transit Gateway as a centralized hub-and-spoke connectivity model.",
     "topic": "AWS Transit Gateway",
-    "tags": ["Transit-Gateway", "VPC", "networking", "hub-and-spoke", "scalability", "multi-VPC"]
+    "tags": [
+      "Transit-Gateway",
+      "VPC",
+      "networking",
+      "hub-and-spoke",
+      "scalability",
+      "multi-VPC"
+    ]
   },
   {
     "id": "saa-025-19",
@@ -427,7 +593,9 @@
       "C": "Use Aurora Parallel Query to accelerate reporting queries on the existing cluster without affecting OLTP performance.",
       "D": "Create an Aurora custom endpoint that includes only a subset of read replicas dedicated to reporting. Set the custom endpoint's connection load balancing to target these reporting replicas exclusively."
     },
-    "correctAnswers": ["D"],
+    "correctAnswers": [
+      "D"
+    ],
     "explanation": "D is correct because Aurora custom endpoints allow the company to create a dedicated endpoint that routes reporting query traffic exclusively to designated read replicas. The company creates one or more Aurora read replicas specifically sized for analytical workloads (e.g., r6g.2xlarge or r6g.4xlarge for memory-intensive aggregations) and creates a custom endpoint that includes only these reporting replicas. The web application continues using the existing reader endpoint (which load-balances across the OLTP-optimized read replicas), and the reporting tool connects to the custom endpoint (which routes only to the reporting-dedicated replicas). Since all Aurora replicas share the same underlying storage volume (Aurora's shared storage architecture), there is no separate data copy — the reporting replicas read from the same current data as the OLTP replicas with typical replication lag under 20ms. This provides complete compute isolation while maintaining a single source of truth for the data.",
     "whyOthersAreWrong": {
       "A": "Creating a dedicated read replica with a larger instance class is part of the solution, but without a custom endpoint, the reporting replica would be included in the default reader endpoint. This means OLTP read traffic from the web application could be routed to the reporting replica, and reporting traffic could be routed to OLTP replicas. The default reader endpoint load-balances across all replicas without distinction. A custom endpoint (option D) is needed to create the routing isolation — directing reporting traffic exclusively to the reporting replica(s) and excluding them from the default reader endpoint used by the web application.",
@@ -436,7 +604,14 @@
     },
     "learningObjective": "Isolate OLTP and OLAP workloads on Aurora using custom endpoints to route different query types to dedicated read replicas.",
     "topic": "Amazon Aurora",
-    "tags": ["Aurora", "custom-endpoint", "read-replica", "workload-isolation", "OLTP", "OLAP"]
+    "tags": [
+      "Aurora",
+      "custom-endpoint",
+      "read-replica",
+      "workload-isolation",
+      "OLTP",
+      "OLAP"
+    ]
   },
   {
     "id": "saa-025-20",
@@ -450,15 +625,23 @@
       "C": "Use AWS Config rules to detect configuration changes and automatically remediate by reverting resources to their original configuration using Lambda functions.",
       "D": "Export all current resource configurations using AWS Config and generate new CloudFormation templates from the exported configurations."
     },
-    "correctAnswers": ["A"],
+    "correctAnswers": [
+      "A"
+    ],
     "explanation": "A is correct because CloudFormation drift detection is the native mechanism for identifying differences between the actual resource configuration and the expected configuration defined in the template. Running drift detection on each stack produces a detailed report showing which resources have drifted, which properties have changed, and the expected vs. actual values. For each drifted resource, the company makes a deliberate decision: if the manual change was intentional (e.g., a security group rule added during incident response), the template is updated to include the change, preserving it as code. If the change was unintentional (e.g., someone accidentally modified a setting), a stack update operation is performed that reverts the resource to the template-defined configuration. This approach is methodical and safe — each drift is reviewed before remediation, preventing accidental data loss or service disruption from reverting intentional changes. CloudFormation drift detection can be automated using the AWS SDK to detect drift across all 50 stacks and report results to a central dashboard.",
     "whyOthersAreWrong": {
       "B": "Deleting and recreating stacks would ensure template-to-resource consistency, but it destroys all existing resources including databases, storage, and stateful services — causing data loss and application downtime. For production stacks with RDS databases, S3 buckets with data, and running EC2 instances, deletion is destructive and unacceptable. CloudFormation stack updates (option A) modify resources in place without destroying them, preserving data and minimizing disruption.",
       "C": "AWS Config rules can detect configuration changes in real-time, but automatic remediation without human review is risky. Some manual changes may be intentional (emergency security patches, incident response modifications), and automatically reverting them could reintroduce vulnerabilities or disrupt ongoing incident remediation. Config also operates at the individual resource level, not at the CloudFormation stack level — it doesn't understand the relationship between a resource's configuration and its CloudFormation template. CloudFormation drift detection provides stack-level context that Config rule remediation lacks.",
-      "D": "Generating CloudFormation templates from existing resource configurations captures the current state but does not remediate drift — it simply documents the current configuration, including any unintentional changes. This approach also does not leverage the existing 50 CloudFormation templates that define the intended configuration. The goal is to bring resources back in line with the templates (or update templates for intentional changes), not to create new templates from the drifted state. Tools like AWS CloudFormation Import can import resources into stacks, but generating complete templates from existing infrastructure is complex and may not capture all resource relationships."
+      "D": "AWS Config exports current resource states but cannot automatically synthesize modular, reusable Infrastructure as Code (CloudFormation) templates for disaster recovery."
     },
     "learningObjective": "Detect and remediate CloudFormation configuration drift using drift detection with deliberate template or resource updates.",
     "topic": "AWS CloudFormation",
-    "tags": ["CloudFormation", "drift-detection", "IaC", "remediation", "configuration-management"]
+    "tags": [
+      "CloudFormation",
+      "drift-detection",
+      "IaC",
+      "remediation",
+      "configuration-management"
+    ]
   }
 ]

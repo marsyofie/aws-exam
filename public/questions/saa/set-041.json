@@ -17,8 +17,8 @@
     "explanation": "AWS WAF (Web Application Firewall) can be associated with an ALB or CloudFront to filter web traffic based on IP addresses, headers, and payload patterns.",
     "whyOthersAreWrong": {
       "A": "Network ACLs are stateless and apply to entire subnet CIDR blocks; they cannot dynamically reference instance security groups or maintain stateful connection tracking.",
-      "B": "This approach (Security Groups) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Shield Standard) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Security groups support allow rules only and cannot create explicit deny rules to block specific malicious IP addresses.",
+      "D": "AWS Shield Standard automatically mitigates common layer 3 and 4 DDoS infrastructure attacks, but cannot inspect layer 7 requests or block specific client IP addresses."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS WAF.",
     "topic": "AWS WAF",
@@ -46,7 +46,7 @@
     "explanation": "Moving data to Standard-IA after 30 days (for occasional access) and then to Deep Archive (for long-term retention) is the most cost-effective lifecycle pattern for this scenario.",
     "whyOthersAreWrong": {
       "B": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data.",
-      "C": "This approach (Use S3 Intelligent-Tiering) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "S3 Intelligent-Tiering incurs a monthly per-object monitoring fee, making it less cost-effective than lifecycle policies for predictable access patterns transitioning to Glacier Deep Archive.",
       "D": "S3 One Zone-IA stores data in a single Availability Zone, risking permanent data loss if that Availability Zone is impaired, violating multi-AZ durability requirements."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
@@ -75,7 +75,7 @@
     "explanation": "Kinesis Data Streams is designed for real-time data streaming, and Kinesis Data Analytics can process and analyze this data in real-time.",
     "whyOthersAreWrong": {
       "A": "Amazon SQS is a discrete message queue designed for asynchronous decoupled processing, not for continuous high-throughput real-time streaming data ingestion.",
-      "C": "This approach (Amazon S3 and Amazon Athena) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "Writing data to S3 and running batch SQL queries with Athena introduces minutes of latency, failing the requirement to process and analyze data within seconds.",
       "D": "Writing real-time stream data directly to S3 via custom EC2 scripts introduces severe operational management overhead, latency, and scaling bottlenecks compared to managed streaming services."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
@@ -106,7 +106,7 @@
     "whyOthersAreWrong": {
       "B": "Amazon FSx for Windows File Server is built for SMB Windows environments, not Linux HPC clusters requiring POSIX permissions.",
       "C": "Amazon EBS volumes are typically restricted to a single instance within a single Availability Zone and cannot provide shared multi-AZ file access.",
-      "D": "This approach (AWS Storage Gateway File Gateway) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "AWS Storage Gateway File Gateway provides an on-premises local cache backed by S3 objects rather than a native, cloud-elastic POSIX file system for shared application compute."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EFS.",
     "topic": "Amazon EFS",
@@ -134,9 +134,9 @@
     ],
     "explanation": "Cluster placement groups keep instances physically close. EFAs provide the OS bypass capabilities required for maximum throughput and minimum latency in HPC workloads.",
     "whyOthersAreWrong": {
-      "A": "This approach (Spread placement group with Elastic Network Interfaces (ENIs)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Partition placement group with Enhanced Networking) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Transit Gateway attachment) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Spread placement groups distribute instances across distinct physical hardware racks to minimize correlated failures, increasing inter-instance latency.",
+      "C": "Partition placement groups separate instances across logical partitions to isolate faults, but do not provide the sub-microsecond latency or OS bypass provided by EFAs in a cluster placement group.",
+      "D": "AWS Transit Gateway is a regional router for connecting VPCs and on-premises networks; routing HPC traffic through it adds unnecessary hops and network latency."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -165,7 +165,7 @@
     "whyOthersAreWrong": {
       "A": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints.",
       "B": "Introducing an in-memory caching cluster adds architectural complexity and ongoing cache invalidation overhead without solving persistent storage durability requirements.",
-      "D": "This approach (Upgrade to a larger RDS instance class) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Upgrading to a larger instance class is expensive vertical scaling that requires downtime during resizing and still leaves read and write traffic competing on a single instance."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon RDS.",
     "topic": "Amazon RDS",
@@ -194,9 +194,9 @@
     ],
     "explanation": "API Gateway provides the HTTP/REST endpoint, and Lambda provides the serverless compute to execute the Python code.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon EC2) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Elastic Beanstalk) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (Amazon ECS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Amazon EC2 requires provisioning, maintaining, patching, and scaling operating system instances, failing the serverless requirement.",
+      "D": "AWS Elastic Beanstalk deploys applications onto underlying EC2 instances that require infrastructure maintenance, failing the serverless requirement.",
+      "E": "Amazon ECS manages Docker containers and tasks rather than providing a native, fully managed event-driven serverless REST endpoint and Python runtime."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Lambda.",
     "topic": "AWS Lambda",
@@ -224,9 +224,9 @@
     ],
     "explanation": "The SNS to SQS fan-out pattern ensures that a message published to an SNS topic is delivered to multiple subscribed SQS queues, one for each consumer application.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon SQS and AWS Lambda) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon Kinesis Data Firehose and Amazon S3) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon EventBridge and AWS Step Functions) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "A single SQS queue delivers each message to only one consumer worker, so it cannot natively fan out duplicate copies of every message to multiple distinct consumer applications.",
+      "C": "Amazon Kinesis Data Firehose is designed to load streaming data into data stores like S3 or Redshift, not to fan out messages to multiple downstream decoupled application consumers.",
+      "D": "EventBridge and Step Functions orchestrate stateful event-driven workflows, but SNS with SQS subscriptions is the standard, high-throughput fan-out messaging pattern."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
     "topic": "Amazon Kinesis",
@@ -254,9 +254,9 @@
     ],
     "explanation": "OAC (which replaces OAI) is the secure way to grant a CloudFront distribution access to an S3 bucket while keeping the bucket private from direct internet access.",
     "whyOthersAreWrong": {
-      "B": "This approach (Use signed URLs on the S3 bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "S3 presigned URLs grant direct access to S3 objects without routing requests through CloudFront's caching and edge protection features.",
       "C": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks.",
-      "D": "This approach (Deploy an ALB in front of the S3 bucket) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "An Application Load Balancer cannot directly target an S3 bucket as a backend target group to restrict direct bucket internet access."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
     "topic": "AWS CloudFront",
@@ -314,9 +314,9 @@
     ],
     "explanation": "AWS Secrets Manager is specifically designed to store, retrieve, and automatically rotate database credentials.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS KMS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "AWS KMS manages encryption keys for cryptographic operations, but does not store secret strings or orchestrate database password rotations.",
       "B": "AWS Systems Manager Parameter Store does not natively support automated scheduled rotation with built-in Lambda templates for RDS credentials.",
-      "D": "This approach (IAM Roles) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "IAM Roles manage temporary AWS API credentials, whereas standard relational database credentials require password management and automated rotation."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Systems Manager.",
     "topic": "AWS Systems Manager",
@@ -376,9 +376,9 @@
     ],
     "explanation": "Athena is an interactive, serverless query service that makes it easy to analyze data in Amazon S3 using standard SQL.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon Redshift) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Amazon RDS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon EMR) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon Redshift is a dedicated data warehouse requiring cluster provisioning, schema management, and data loading before querying.",
+      "B": "Amazon RDS requires provisioning compute and storage instances and ingesting CSV files into a relational database schema, requiring significant operational overhead.",
+      "D": "Amazon EMR requires provisioning and configuring Apache Spark or Presto clusters, violating the requirement to avoid managing infrastructure."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -406,9 +406,9 @@
     ],
     "explanation": "AWS Fargate is a serverless compute engine for containers that works with ECS and EKS, eliminating the need to manage underlying servers.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon EKS with EC2 worker nodes) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS Elastic Beanstalk) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Batch) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon EKS with EC2 worker nodes requires managing, scaling, and patching the underlying EC2 instances.",
+      "C": "AWS Elastic Beanstalk provisions and maintains underlying EC2 instances that the operations team must still monitor and patch.",
+      "D": "AWS Batch is designed for scheduled batch computing jobs rather than general-purpose containerized service execution without server management."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
     "topic": "Amazon ECS",
@@ -436,8 +436,8 @@
     ],
     "explanation": "DAX is a fully managed, highly available, in-memory cache for DynamoDB that delivers up to a 10x performance improvement for read-heavy workloads.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the provisioned read capacity units (RCUs) significantly) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Migrate the database to Amazon RDS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Significantly increasing provisioned RCUs is expensive and still results in single-digit millisecond latency rather than microsecond in-memory response times.",
+      "C": "Migrating to Amazon RDS requires rewriting application code, rearchitecting the data model, and managing relational connections, introducing unnecessary cost and complexity.",
       "D": "Introducing an in-memory caching cluster adds architectural complexity and ongoing cache invalidation overhead without solving persistent storage durability requirements."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon DynamoDB to satisfy workload requirements.",
@@ -467,8 +467,8 @@
     "explanation": "S3 Object Lock enables you to store objects using a WORM model, preventing them from being deleted or overwritten for a fixed amount of time or indefinitely.",
     "whyOthersAreWrong": {
       "A": "S3 Versioning preserves previous versions of modified or deleted objects, but does not prevent public exposure or enforce bucket access controls.",
-      "C": "This approach (S3 Cross-Region Replication) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS KMS Encryption) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "S3 Cross-Region Replication copies objects across AWS regions for redundancy, but does not prevent deletion or enforce WORM compliance rules.",
+      "D": "AWS KMS encryption secures data at rest using encryption keys, but does not prevent authorized users from deleting or overwriting objects."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
     "topic": "Amazon S3",
@@ -496,8 +496,8 @@
     "explanation": "AWS Site-to-Site VPN uses IPsec over the internet, supports BGP for dynamic routing, and is quick to set up compared to Direct Connect.",
     "whyOthersAreWrong": {
       "A": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
-      "C": "This approach (AWS Transit Gateway) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (VPC Peering) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "AWS Transit Gateway acts as a central hub for multiple VPC and VPN attachments, but does not provide the encrypted IPsec VPN connection over the internet on its own.",
+      "D": "VPC Peering only routes traffic between AWS VPCs and cannot establish a connection between an on-premises data center and an AWS VPC."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
     "topic": "Amazon VPC",
@@ -528,7 +528,7 @@
     "whyOthersAreWrong": {
       "A": "VPC Peering does not support transitive routing, and establishing a full mesh across multiple VPCs creates excessive administrative and route table complexity.",
       "C": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
-      "D": "This approach (AWS PrivateLink) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "AWS PrivateLink exposes specific endpoint services to individual VPCs privately, but does not provide general routed network connectivity between hundreds of VPCs and an on-premises network."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
@@ -557,9 +557,9 @@
     ],
     "explanation": "Global Accelerator supports UDP and TCP traffic, routing users to the nearest edge location and over the AWS global network to improve performance and reduce latency.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon CloudFront) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Amazon CloudFront operates as a content delivery network for HTTP and HTTPS protocols and does not support UDP traffic routing.",
       "C": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations.",
-      "D": "This approach (Application Load Balancer) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Application Load Balancers operate at Layer 7 and only support HTTP, HTTPS, and gRPC protocols, not UDP traffic."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS CloudFront.",
     "topic": "AWS CloudFront",
@@ -586,9 +586,9 @@
     ],
     "explanation": "AWS Application Migration Service (MGN) automates lift-and-shift migrations to AWS, continuously replicating source servers to AWS without performance impact.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS DataSync) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS Database Migration Service (DMS)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Snowball Edge) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS DataSync is designed for online data transfer between file and object storage systems, not for replicating boot and root operating system disks to EC2.",
+      "C": "AWS Database Migration Service (DMS) migrates relational databases and analytics data stores, not application server operating systems.",
+      "D": "AWS Snowball Edge is a physical data transfer appliance for offline bulk data movement, not an automated lift-and-shift server replication tool."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Architecture.",
     "topic": "AWS Architecture",

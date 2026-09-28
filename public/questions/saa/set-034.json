@@ -17,8 +17,8 @@
     "explanation": "Compute Savings Plans apply to Fargate (and Lambda, EC2) usage, and the standard cost-optimization pattern is to commit to a Savings Plan sized for the known, steady baseline usage (getting a meaningful discount, up to a maximum in the ~50% range for compute savings plans depending on term/payment option) while letting variable, harder-to-predict spikes scale out and bill at On-Demand rates -- balancing savings with flexibility. Paying fully On-Demand forfeits available discounts on the predictable portion. Sizing the commitment to absolute peak results in paying for committed capacity that goes unused during non-peak periods, which is wasteful.",
     "whyOthersAreWrong": {
       "D": "This option is factually incorrect. - Fargate usage is eligible for Compute Savings Plans.",
-      "A": "This approach (Pay for all Fargate capacity On-Demand at all times) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Purchase enough Savings Plan coverage for the absolute peak capacity) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Paying all Fargate capacity at On-Demand rates misses out on significant cost savings (up to ~50%) available through commitments on predictable baseline usage.",
+      "C": "Purchasing a Savings Plan sized for absolute peak capacity results in paying for unused committed capacity during normal non-peak hours, wasting budget."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -48,7 +48,7 @@
     "whyOthersAreWrong": {
       "C": "Data transfer IN is generally free/not the primary cost driver in most scenarios , making that statement both factually wrong and not actionable.",
       "D": "Data transfer pricing varies significantly by direction, region pair, and mechanism , so a flat-rate claim is incorrect.",
-      "A": "This approach (Data transfer between AWS regions (e.g., us-east-1 to eu-west-1) is always free) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Inter-region data transfer between AWS Regions (such as us-east-1 to eu-west-1) is not free and incurs per-GB data egress charges."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -106,9 +106,9 @@
     ],
     "explanation": "An ASG mixed instances policy allows specifying an On-Demand base capacity (guaranteeing a minimum number of non-interruptible instances for baseline reliability) plus an On-Demand/Spot split for additional scaling capacity, with Spot diversified across multiple instance types/pools to improve availability and reduce interruption impact -- this directly satisfies both the cost-savings and guaranteed-baseline requirements simultaneously. Running the entire fleet on Spot risks the 'never interrupted' baseline requirement being violated. Running entirely On-Demand guarantees availability but forgoes all Spot savings, which isn't cost-optimized. Using Reserved Instances for all capacity including burst means paying for committed capacity that may sit idle during non-burst periods, which is not cost-efficient for variable/burst demand.",
     "whyOthersAreWrong": {
-      "A": "This approach (Run the entire fleet on Spot Instances for maximum savings) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Run the entire fleet on On-Demand Instances to guarantee availability, forgoing Spot) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Use Reserved Instances for 100% of capacity, including burst capacity) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Running the entire fleet on Spot Instances risks complete application unavailability if AWS reclaims capacity during high demand, violating the guaranteed baseline availability requirement.",
+      "C": "Running exclusively on On-Demand instances provides availability but completely misses out on the substantial cost savings (up to 90%) provided by Spot Instances for scalable capacity.",
+      "D": "Purchasing Reserved Instances for 100% of capacity, including variable burst capacity, forces long-term financial commitments on capacity that sits idle during low-traffic periods."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -196,8 +196,8 @@
     "explanation": "Amazon SQS provides a highly scalable message queuing service that decouples components. Messages remain in the queue until successfully processed and deleted, ensuring no data loss if a worker fails.",
     "whyOthersAreWrong": {
       "A": "Amazon SNS is a pub/sub fan-out notification service and lacks message queuing, buffering, and persistent backpressure handling on its own.",
-      "C": "This approach (Amazon Kinesis Data Streams) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Step Functions) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Amazon Kinesis Data Streams is designed for high-throughput real-time streaming analytics with shard-based partitioning, rather than long-running discrete task queueing with per-message acknowledgement.",
+      "D": "AWS Step Functions is a state machine workflow orchestrator; while it can coordinate distributed steps, it is not a decoupled message queue for buffering asynchronous worker tasks."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
     "topic": "Amazon Kinesis",
@@ -225,8 +225,8 @@
     ],
     "explanation": "Amazon RDS is a managed relational database service that handles administration tasks. Multi-AZ provides high availability and automatic failover, making it ideal for critical databases.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon EC2 with MySQL installed) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon Aurora with multi-master enabled) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Running MySQL on Amazon EC2 requires manual installation, OS patching, backup scripting, and custom high availability failover configuration, introducing heavy administrative overhead.",
+      "C": "Amazon Aurora multi-master is designed for specialized continuous write availability across multiple AZs within a single region, but introduces complex application-level conflict resolution and is not supported on standard MySQL RDS.",
       "D": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon RDS.",
@@ -256,7 +256,7 @@
     ],
     "explanation": "S3 Glacier Deep Archive is the lowest-cost storage class in AWS and supports retrieval times of 12 hours, perfectly matching the scenario's requirements.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon S3 Standard) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Amazon S3 Standard charges the highest storage fees ($0.023/GB) designed for frequent access, making it cost-prohibitive for rarely accessed petabyte-scale archives.",
       "B": "Infrequent Access tiers have a 30-day minimum storage duration and retrieval fees that are suboptimal for immediate, active analytical queries.",
       "C": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data."
     },
@@ -285,7 +285,7 @@
     "explanation": "Amazon FSx for Lustre is designed specifically for fast processing of workloads like machine learning, high performance computing (HPC), and video processing, offering sub-millisecond latencies.",
     "whyOthersAreWrong": {
       "A": "Amazon EFS is a distributed NFS file system with millisecond latencies; it cannot provide sub-millisecond block-level I/O performance or serve as a raw boot disk.",
-      "C": "This approach (Amazon S3) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "Amazon S3 is an object store accessed via REST API (HTTP/HTTPS) and does not natively support POSIX file system semantics, file locking, or sub-millisecond local file system operations.",
       "D": "Amazon EBS volumes are typically restricted to a single instance within a single Availability Zone and cannot provide shared multi-AZ file access."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon FSx.",
@@ -314,9 +314,9 @@
     ],
     "explanation": "Amazon DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability and single-digit millisecond latency.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon Redshift) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Amazon RDS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon DocumentDB) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon Redshift is a columnar relational data warehouse intended for complex analytical (OLAP) queries across large datasets, not a low-latency NoSQL transactional store.",
+      "B": "Amazon RDS is a managed relational database service (SQL) that uses structured schemas and ACID transactions, not a horizontally scalable NoSQL database.",
+      "C": "Amazon DocumentDB is a MongoDB-compatible JSON document database, but it relies on an Aurora-like cluster architecture that does not scale out writes with seamless single-digit millisecond latency at arbitrary global scale like DynamoDB."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -343,9 +343,9 @@
     ],
     "explanation": "AWS Config enables you to assess, audit, and evaluate the configurations of your AWS resources, including checking if S3 buckets have default encryption enabled.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS CloudTrail) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS IAM) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon Macie) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS CloudTrail records API activity and event history across your AWS infrastructure, but it does not evaluate resource configuration compliance against desired rules.",
+      "C": "AWS IAM manages identities, roles, and permissions, but cannot scan or continuously evaluate resource configurations for encryption compliance.",
+      "D": "Amazon Macie uses machine learning to discover and protect sensitive data (such as PII) stored in S3, but does not monitor or enforce bucket default encryption settings."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
     "topic": "Amazon S3",
@@ -373,9 +373,9 @@
     ],
     "explanation": "An NLB provides static IP addresses and can route traffic to an RDS instance. RDS itself cannot be assigned an Elastic IP directly in a typical managed deployment, making NLB the correct choice.",
     "whyOthersAreWrong": {
-      "A": "This approach (Use an AWS Lambda function to route traffic to RDS.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Use AWS Global Accelerator.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Assign an Elastic IP directly to the RDS instance.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "AWS Lambda functions cannot provide a dedicated static TCP listening IP address to proxy long-lived database connection streams directly to RDS.",
+      "B": "AWS Global Accelerator routes user traffic over anycast static IPs to regional endpoints (like ALBs, NLBs, or EC2), but it cannot directly attach to a private RDS DB instance without a supported fronting endpoint.",
+      "D": "Amazon RDS DB instances do not support direct Elastic IP assignment; their IP addresses are dynamic within private or public subnets, relying on DNS endpoints."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Lambda.",
     "topic": "AWS Lambda",
@@ -402,8 +402,8 @@
     "explanation": "AWS Site-to-Site VPN uses IPsec to establish a secure, encrypted connection over the public internet. It can be set up quickly, unlike Direct Connect which takes weeks.",
     "whyOthersAreWrong": {
       "A": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
-      "C": "This approach (AWS Transit Gateway) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (VPC Peering) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "AWS Transit Gateway is a centralized hub that connects VPCs and on-premises networks; it does not independently establish encrypted tunnels over the internet without a VPN attachment.",
+      "D": "VPC Peering connects two AWS VPCs together and cannot connect on-premises data centers to AWS."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
     "topic": "Amazon VPC",
@@ -432,7 +432,7 @@
     ],
     "explanation": "Predictive scaling uses machine learning to predict upcoming traffic spikes and scales out instances proactively, making it the perfect fit.",
     "whyOthersAreWrong": {
-      "A": "This approach (Target tracking scaling) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Target tracking scaling monitors real-time metrics (like average CPU utilization) and reacts after the load increases, rather than proactively provisioning capacity ahead of anticipated traffic.",
       "B": "Simple scaling reacts only after a CloudWatch alarm threshold is breached, which is too slow to absorb rapid, sudden traffic surges.",
       "C": "Step scaling is reactive to threshold breaches rather than predictive, requiring manual configuration of step adjustments without machine-learning forecasting."
     },

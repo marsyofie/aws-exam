@@ -17,8 +17,8 @@
     "explanation": "For unpredictable, bursty, short-lived workloads, serverless compute -- Lambda for jobs within its execution time/resource limits, or Fargate/ECS with Auto Scaling for longer-running or more resource-intensive transcoding jobs -- provisions capacity only when needed and eliminates idle-time cost and server management, matching both the cost and operational requirements. Always-on Reserved Instances sized for peak pay for idle capacity most of the day, wasting money.",
     "whyOthersAreWrong": {
       "C": "A single always-on large instance has the same idle-cost problem and lacks elasticity for bursts. Dedicated Hosts are for licensing/compliance requirements tied to physical servers and are not cost-efficient or appropriate for bursty, serverless-friendly workloads.",
-      "A": "This approach (A fleet of always-on Reserved EC2 Instances sized for peak load) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (EC2 Dedicated Hosts) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "A fleet of always-on Reserved EC2 instances sized for peak load wastes significant compute budget during unpredictable idle periods.",
+      "D": "Dedicated Hosts allocate entire physical servers, providing the highest possible compute cost without addressing the need for elasticity or serverless management."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Lambda to satisfy workload requirements.",
     "topic": "AWS Lambda",
@@ -46,9 +46,9 @@
     ],
     "explanation": "For tightly coupled HPC workloads like MPI simulations, a Cluster placement group packs instances close together in a single AZ to minimize network latency, and EFA provides OS-bypass networking with very low, consistent latency and high throughput specifically designed for HPC/MPI-style communication patterns. Standard ENA with no placement strategy doesn't guarantee the low-latency proximity HPC needs. A Spread placement group is designed to minimize correlated failures by placing instances on distinct underlying hardware, often across AZs, which is the opposite of what's needed for low-latency clustering. Disabling enhanced networking would degrade, not improve, network performance.",
     "whyOthersAreWrong": {
-      "A": "This approach (Standard ENA networking with no special placement) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (A Spread placement group across multiple AZs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Enhanced networking disabled to reduce CPU overhead) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Standard ENA networking without placement strategy does not guarantee instances are physically close on the same network rack, resulting in sub-optimal latency for tightly coupled MPI tasks.",
+      "C": "A spread placement group deliberately places instances on distinct underlying hardware racks across AZs, increasing network latency rather than minimizing it.",
+      "D": "Disabling enhanced networking forces the hypervisor to handle packet processing, increasing CPU overhead and network latency while reducing overall throughput."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -75,8 +75,8 @@
     "explanation": "A key advantage of gp3 over gp2 is that IOPS and throughput can be provisioned independently of volume size, up to the volume type's maximums, allowing the architect to directly increase performance ceilings to match demand without resizing or migrating to a different volume type. Increasing vCPU count addresses compute, not storage I/O, and won't help if the bottleneck is EBS throughput/IOPS. Cold HDD sc1 is a low-performance, low-cost volume type intended for infrequently accessed, throughput-oriented workloads and would make latency worse for this use case.",
     "whyOthersAreWrong": {
       "D": "Detaching/reattaching does not change or 'reset' any performance characteristics -- gp3 baseline performance is a fixed provisioned value, not a depletable burst credit balance like gp2.",
-      "B": "This approach (Increase the EC2 instance's vCPU count) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Switch the EBS volume to Cold HDD (sc1)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Increasing the vCPU count scales compute capacity but does not change the I/O limits of the underlying EBS gp3 volume, which is the source of the latency.",
+      "C": "Cold HDD (sc1) volumes are designed for infrequent, sequential, large-block workloads and provide significantly lower IOPS and higher latency than gp3."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -103,9 +103,9 @@
     ],
     "explanation": "Target tracking on ALBRequestCountPerTarget scales the ECS service based on actual request volume per task, which reflects real application load more directly than CPU or memory for many request-driven APIs, and target tracking policies can react quickly with configurable scale-out behavior to handle sudden spikes like flash sales. A fixed desired count at peak capacity wastes significant cost during the 99% of the time traffic is at baseline. Manual scaling is slow, error-prone, and doesn't scale operationally for unpredictable spike timing. Scaling on memory alone may not correlate well with request-driven load spikes for many API workloads, especially if memory usage is relatively flat regardless of request rate.",
     "whyOthersAreWrong": {
-      "B": "This approach (A fixed desired count set to the maximum expected peak capacity at all times) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Setting a fixed desired count to handle maximum peak capacity wastes significant resources and budget during normal, non-spike traffic periods.",
       "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "D": "This approach (Auto Scaling based solely on average memory utilization) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Auto Scaling based solely on average memory utilization may not scale fast enough for a CPU- or connection-bound Node.js API experiencing sudden 10x traffic spikes."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
     "topic": "Amazon ECS",
@@ -133,8 +133,8 @@
     "explanation": "Amazon Athena is a serverless query service designed exactly for this use case: ad-hoc SQL directly against S3 data (including Parquet, which it can query efficiently due to columnar format), with no cluster to provision or manage and billing based on data scanned per query. Redshift with a permanent cluster requires ongoing cluster management and cost even when idle, which conflicts with the 'no cluster to manage, pay only for queries' requirement (Redshift Serverless would be closer, but isn't the option given).",
     "whyOthersAreWrong": {
       "C": "Importing into RDS adds unnecessary ETL overhead for ad-hoc querying of files already in S3, and RDS isn't optimized for large-scale analytical scanning. An always-on EMR cluster incurs continuous cost and management overhead unsuited for ad-hoc, intermittent query patterns.",
-      "A": "This approach (Amazon Redshift with a permanently provisioned cluster) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon EMR with an always-on long-running cluster) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon Redshift requires provisioning and paying for an always-on data warehouse cluster, which is not cost-effective for ad-hoc queries compared to serverless pay-per-query models.",
+      "D": "Amazon EMR with an always-on long-running cluster incurs continuous compute charges regardless of query activity, violating the pay-only-for-queries-executed constraint."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -163,9 +163,9 @@
     ],
     "explanation": "General Purpose performance mode is designed for latency-sensitive use cases (lower per-operation latency than Max I/O) and is the default recommendation unless very high levels of aggregate throughput/operations per second across thousands of clients are required. Bursting Throughput scales with file system size and can be monitored for credit depletion, or Elastic Throughput automatically adapts to spiky, unpredictable workloads while billing only for what's used -- both fit this scenario's mix of latency sensitivity and cost control better than the alternatives. Max I/O trades higher per-operation latency for higher aggregate throughput/parallelism, which isn't the stated need and would worsen latency. Permanent maximum Provisioned Throughput guarantees throughput but at a fixed cost regardless of actual usage, which conflicts with the cost-minimization requirement for an unpredictable workload. One Zone storage reduces resilience and isn't about performance mode.",
     "whyOthersAreWrong": {
-      "B": "This approach (Max I/O performance mode for the lowest possible per-operation latency) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Provisioned Throughput mode at the maximum available throughput permanently) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (One Zone storage class with Max I/O performance mode) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Max I/O performance mode sacrifices per-operation latency (slightly higher latency) to support massive parallel throughput for big-data workloads, making it less appropriate for general-purpose latency-sensitive workloads.",
+      "C": "Provisioned Throughput mode guarantees a specific throughput rate but incurs additional permanent costs, which is unnecessary and less cost-effective for unpredictable workloads than Elastic throughput.",
+      "D": "One Zone storage class lacks multi-AZ durability, risking permanent data loss in the event of an AZ failure, and Max I/O mode is inappropriate for general-purpose latency-sensitive access."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -194,9 +194,9 @@
     ],
     "explanation": "Provisioned Concurrency pre-initializes a specified number of execution environments so they are ready to respond immediately, directly addressing cold start latency for infrequently invoked functions with strict SLAs -- this is the AWS-documented direct solution to this exact problem, and is especially relevant for runtimes like Java that have historically had longer cold-start init times. Increasing memory alone can reduce cold start duration somewhat (since CPU scales with memory) but doesn't eliminate the cold start itself the way Provisioned Concurrency does, and isn't the most direct/complete fix. Rewriting in another language might help but is a drastic, costly re-architecture rather than the direct AWS-native solution, and isn't guaranteed to meet strict SLAs alone. SQS triggers invoke Lambda asynchronously/via polling, not synchronously in the way implied , and switching trigger type doesn't address cold starts.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the function's memory allocation only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Rewrite the entire application in a compiled language other than Java as the only fix) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Switch to synchronous invocation from an SQS trigger) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Increasing memory allocation can slightly reduce cold start duration by providing more CPU, but it does not eliminate cold starts for infrequent invocations.",
+      "C": "Rewriting the entire application introduces massive operational overhead and development delays when a simple configuration change can resolve the latency SLA requirement.",
+      "D": "Switching to an SQS trigger makes the invocation asynchronous, which does not guarantee strict low-latency synchronous responses to calling clients."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
     "topic": "AWS Lambda",
@@ -224,9 +224,9 @@
     ],
     "explanation": "DynamoDB is purpose-built for this exact profile: massive-scale key-value/document access with consistent single-digit millisecond latency, fully managed, and on-demand capacity mode scales automatically without capacity planning, closely matching a 'serverless' operational model. RDS MySQL with read replicas has a practical ceiling on write scalability (single writer) and latency/throughput characteristics that don't match extreme key-value workloads as well as DynamoDB. Redshift is an OLAP data warehouse for analytical queries over large datasets, not a low-latency operational key-value store. Self-managed Cassandra on EC2 could technically scale but requires significant operational overhead to manage, patch, and scale the cluster, failing the 'fully managed' requirement.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon RDS for MySQL with read replicas) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon Redshift) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Self-managed Cassandra on EC2) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon RDS for MySQL is a relational database designed for complex ACID transactions and requires managing instance sizes, scaling, and read replicas rather than providing serverless key-value scaling.",
+      "C": "Amazon Redshift is an OLAP data warehouse optimized for complex analytic aggregations, not high-concurrency low-latency transactional key-value lookups.",
+      "D": "Self-managed Cassandra on EC2 requires significant operational overhead to manage nodes, clusters, patching, and scaling, failing the fully-managed serverless requirement."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon RDS.",
     "topic": "Amazon RDS",
@@ -256,8 +256,8 @@
     "explanation": "Kinesis Data Streams is designed for high-throughput, real-time streaming ingestion where multiple independent consumer applications can each read and process the entire stream independently (each maintaining its own position), and enhanced fan-out provides dedicated throughput per consumer for demanding read patterns -- directly matching the multi-consumer, high-volume requirement.",
     "whyOthersAreWrong": {
       "A": "SQS Standard is a competing-consumers model: once one consumer processes/deletes a message, it's gone, so multiple consumers can't each independently process the full stream from the same queue (SNS fan-out to multiple SQS queues could achieve a similar pattern, but plain SQS alone as described does not). A single Lambda from SNS doesn't provide the massive parallel throughput or independent multi-consumer replay capability needed. Using RDS as an event ingestion sink at hundreds of thousands of events per second is not a scalable or appropriate pattern; relational databases aren't designed for this ingestion rate.",
-      "C": "This approach (A single Lambda function processing events one at a time from an SNS topic) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon RDS with a high write-IOPS instance ingesting each event as a row) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "A single Lambda function processing events one at a time from SNS cannot scale to ingest hundreds of thousands of events per second without encountering severe concurrency limits and throttling.",
+      "D": "Amazon RDS is a relational database optimized for ACID transactions, not a streaming data ingestion buffer; writing hundreds of thousands of rows per second would require prohibitively expensive hardware."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Lambda.",
     "topic": "AWS Lambda",
@@ -314,9 +314,9 @@
     ],
     "explanation": "In Redshift, query performance for join- and filter-heavy patterns is most fundamentally driven by table design: choosing an appropriate DISTKEY to co-locate matching join keys on the same node/slice (reducing data movement) and a SORTKEY aligned with common filter predicates (like a date range) to enable zone-map pruning and range-restricted scans, together with up-to-date table statistics, is the standard first optimization step before considering hardware changes. Simply adding nodes increases cost and may help somewhat but doesn't fix an underlying poor distribution/sort design, and is not the recommended first step. Switching node types without addressing table design first may not resolve the root cause and is a premature, potentially costly change. Moving to DynamoDB is not appropriate for a data warehouse workload involving large-scale joins and analytical queries across fact/dimension tables, which Redshift is purpose-built for.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the number of Redshift nodes without reviewing table design) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Switch the cluster to use DC2 (Dense Compute) nodes regardless of current node type) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Move the entire data warehouse to DynamoDB) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Increasing node count adds compute and storage capacity but does not resolve fundamental data modeling issues such as suboptimal distribution or sort keys that cause heavy broadcast joins.",
+      "C": "Switching to Dense Compute (DC2) nodes provides SSD storage but does not optimize query execution plans that suffer from missing sort or distribution keys.",
+      "D": "Moving a large data warehouse with complex join requirements to DynamoDB is an anti-pattern, as DynamoDB is a NoSQL key-value store unsuited for ad-hoc analytical queries."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -344,9 +344,9 @@
     ],
     "explanation": "API Gateway response caching can cache responses for a specified TTL directly at the API Gateway layer, serving repeated identical requests for rarely-changing data without invoking Lambda at all, directly reducing both latency and cost for this exact access pattern. Increasing reserved concurrency ensures capacity for concurrent invocations but does nothing to reduce the number of redundant invocations or their cost. A CloudWatch alarm is purely observational and doesn't reduce load. Provisioned concurrency addresses cold-start latency, not redundant invocation volume, and would not reduce cost from repeated identical requests -- it would still invoke Lambda for every request.",
     "whyOthersAreWrong": {
-      "B": "This approach (Increase the Lambda function's reserved concurrency) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Add a CloudWatch alarm to notify when invocation count is high) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Convert the Lambda function to use provisioned concurrency) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Increasing reserved concurrency guarantees execution capacity but does not reduce the actual number of invocations or the associated cost of repeatedly fetching reference data.",
+      "C": "Adding a CloudWatch alarm provides monitoring visibility but does not technically reduce the invocation volume or optimize the architecture.",
+      "D": "Provisioned concurrency keeps execution environments warm to prevent cold starts, but does not prevent duplicate invocations or reduce the total invocation count and cost."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Lambda to satisfy workload requirements.",
     "topic": "AWS Lambda",
@@ -374,9 +374,9 @@
     ],
     "explanation": "AWS Global Accelerator provides static Anycast IP addresses so clients connect to the nearest AWS edge location and traffic travels over AWS's private global network backbone, reducing latency from DNS/connection setup and improving performance for globally distributed users, and it includes AWS Shield Standard for infrastructure-layer (Layer 3/4) DDoS protection by default. Route 53 simple routing doesn't provide the Anycast/global-network performance benefit or health-check-based routing. A second ALB in the same region doesn't improve global latency for distant users at all, since it doesn't move traffic entry closer to users. Increasing idle timeout affects how long connections are held open, not global connection setup latency or DDoS protection.",
     "whyOthersAreWrong": {
-      "A": "This approach (Deploy Route 53 with a simple routing policy only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Deploy a second identical ALB in the same region for redundancy) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Increase the ALB's idle timeout setting) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Route 53 simple routing provides basic DNS resolution but lacks anycast routing, edge network acceleration, or built-in DDoS protection for the application layer.",
+      "C": "Deploying a second identical ALB provides regional redundancy but does not improve global DNS resolution latency, edge connection setup, or DDoS mitigation.",
+      "D": "Increasing the ALB idle timeout keeps connections open longer but does not reduce initial connection setup latency or provide edge protection for global users."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
     "topic": "Amazon Route 53",
@@ -405,9 +405,9 @@
     ],
     "explanation": "A Cluster placement group packs instances close together within a single Availability Zone to achieve the lowest possible network latency and highest throughput between instances, at the cost of reduced fault tolerance since instances may share underlying hardware -- this matches both the performance requirement and the stated willingness to trade off resilience. A Spread placement group does the opposite: it places instances on distinct hardware to minimize correlated failure, which typically means instances are further apart with higher inter-instance latency. A Partition placement group is designed for large distributed systems (like Hadoop/Cassandra) that need to isolate failure domains across partitions, not for minimizing latency between a tightly coupled instance set. No placement group provides no guarantee of proximity or reduced latency.",
     "whyOthersAreWrong": {
-      "A": "This approach (Spread placement group) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Partition placement group) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (No placement group, relying on default instance placement) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "A spread placement group places instances on distinct underlying hardware racks across different AZs, which increases network latency rather than minimizing it.",
+      "B": "A partition placement group divides instances into logical partitions to isolate hardware failures, but does not pack instances as tightly as a cluster placement group for MPI latency.",
+      "D": "Default instance placement provides no guarantees about the physical proximity of instances within an AZ, leading to inconsistent and sub-optimal network latency."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -435,8 +435,8 @@
     "explanation": "For a known, steady-state, long-term (3-year) workload, a 3-year commitment via Savings Plans or Reserved Instances with All Upfront payment provides the deepest discount (typically the largest savings tier compared to shorter terms or partial/no upfront), making it the most cost-effective choice when future usage is predictable and committed. On-Demand offers no discount and is meant for unpredictable/short-term needs. Spot Instances offer the deepest discounts but are subject to interruption, making them unsuitable for workloads requiring continuous, uninterrupted operation for years.",
     "whyOthersAreWrong": {
       "D": "Dedicated Hosts billed hourly are typically for licensing/compliance needs tied to physical server visibility and are more expensive than Savings Plans/RIs for general compute without that specific requirement.",
-      "A": "This approach (On-Demand Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Spot Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "On-Demand Instances provide pay-as-you-go flexibility with no commitment, but are significantly more expensive than Reserved Instances for predictable 3-year steady-state workloads.",
+      "B": "Spot Instances offer steep discounts but can be reclaimed by AWS with a 2-minute notice, making them unsuitable for mission-critical, predictable steady-state production workloads."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -463,7 +463,7 @@
     "explanation": "This tiered lifecycle matches storage cost to actual access patterns: S3 Standard for the first 30 days (frequent access, no retrieval fees/delay), Standard-IA is skipped/considered but Glacier Flexible Retrieval or Deep Archive after 90 days (near-zero access, lowest storage cost, retrieval time is acceptable for rare compliance-driven access), with automatic expiration at the 7-year mark to meet retention requirements without keeping data indefinitely. Keeping everything in Standard for 7 years is drastically over-priced for data that's rarely accessed after 90 days. Moving immediately to Deep Archive would make the frequently-needed first-30-days troubleshooting access slow and potentially costly due to retrieval fees and multi-hour retrieval times.",
     "whyOthersAreWrong": {
       "D": "Deleting after 90 days violates the explicit 7-year compliance retention requirement.",
-      "A": "This approach (Keep all logs in S3 Standard for the full 7 years) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Keeping all logs in S3 Standard for the full 7 years incurs high storage costs for data that is rarely or never accessed after 90 days.",
       "C": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
@@ -490,9 +490,9 @@
     ],
     "explanation": "Cost visibility and allocation start with consistent tagging : resources tagged with dimensions like department/project, activated as cost allocation tags, allow Cost Explorer and Cost and Usage Reports to break down spend accurately by those dimensions -- this is the foundational step before any cost-reduction purchasing decisions can be well-targeted. Buying Reserved Instances immediately without understanding usage patterns risks over- or under-committing. Consolidating into a single shared account actually makes cost attribution harder without tagging/AWS Organizations cost allocation features, and loses account-level isolation benefits. Disabling detailed billing would reduce visibility, which is the opposite of the goal, and 'reducing data processing costs' isn't a meaningful billing lever here.",
     "whyOthersAreWrong": {
-      "A": "This approach (Immediately purchase Reserved Instances across the board to reduce costs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Move all departments into a single shared AWS account for simplicity) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Disable detailed billing to reduce data processing costs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Purchasing Reserved Instances blindly across all accounts may lock the company into unnecessary capacity without first understanding which departments are driving the costs.",
+      "C": "Moving all departments into a single shared AWS account removes isolation, complicates security boundaries, and makes cost allocation significantly more difficult to untangle.",
+      "D": "Disabling detailed billing (or Cost and Usage Reports) removes the raw data necessary for granular cost allocation and analytics, directly defeating the finance team goal."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon VPC to satisfy workload requirements.",
     "topic": "Amazon VPC",
@@ -521,7 +521,7 @@
     "whyOthersAreWrong": {
       "A": "On-Demand is more expensive than necessary for a workload that explicitly tolerates interruption. A 1-year Reserved Instance running 24/7 would mean paying for 22 unused hours a day just to cover a 2-hour job, which is highly wasteful.",
       "D": "Dedicated Hosts are for licensing/compliance needs and are considerably more expensive, with no benefit for this use case.",
-      "C": "This approach (A 1-year Reserved Instance running 24/7 even though only used 2 hours a night) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "A 1-year Reserved Instance requires paying for 24/7 capacity, which is far less cost-effective than Spot Instances or On-Demand when the workload only runs 2 hours a day."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -547,9 +547,9 @@
     ],
     "explanation": "Since the dev environment is only needed roughly 50 hours/week out of 168, stopping resources outside business hours -- via the AWS Instance Scheduler solution or a custom EventBridge-triggered Lambda -- can reduce compute costs by roughly 70%, since stopped EC2/RDS instances (with some RDS storage cost persisting) aren't billed for compute time while stopped, and this requires no upfront purchase commitment. Reserved Instances commit to a term but don't reduce cost for hours the resource isn't even needed -- you'd still pay for nights/weekends. Spot Instances reduce hourly cost but don't address the fact that the resource is running unnecessarily outside business hours, and RDS doesn't support Spot at all. Downsizing without changing the schedule helps somewhat but leaves the bigger inefficiency (24/7 operation for a business-hours-only need) unaddressed.",
     "whyOthersAreWrong": {
-      "A": "This approach (Purchase Reserved Instances for the development environment) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Move the development environment to Spot Instances only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Downsize the instance types without changing the schedule) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Reserved Instances require paying for 24/7 capacity; since the resources are only needed about 30 percent of the week, an RI discount will not yield as much savings as stopping the instances during off-hours.",
+      "C": "Moving a development environment (including databases) to Spot Instances introduces the risk of unexpected 2-minute interruptions, which can disrupt active developer testing or corrupt state.",
+      "D": "Downsizing instance types provides some cost reduction, but leaves resources running idly and incurring charges for 118 off-hours per week, wasting significant budget."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -578,9 +578,9 @@
     ],
     "explanation": "AWS Trusted Advisor includes a Cost Optimization category with checks for low-utilization EC2 instances, idle load balancers, unassociated Elastic IPs, and underutilized EBS volumes, among others -- core checks are available even on the Basic/Developer support plan at no extra cost, with the full check set available on Business/Enterprise support. Amazon Inspector is a vulnerability/security assessment service, not a cost tool. AWS Config tracks configuration compliance and change history, not resource utilization/cost recommendations by default. GuardDuty is a threat detection service, unrelated to cost optimization.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon Inspector) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Amazon Inspector is an automated vulnerability management service that scans for software vulnerabilities and network exposure, not a cost optimization or resource utilization tool.",
       "C": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (Amazon GuardDuty) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Amazon GuardDuty is an intelligent threat detection service that monitors logs for malicious activity, not a service for identifying underutilized infrastructure or cost savings."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",

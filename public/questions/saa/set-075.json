@@ -288,9 +288,9 @@
     ],
     "explanation": "This combination of native, purpose-built AWS tools directly satisfies the requirement: Trusted Advisor, at Business or Enterprise support tier, continuously surfaces cost-optimization findings like idle resources, unattached EBS volumes, and RI or Savings Plans opportunities, while Cost Explorer, viewed from the Organization's management or payer account for consolidated visibility, provides historical trend analysis, forecasting, and its own purchase recommendation reports, together covering every stated need with minimal custom engineering.",
     "whyOthersAreWrong": {
-      "A": "A is a low-frequency, labor-intensive, technically shallow approach that misses granular, ongoing, resource-level optimization opportunities and provides no forecasting. C requires significant custom development and ongoing maintenance to replicate functionality AWS already provides natively, directly contradicting the requirement for a low-effort approach using native tools.",
+      "A": "A is a low-frequency, labor-intensive, technically shallow approach that misses granular, ongoing, resource-level optimization opportunities and provides no forecasting.",
       "B": "Free Tier usage alerts are a basic notification mechanism related to Free Tier thresholds, not remotely equivalent to Trusted Advisor's resource-level checks or Cost Explorer's analytical and forecasting capabilities.",
-      "C": "This approach (Build a custom AWS Lambda function that queries the Cost and Usage Report daily and implements custom logic to replicate all of Trusted Advisor's and Cost Explorer's functionality from scratch.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Writing and maintaining custom Lambda scripts to query the Cost and Usage Report introduces high development and operational overhead compared to native tools like Trusted Advisor and Cost Explorer."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -349,8 +349,8 @@
     ],
     "explanation": "An AWS Organizations CloudTrail trail, created once in the management account with \"apply trail to all accounts in my organization\" enabled, automatically captures activity from every existing member account and any account that joins later \u2014 satisfying the \"no per-account configuration\" requirement. Delivering to a bucket in the Log Archive account, encrypted with a customer managed KMS key whose key policy grants decrypt only to Log Archive principals, satisfies both the CMK requirement and the \"only readable in the Log Archive account\" requirement. Because member accounts have no IAM permission that can override an SCP, a deny-based SCP on cloudtrail:StopLogging/DeleteTrail reliably prevents tampering \u2014 IAM allow policies in a member account can never override an Organizations SCP deny.",
     "whyOthersAreWrong": {
-      "A": "Service Control Policies (SCPs) act as permission guardrails that restrict the maximum permissions available in an account; they do not grant permissions or configure resource-level behaviors directly.",
-      "C": "This approach (In the Log Archive account, create a CloudTrail trail with \"collect events from all accounts\" enabled, delivering to an S3 bucket owned by the management account and encrypted with the AWS managed CloudTrail KMS key.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Individual member account trails lack centralized governance and require managing S3 bucket policies across all accounts individually.",
+      "C": "An AWS Organizations trail must be created in the organization's management account (or delegated administrator account), not in a member account like Log Archive.",
       "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
@@ -413,9 +413,9 @@
     ],
     "explanation": "ECS blue/green deployments require the ECS service's deploymentController to be set to CODE_DEPLOY, backed by a CodeDeploy application and deployment group (compute platform ECS) that references the two ALB listeners (production and optional test) and the two target groups CodeDeploy will shift traffic between (option A). To get automatic rollback \u2014 rather than requiring someone to notice a problem and roll back manually \u2014 one or more CloudWatch alarms must be attached directly to that CodeDeploy deployment group; if the alarm goes into ALARM state during or shortly after the traffic shift, CodeDeploy automatically halts and rolls back the deployment (option B).",
     "whyOthersAreWrong": {
-      "C": "This approach (Change the ECS service's scheduling strategy from REPLICA to DAEMON so that exactly one task runs per container instance during the deployment.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Create an Application Auto Scaling target tracking policy on the ECS service based on ALBRequestCountPerTarget to trigger the blue/green deployment automatically.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (Enable ECS Service Connect on the service to allow the load balancer to perform automatic canary analysis between the blue and green task sets.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "DAEMON scheduling strategy deploys exactly one task per EC2 container instance and is not supported on AWS Fargate serverless compute.",
+      "D": "Application Auto Scaling adjusts running task counts based on traffic load, but does not manage or trigger blue/green application deployments.",
+      "E": "ECS Service Connect provides service-to-service service discovery within a VPC, not canary analysis or blue/green ALB traffic shifting."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
     "topic": "Amazon ECS",
@@ -505,9 +505,9 @@
     ],
     "explanation": "Aurora Serverless v2 adjusts the writer's capacity in Aurora Capacity Units (ACUs) up and down automatically, within seconds, in direct response to load \u2014 without changing the instance's connection endpoint and without dropping active connections. This exactly matches an unpredictable, spiky write-heavy workload that needs to scale rapidly and then scale back down to minimize cost during long idle periods, with zero manual intervention.",
     "whyOthersAreWrong": {
-      "A": "This approach (Enable Aurora Auto Scaling on the cluster to automatically add Aurora Replicas during the spike and remove them afterward.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Aurora Auto Scaling adds read replicas to handle read traffic; it cannot scale the compute capacity of the single writer instance during write spikes.",
       "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "D": "This approach (Enable Aurora Multi-Master so a second writer instance can absorb additional write throughput during peak periods.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Aurora Multi-Master requires specialized application design for conflict resolution and does not scale compute dynamically up and down to minimize costs."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon Aurora to satisfy workload requirements.",
     "topic": "Amazon Aurora",
@@ -536,9 +536,9 @@
     ],
     "explanation": "DynamoDB Global Tables provide native, multi-region, multi-active replication: applications in each region read from and write to their own local regional table with single-digit-millisecond latency, DynamoDB handles cross-region propagation automatically, and built-in last-writer-wins conflict resolution handles near-simultaneous updates to the same item. Because every region can accept writes independently, the loss of any single region does not block writes elsewhere \u2014 all with no custom replication code to build or operate.",
     "whyOthersAreWrong": {
-      "A": "This approach (Deploy a single Aurora MySQL Global Database with the primary in us-east-1 and secondary clusters in eu-west-1 and ap-northeast-1; enable write forwarding so the secondary regions can forward writes to the primary.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Deploy DynamoDB tables in each region and use DynamoDB Streams with a custom Lambda function to asynchronously replicate changes between the three regional tables.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Deploy a single DynamoDB table in us-east-1 with Amazon DynamoDB Accelerator (DAX) clusters deployed in eu-west-1 and ap-northeast-1 to cache reads closer to European and Asian players.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Aurora Global Database forwards writes across regions to the single primary writer, introducing latency and preventing writes if the primary region experiences an outage.",
+      "B": "Building custom multi-region replication with DynamoDB Streams and Lambda requires complex custom error handling and conflict resolution, increasing operational overhead.",
+      "D": "DAX caches read queries only; write operations must still route across regions to the single table in us-east-1, failing the requirement for local regional writes."
     },
     "learningObjective": "Design a solution using Amazon DynamoDB that minimizes ongoing operational maintenance.",
     "topic": "Amazon DynamoDB",
@@ -567,9 +567,9 @@
     ],
     "explanation": "Amazon RDS Proxy sits between the application and the database and pools/multiplexes a large number of client connections (such as thousands of concurrent Lambda executions) over a much smaller number of actual database connections. Because the fix is simply pointing the application's connection string at the RDS Proxy endpoint instead of the RDS instance endpoint directly, it requires minimal to no application code changes, and it does not require resizing the database instance class to chase a higher connection ceiling.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the RDS parameter group's max_connections value to the highest supported setting for the current instance class.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Enable AWS Lambda Provisioned Concurrency for the functions to eliminate cold starts and reduce the number of concurrent connections opened.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Remove the Lambda functions from the VPC so they connect to RDS over its public endpoint, reducing ENI-related connection overhead.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Increasing max_connections beyond instance limits can exhaust memory and risk database crashes, without solving connection churn from thousands of concurrent lambdas.",
+      "B": "Provisioned Concurrency keeps Lambda execution environments initialized, but each execution still opens independent database connections, failing to prevent connection exhaustion.",
+      "D": "Removing Lambda functions from the VPC forces database traffic over public endpoints without connection pooling, worsening security and failing to solve connection limits."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
     "topic": "Amazon RDS",
@@ -597,9 +597,9 @@
     ],
     "explanation": "Warm standby continuously runs a smaller, but fully functional, copy of the entire stack (application tier and data tier) in the DR region, so recovery is primarily a matter of scaling up already-running infrastructure and promoting the database \u2014 comfortably achievable within a 15-minute RTO and a 5-minute-or-less RPO using an active RDS read replica. This matches leadership's explicit willingness to accept \"a modest always-on footprint\" specifically to hit an aggressive RTO, without paying for full-scale active/active capacity.",
     "whyOthersAreWrong": {
-      "A": "This approach (Backup and restore: take daily RDS snapshots and AMI backups, replicate them to the DR region with AWS Backup, and launch new infrastructure from scratch only when a disaster is declared.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Pilot light: keep only a minimal RDS replica running in the DR region (data tier only) with no application-tier compute running, and launch the Auto Scaling group and ALB from infrastructure as code when a disaster is declared.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Multi-site active/active: run full-scale production infrastructure in both regions simultaneously, with Route 53 weighted routing splitting live traffic between both regions at all times.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Backup and restore requires recreating the environment and restoring database snapshots after an outage occurs, exceeding the 15-minute RTO target.",
+      "B": "Pilot light keeps zero application-tier compute running, making it challenging to provision and configure the full application fleet within 15 minutes.",
+      "D": "Multi-site active/active requires running full-scale duplicate production capacity in both regions continuously, exceeding budget constraints."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon EC2.",
     "topic": "Amazon EC2",

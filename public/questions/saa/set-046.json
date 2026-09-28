@@ -17,8 +17,8 @@
     "explanation": "DynamoDB is a fully managed, serverless-capable NoSQL database purpose-built for single-digit millisecond latency at virtually unlimited scale, with flexible (schema-less) item structures, making it ideal for high-throughput, low-latency gaming state data. RDS PostgreSQL , even on a large instance, has vertical scaling ceilings and relational schema rigidity that struggle at this request scale. Redshift is a data warehouse optimized for analytical (OLAP) queries over large datasets, not low-latency transactional (OLTP) workloads.",
     "whyOthersAreWrong": {
       "D": "A self-managed MySQL instance on EC2 requires manual scaling/sharding and operational overhead, and cannot natively match DynamoDB's scale and latency profile.",
-      "A": "This approach (Amazon RDS for PostgreSQL with a large instance class) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon Redshift) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon RDS for PostgreSQL introduces relational locking, connection limits, and disk I/O latency that cannot guarantee sub-millisecond response times at massive scale.",
+      "C": "Amazon Redshift is an OLAP columnar data warehouse optimized for analytical queries, not for sub-millisecond real-time transactional player state lookups."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon RDS.",
     "topic": "Amazon RDS",
@@ -48,8 +48,8 @@
     "explanation": "Spot Instances offer discounts of up to 90% compared to On-Demand pricing and are well-suited for fault-tolerant, flexible workloads like EMR task nodes that can handle interruption (EMR automatically handles node loss for task nodes without data loss, as they don't hold HDFS data).",
     "whyOthersAreWrong": {
       "A": "On-Demand is far more expensive for a non-critical, interruption-tolerant workload. Reserved Instances require a long-term commitment ill-suited for variable analytics workloads and don't offer the deepest possible discount for interruptible work. Dedicated Hosts address licensing/compliance/isolation needs at a premium price, not cost optimization for this scenario.",
-      "C": "This approach (Reserved Instances with a 3-year all-upfront commitment) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Dedicated Hosts) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Reserved Instances require a 1-year or 3-year commitment with upfront costs, which is unnecessary and significantly more expensive than Spot Instances for fault-tolerant batch analytics.",
+      "D": "Dedicated Hosts allocate physical servers for compliance and BYOL licensing, incurring maximum compute expense without any architectural benefit for interruptible EMR jobs."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -75,8 +75,8 @@
     ],
     "explanation": "Using SQS to queue individual chunk-processing jobs decouples work distribution from processing capacity, and scaling the consumer fleet (ASG or Lambda concurrency) based on the CloudWatch metric ApproximateNumberOfMessagesVisible allows compute capacity to automatically track workload depth-scaling out during bursts and in when the queue drains, which is a canonical elastic parallel-processing pattern. A single large sequential instance has no parallelism or elasticity. RDS with hourly polling is not a queueing/scaling mechanism and introduces unacceptable latency. Direct Connect is a network connectivity service unrelated to compute scaling or processing.",
     "whyOthersAreWrong": {
-      "A": "This approach (A single large EC2 instance processing files sequentially) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon RDS to store job status with polling every hour) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "A single large EC2 instance processing sequentially lacks elasticity, creates a processing bottleneck, and introduces a single point of failure.",
+      "C": "Amazon RDS is a relational database unsuited for asynchronous message dispatching, and hourly polling introduces unacceptable latency for video processing tasks.",
       "D": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
@@ -106,9 +106,9 @@
     ],
     "explanation": "AWS Global Accelerator provides static anycast IP addresses and routes user traffic onto the AWS global backbone network as quickly as possible, reducing the number of internet hops and jitter for TCP/UDP traffic to a single-region (or multi-region) ALB, improving performance for global users without requiring the application to be deployed in multiple regions. CloudFront without caching still helps with TCP termination at the edge but is primarily designed for cacheable HTTP(S) content delivery, not general TCP/UDP acceleration to an ALB. A second ALB in the same region doesn't address geographic latency at all. Route 53 simple routing doesn't provide any performance optimization, just basic DNS resolution.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon CloudFront with no origin caching enabled) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (A second identical ALB in the same region) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Route 53 simple routing) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Amazon CloudFront without caching still proxies requests, but Global Accelerator is specifically optimized for TCP/UDP traffic routing over the AWS global network to an ALB origin with static anycast IPs.",
+      "C": "A second ALB in the same region does not reduce network latency for geographically dispersed global users connecting over the public internet.",
+      "D": "Route 53 simple routing does not route traffic based on network latency or leverage the AWS global edge network backbone."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
     "topic": "Amazon Route 53",
@@ -136,8 +136,8 @@
     "explanation": "AWS Fargate is a serverless compute engine for containers where AWS manages the underlying infrastructure entirely-no EC2 instances to patch, scale, or manage-and tasks can start quickly since there's no need to provision/scale host capacity ahead of time. ECS on EC2 still requires the team to manage the underlying EC2 fleet, patching, and capacity/Auto Scaling configuration. Running containers directly without ECS reintroduces significant orchestration complexity that ECS is meant to solve. EMR is a big data processing platform, unrelated to general-purpose container orchestration.",
     "whyOthersAreWrong": {
       "A": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "C": "This approach (Deploy containers directly on bare-metal EC2 instances without ECS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon EMR) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Deploying containers directly on bare-metal EC2 instances requires extensive manual server provisioning, host OS maintenance, and custom scaling logic without ECS container orchestration.",
+      "D": "Amazon EMR is a managed distributed data processing service for Hadoop and Spark, not a container orchestration engine for microservices."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon ECS.",
     "topic": "Amazon ECS",
@@ -165,7 +165,7 @@
     ],
     "explanation": "Athena performance and cost scale with the amount of data scanned and the number of files read; compacting many small files into fewer, larger Parquet files (columnar, compressed) and partitioning by a commonly filtered field like date drastically reduces I/O overhead and the bytes scanned per query, directly improving both speed and cost-this is a well-established data lake optimization pattern. S3 doesn't have a meaningful 'request rate limit' setting to raise in this context -S3 already scales automatically. Transfer Acceleration speeds up uploads over distance, unrelated to query performance. Moving to Glacier would make the objects inaccessible for immediate Athena queries without a restore, actively harming this analytical use case.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the S3 bucket's request rate limits) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Increasing S3 request rate limits does not address Athena query performance or costs, which are driven by scanning millions of small JSON file metadata headers rather than S3 request throttling.",
       "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
       "D": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data."
     },
@@ -195,9 +195,9 @@
     ],
     "explanation": "DAX is a DynamoDB-compatible, fully managed, in-memory caching layer that can reduce read latency from single-digit milliseconds to microseconds for read-heavy workloads with repeated access to the same items (a 'hot key' pattern), without requiring application logic changes beyond swapping the client. Increasing write capacity doesn't help a read-heavy workload. DynamoDB Streams captures item-level change data for event-driven processing, not caching/latency reduction. 'Eventually consistent writes' isn't a real DynamoDB concept (consistency settings apply to reads, not writes) and wouldn't address latency.",
     "whyOthersAreWrong": {
-      "B": "This approach (Increase DynamoDB write capacity units only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Enable DynamoDB Streams) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Switch to eventually consistent writes) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Increasing write capacity units does not improve read query performance or reduce read latency for frequently accessed catalog items.",
+      "C": "DynamoDB Streams capture item-level modification events for event-driven workflows, but do not cache read requests.",
+      "D": "DynamoDB writes are always committed to storage; this is not a valid DynamoDB read-caching feature and does not alleviate read latency."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -223,9 +223,9 @@
     ],
     "explanation": "Io2 Block Express volumes are purpose-built for the most demanding, latency-sensitive, transactional workloads, offering up to 256,000 IOPS, sub-millisecond latency, and very high durability, making them the correct choice when maximum performance is the primary requirement. sc1 and st1 are HDD-based volumes optimized for throughput on infrequently accessed or large sequential workloads, not high IOPS/low latency transactional use cases-in fact they don't support small, random IOPS efficiently. gp2 is general purpose SSD and can't match io2 Block Express's IOPS ceiling or consistency for this demanding requirement.",
     "whyOthersAreWrong": {
-      "A": "This approach (sc1 (Cold HDD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (st1 (Throughput Optimized HDD)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (gp2 with default settings) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "sc1 (Cold HDD) is designed for infrequently accessed sequential workloads and is limited to 250 IOPS with high latency, making it unsuitable for transactional databases.",
+      "B": "st1 (Throughput Optimized HDD) is optimized for sequential streaming and big data workloads with a maximum of 500 IOPS, failing the extreme random IOPS requirement.",
+      "D": "gp2 baseline performance scales at only 3 IOPS per GiB up to burst limits, which cannot match the high, consistent sub-millisecond IOPS of io2 Block Express."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS Architecture.",
     "topic": "AWS Architecture",
@@ -251,9 +251,9 @@
     ],
     "explanation": "Provisioned Concurrency pre-initializes a specified number of execution environments so they are ready to respond to invocations immediately, eliminating cold-start latency for those pre-warmed instances, which is exactly the intended mitigation for latency-sensitive APIs with unpredictable invocation patterns. Increasing the timeout only affects how long a function is allowed to run, not startup latency. Reducing memory can actually increase cold-start duration since Lambda allocates CPU proportionally to memory, and lower memory generally means slower initialization, not faster. Changing the trigger to SQS would fundamentally change the request pattern from synchronous to asynchronous and doesn't fit a customer-facing API's typical request/response requirement.",
     "whyOthersAreWrong": {
-      "A": "This approach (Increase the Lambda function's timeout setting) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Reduce the function's memory allocation to the minimum) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Switch the function's trigger from API Gateway to an SQS queue) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Increasing the function timeout allows invocations to run longer, but does not initialize execution environments in advance to mitigate cold starts.",
+      "C": "Reducing memory allocation also proportionally lowers allocated vCPU, which actually slows down function initialization and increases execution latency.",
+      "D": "Switching to an asynchronous SQS queue breaks the synchronous request-response requirement of an interactive, customer-facing REST API."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
     "topic": "AWS Lambda",
@@ -280,9 +280,9 @@
     ],
     "explanation": "AWS Graviton processors are custom-built ARM64 chips that AWS states can offer up to significantly better price-performance than comparable x86-based instances for many workloads, and the 'g' suffix families (M7g, C7g, R7g, etc.) are the Graviton-based options-directly matching the requirement for ARM64-compatible, cost/power-efficient compute. Sticking with x86 M5 instances forgoes the price-performance benefit despite confirmed ARM64 compatibility. T2 burstable instances are designed for workloads with occasional CPU bursts, not sustained compute-intensive processing, and recommending them 'regardless of workload profile' ignores fit-for-purpose sizing. i3en instances are storage-optimized for high-IOPS local NVMe storage use cases, not primarily a compute price-performance play, and aren't Graviton-based.",
     "whyOthersAreWrong": {
-      "B": "This approach (Standard x86-based M5 instances only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (T2 burstable instances only, regardless of workload profile) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (i3en storage-optimized instances specifically for compute) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Standard x86-based M5 instances do not provide the improved price-performance and power efficiency benefits offered by AWS Graviton ARM-based processors.",
+      "C": "T2 burstable instances rely on CPU credits and throttle when credits are exhausted, making them inappropriate for sustained, compute-intensive workloads.",
+      "D": "i3en storage-optimized instances provide expensive high-density NVMe SSD storage, which is unnecessary and cost-ineffective for compute-focused applications."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -309,8 +309,8 @@
     ],
     "explanation": "While modern S3 automatically scales partitioning and request rates far better than in the past, workloads with extremely high request rates using sequential, predictable key prefixes can still benefit from introducing randomness (e.g., a hash prefix) at the start of the key to spread requests across S3's internal partitions more evenly and avoid hot-partition throttling under sustained heavy load-this remains a documented AWS best practice for very high-throughput, sequentially-prefixed workloads. Simply reducing the number of objects may not be feasible for a legitimate high-volume logging workload and doesn't address the root partitioning issue. Versioning is unrelated to request throttling. Changing storage class to One Zone-IA affects durability/availability tier and cost, not request-rate partitioning behavior.",
     "whyOthersAreWrong": {
-      "B": "This approach (Reduce the number of objects being written) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Enable S3 Versioning to fix the throttling) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Artificially reducing the number of objects written artificially limits application throughput and fails to meet business logging and ingestion requirements.",
+      "C": "Enabling S3 Versioning preserves multiple versions of objects but does not distribute requests across different partition keys or mitigate 503 Slow Down throttling.",
       "D": "S3 One Zone-IA stores data in a single Availability Zone, risking permanent data loss if that Availability Zone is impaired, violating multi-AZ durability requirements."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
@@ -337,8 +337,8 @@
     ],
     "explanation": "AWS X-Ray provides distributed tracing across services like API Gateway, Lambda, and DynamoDB (with SDK integration requiring minimal code changes), capturing per-segment latency percentiles, error rates, and a visual service map, making it purpose-built for end-to-end performance analysis across application layers. CloudWatch Logs Insights can query log data but doesn't natively provide distributed tracing or automatic percentile latency breakdowns across services without significant custom log correlation work. Trusted Advisor provides account-level best-practice checks, not request-level tracing. AWS Config tracks resource configuration compliance, not application performance.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon CloudWatch Logs Insights only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS Trusted Advisor) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "CloudWatch Logs Insights queries existing log files using interactive queries, but does not trace distributed request paths or measure end-to-end latency breakdowns across microservices.",
+      "C": "AWS Trusted Advisor provides best-practice checks for security, cost, and service limits, but does not perform microservice distributed tracing or latency analysis.",
       "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon CloudWatch.",
@@ -369,8 +369,8 @@
     "explanation": "Separating OLTP (transactional) and OLAP (analytical/reporting) workloads is a core scaling best practice: read replicas can offload some reporting load from the primary, but a purpose-built data warehouse like Redshift (columnar storage, massively parallel processing) is optimized for complex aggregate queries over large datasets and scales independently of the transactional system, providing a durable long-term fix rather than a stopgap. Continually resizing the primary is a costly, non-scalable workaround that doesn't address the fundamental workload mismatch. Running reports directly against the OLTP primary continues to risk contention with transactional traffic.",
     "whyOthersAreWrong": {
       "D": "Migrating the entire OLTP workload to Redshift is inappropriate since Redshift is not designed for high-concurrency, low-latency transactional operations.",
-      "B": "This approach (Continually increase the primary database's instance size whenever reporting queries slow down) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Run reporting queries directly against the OLTP primary during business hours) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Vertically scaling the primary database instance is expensive, causes downtime during maintenance windows, and does not decouple reporting queries from transactional write workloads.",
+      "C": "Running reporting queries directly against the primary OLTP instance during business hours consumes CPU and memory resources, degrading transactional performance."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Glue.",
     "topic": "AWS Glue",
@@ -398,8 +398,8 @@
     "explanation": "For steady-state, predictable, long-term (3-year) workloads, a 3-year Reserved Instance or Compute Savings Plan provides the deepest discounts (often up to ~72% or more versus On-Demand) in exchange for the usage commitment, which is exactly the profile described.",
     "whyOthersAreWrong": {
       "A": "On-Demand is the most expensive option for guaranteed long-term usage. Spot is unsuitable for a workload that must run 24/7 without interruption tolerance implied by 'production workload' with no mention of fault tolerance. Dedicated Hosts billed On-Demand address licensing/isolation needs at a premium and don't provide the described cost savings for standard steady-state compute.",
-      "B": "This approach (Spot Instances) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Dedicated Hosts billed On-Demand) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Spot Instances can be interrupted with a 2-minute warning whenever AWS reclaims capacity, making them unsuitable for steady-state 24/7 mission-critical production systems.",
+      "D": "Dedicated Hosts billed On-Demand are the most expensive compute option and provide no cost savings for standard workloads that do not require dedicated hardware or BYOL licensing."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -456,9 +456,9 @@
     ],
     "explanation": "Unattached EBS volumes and unassociated Elastic IPs both incur ongoing charges with no operational benefit, so snapshotting (if needed for recovery) and deleting/releasing them is a safe, direct cost reduction. Right-sizing the RDS instance based on Compute Optimizer recommendations and actual CloudWatch utilization data reduces cost while maintaining adequate performance headroom, following AWS Well-Architected cost optimization guidance. Terminating the RDS instance without review risks data loss and business disruption. Reserved Instances apply to compute capacity commitments, not a way to 'cover' idle EBS volumes, and wouldn't reduce this cost. Elastic IPs are NOT always free-AWS charges for EIPs that are allocated but not attached to a running resource, making E factually incorrect.",
     "whyOthersAreWrong": {
-      "C": "This approach (Immediately terminate the RDS instance without any review) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Purchase additional Reserved Instances to cover the unattached EBS volumes) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (Ignore Elastic IP charges since they are always free) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Immediately terminating the RDS instance without review or data retention verification risks accidental loss of production or compliance data.",
+      "D": "Reserved Instances apply discounts to compute instance hours, not to unattached EBS volume storage charges.",
+      "E": "Elastic IP addresses incur hourly charges when allocated to an account but not associated with a running EC2 instance."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon RDS to satisfy workload requirements.",
     "topic": "Amazon RDS",
@@ -487,7 +487,7 @@
     "whyOthersAreWrong": {
       "D": "Spot Instances alone without scheduling still run continuously and doesn't address the core issue of unnecessary uptime, plus introduces interruption risk without addressing cost timing.",
       "A": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "C": "This approach (Purchase Reserved Instances for the development environment) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "Reserved Instances require paying for 24/7 capacity over a 1- or 3-year term, whereas shutting down development instances outside business hours eliminates approximately 70% of running hours."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -516,8 +516,8 @@
     "explanation": "AWS Compute Optimizer analyzes historical CloudWatch metrics (including Lambda invocation duration and memory utilization) and provides specific memory size recommendations to reduce cost or improve performance, directly addressing over-allocated Lambda memory.",
     "whyOthersAreWrong": {
       "A": "Cost Explorer shows spend trends and can help identify that Lambda costs are high, but does not provide function-level memory right-sizing recommendations. AWS Budgets sends alerts when spending thresholds are crossed but doesn't provide optimization recommendations. QuickSight is a business intelligence/visualization tool, not a cost/resource optimization recommendation engine.",
-      "C": "This approach (AWS Budgets) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon QuickSight) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "AWS Budgets tracks overall spend and notifies administrators when cost thresholds are exceeded, but does not analyze memory utilization to provide Lambda right-sizing recommendations.",
+      "D": "Amazon QuickSight is a business intelligence and visualization tool, not an automated compute optimization and right-sizing service."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Lambda to satisfy workload requirements.",
     "topic": "AWS Lambda",
@@ -575,9 +575,9 @@
     ],
     "explanation": "AWS Trusted Advisor's cost optimization category (fuller checks available with Business or Enterprise Support) flags idle load balancers, underutilized EC2/RDS instances, and unassociated Elastic IPs, while AWS Cost Explorer natively provides Reserved Instance and Savings Plans purchase recommendations based on historical usage-together these native tools directly answer the stated requirement without needing custom-built dashboards or third-party tools. Building CloudWatch dashboards from scratch requires significant manual effort to replicate what Trusted Advisor/Cost Explorer already provide out of the box. AWS Config checks resource configuration compliance, not cost optimization recommendations. A third-party SaaS tool contradicts the requirement to use native AWS tooling.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon CloudWatch dashboards built entirely from scratch) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Building custom CloudWatch dashboards from scratch requires high development and maintenance overhead to reproduce checks that AWS natively provides out-of-the-box.",
       "C": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (A third-party cost management SaaS tool exclusively) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Relying exclusively on a third-party SaaS tool introduces unnecessary subscription costs and integration complexity when native AWS tools already provide the required optimization insights."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",

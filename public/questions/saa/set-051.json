@@ -16,8 +16,8 @@
     ],
     "explanation": "B is correct. Route 53 Latency routing directs users to the region with the lowest latency, and associating health checks enables automatic failover to another region if the primary goes down.",
     "whyOthersAreWrong": {
-      "A": "This approach (AWS Global Accelerator with latency routing.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon CloudFront with regional edge caches.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "AWS Global Accelerator uses anycast IPs to route traffic to the nearest regional endpoint but it does not natively use DNS-level latency-based routing policies like Route 53.",
+      "C": "Amazon CloudFront caches content at edge locations but does not provide dynamic DNS routing policies like latency-based failover between primary and secondary application regions.",
       "D": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
@@ -48,7 +48,7 @@
     "explanation": "C is correct. AWS Systems Manager Session Manager allows secure, auditable, IAM-controlled shell access to EC2 instances without requiring open inbound ports, bastion hosts, or managing SSH keys.",
     "whyOthersAreWrong": {
       "A": "A Site-to-Site VPN requires maintaining network tunnels, managing firewall routes, and leaving port 22 open on the target instances.",
-      "B": "This approach (Use EC2 Instance Connect with an open port 22 restricted to the corporate IP range.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "EC2 Instance Connect still requires port 22 to be open inbound in the security group (even if restricted to a specific IP range), violating the strict no-open-inbound-ports requirement.",
       "D": "Deploying Direct Connect with a bastion host introduces significant circuit costs, requires bastion patching, and fails the requirement to eliminate bastion hosts."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS Systems Manager.",
@@ -78,9 +78,9 @@
     ],
     "explanation": "A is correct. Origin Access Control (OAC) ensures that S3 buckets only allow access from specified CloudFront distributions, preventing direct public access to the S3 bucket.",
     "whyOthersAreWrong": {
-      "B": "This approach (Require signed URLs for all S3 object requests.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Requiring signed URLs restricts access at the CloudFront level but does not prevent users from bypassing CloudFront and accessing the S3 bucket directly if the bucket remains public.",
       "C": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (Enable AWS WAF on the S3 bucket.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "AWS WAF protects against web exploits but does not restrict direct access to S3 endpoints when attached to CloudFront."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
     "topic": "AWS CloudFront",
@@ -111,7 +111,7 @@
     "whyOthersAreWrong": {
       "A": "Using static IAM user credentials or long-lived access keys violates AWS security best practices; temporary IAM roles and AWS STS should always be preferred.",
       "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (Use Amazon Macie to detect and block public access.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Amazon Macie uses machine learning to discover sensitive data in S3, but cannot act as a centralized preventive control across AWS Organizations to block public access creation."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -139,9 +139,9 @@
     ],
     "explanation": "B is correct. Cluster placement groups pack instances close together inside an AZ for low-latency, high-throughput networking. EFA provides an OS bypass capability, drastically reducing latency for HPC workloads.",
     "whyOthersAreWrong": {
-      "A": "This approach (Place the instances in a spread placement group.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Place the instances in a partition placement group.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Attach Elastic IP addresses to all instances and use transit gateway.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "A spread placement group deliberately places instances on distinct underlying hardware racks, which increases network latency rather than minimizing it for HPC workloads.",
+      "C": "A partition placement group isolates hardware failures across logical partitions, but does not pack instances as tightly as a cluster placement group for minimal MPI latency.",
+      "D": "Attaching Elastic IP addresses and using a Transit Gateway adds multiple network hops and routing overhead, significantly increasing latency compared to local cluster placement."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -169,7 +169,7 @@
     "explanation": "C is correct. Amazon RDS Proxy manages a pool of database connections and multiplexes them, preventing connection exhaustion from massive surges in Lambda concurrency without requiring a costly DB size increase.",
     "whyOthersAreWrong": {
       "A": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints.",
-      "B": "This approach (Increase the maximum connections setting in the RDS parameter group.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Increasing the maximum connections setting in the RDS parameter group can overwhelm the database engine memory and CPU resources, causing it to crash rather than gracefully managing connection surges.",
       "D": "Vertically scaling compute or database instances does not resolve distributed latency bottlenecks and results in higher idle costs during off-peak periods."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Lambda to satisfy workload requirements.",
@@ -198,9 +198,9 @@
     ],
     "explanation": "B is correct. Amazon Athena is a serverless interactive query service that can query data directly in S3 using SQL. It natively supports querying data encrypted with AWS KMS.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon Redshift Spectrum) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon EMR) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon QuickSight) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon Redshift Spectrum requires an active, provisioned Amazon Redshift cluster to execute queries, violating the requirement to query without provisioning any database infrastructure.",
+      "C": "Amazon EMR is a managed Hadoop/Spark framework that requires provisioning and managing EC2 clusters, violating the serverless/no-infrastructure requirement.",
+      "D": "Amazon QuickSight is a business intelligence and visualization tool, not a serverless SQL query engine for raw S3 data."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
     "topic": "Amazon S3",
@@ -229,8 +229,8 @@
     ],
     "explanation": "C is correct. Spot Instances provide up to 90% discount over On-Demand and are perfect for flexible, fault-tolerant batch processing workloads. AWS Batch can natively manage Spot instances.",
     "whyOthersAreWrong": {
-      "A": "This approach (On-Demand EC2 GPU instances in an Auto Scaling group.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Reserved EC2 GPU instances.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "On-Demand EC2 GPU instances provide no discount for a fault-tolerant, asynchronous batch workload that can easily tolerate delays and interruptions.",
+      "B": "Reserved EC2 GPU instances require a 1- or 3-year commitment and continuous payment, which is not cost-effective for intermittent asynchronous image processing batches.",
       "D": "AWS Lambda has a maximum execution timeout limit of 15 minutes, making it unsuitable for long-running compute or continuous processing jobs."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
@@ -259,9 +259,9 @@
     ],
     "explanation": "C is correct. AWS Fargate is a serverless compute engine for containers that works with ECS (and EKS). It eliminates the need to provision and manage servers, meeting the requirement perfectly.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon ECS with EC2 launch type) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Amazon EKS with EC2 worker nodes) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS Elastic Beanstalk with Docker platform) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon ECS with EC2 launch type requires the team to provision, patch, and scale the underlying EC2 worker instances, violating the requirement to avoid managing EC2.",
+      "B": "Amazon EKS with EC2 worker nodes requires managing the Kubernetes control plane and the underlying EC2 nodes, increasing operational overhead.",
+      "D": "AWS Elastic Beanstalk with Docker provisions and manages underlying EC2 instances, meaning the team is still indirectly responsible for EC2 infrastructure."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
     "topic": "Amazon ECS",
@@ -290,8 +290,8 @@
     "explanation": "B is correct. AWS Direct Connect provides a dedicated, private network connection from an on- premises facility to AWS, bypassing the public internet.",
     "whyOthersAreWrong": {
       "A": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
-      "C": "This approach (AWS Transit Gateway) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS PrivateLink) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "C": "AWS Transit Gateway acts as a central cloud router connecting VPCs and on-premises networks, but it still requires a physical connection method like a VPN or Direct Connect to reach on-premises.",
+      "D": "AWS PrivateLink provides private connectivity between VPCs and supported AWS services over the AWS network, but does not establish physical connectivity to an on-premises data center."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Transit Gateway.",
     "topic": "AWS Transit Gateway",
@@ -319,9 +319,9 @@
     ],
     "explanation": "A is correct. On-Demand capacity mode instantly accommodates unpredictable workloads and traffic spikes without requiring manual capacity planning or complex application changes like DAX.",
     "whyOthersAreWrong": {
-      "B": "This approach (Enable DynamoDB Accelerator (DAX).) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Increase the provisioned write capacity units.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Migrate the data to Amazon RDS.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "DynamoDB Accelerator (DAX) adds an in-memory caching layer that requires provisioning a cluster, modifying application logic to use the DAX client, and does not directly solve underlying write/read capacity throttling.",
+      "C": "Increasing provisioned write capacity units increases costs but does not solve the read throttling issue occurring during promotional events.",
+      "D": "Migrating data to Amazon RDS requires a complete architectural redesign, data migration, and application rewrite, which violates the requirement for the simplest mitigation without changing application logic."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
     "topic": "Amazon DynamoDB",
@@ -347,7 +347,7 @@
     ],
     "explanation": "C is correct. A Gateway VPC Endpoint for S3 routes traffic from the VPC to S3 over the AWS private network, avoiding NAT Gateway data processing charges and internet data transfer costs.",
     "whyOthersAreWrong": {
-      "A": "This approach (Move the S3 bucket to a different AWS Region.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Moving the S3 bucket to a different AWS Region would actually increase data transfer costs and add cross-region network latency.",
       "B": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks.",
       "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
@@ -378,9 +378,9 @@
     ],
     "explanation": "B is correct. Aurora Global Database replicates data across regions with latency typically under 1 second (excellent RPO) and can be promoted to a primary region in under a minute (excellent RTO).",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon RDS for MySQL with Multi-AZ.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Amazon DynamoDB with local secondary indexes.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Amazon Redshift with cross-region snapshots.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Amazon RDS for MySQL with Multi-AZ provides synchronous replication across Availability Zones within a single region, not across two AWS Regions.",
+      "C": "Amazon DynamoDB with local secondary indexes does not inherently provide cross-region replication or relational database failover (unlike DynamoDB Global Tables).",
+      "D": "Amazon Redshift with cross-region snapshots is a data warehouse batch backup solution with an RPO/RTO measured in hours, not minutes."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon RDS.",
     "topic": "Amazon RDS",
@@ -409,9 +409,9 @@
     ],
     "explanation": "C is correct. S3 Object Lock in compliance mode prevents anyone, including the root user, from deleting or modifying an object until the retention period expires.",
     "whyOthersAreWrong": {
-      "A": "This approach (Use AWS KMS encryption with strict IAM policies.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "AWS KMS encryption protects data at rest from unauthorized reads, but does not prevent authorized IAM users or the root user from deleting the objects.",
       "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (Use Amazon Macie to protect the objects.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Amazon Macie identifies and classifies sensitive data, but does not enforce WORM (write once, read many) data retention or prevent object deletion."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon S3.",
     "topic": "Amazon S3",
@@ -440,8 +440,8 @@
     ],
     "explanation": "C is correct. CloudFront allows you to natively configure custom error responses, directing users to a specified object (like a static HTML page in S3) when the origin returns 4xx or 5xx errors.",
     "whyOthersAreWrong": {
-      "A": "This approach (Modify the ALB listener rules to return a custom HTML page on 5xx errors.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Use Lambda@Edge to intercept 5xx responses and replace them with a custom page.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Modifying ALB listener rules does not prevent CloudFront from returning its own default 5xx error page when the ALB itself fails to respond or times out.",
+      "B": "Lambda@Edge can intercept responses, but using it merely to serve a static custom error page introduces unnecessary lambda execution costs and operational complexity compared to native CloudFront custom error pages.",
       "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
@@ -470,8 +470,8 @@
     ],
     "explanation": "A is correct. Systems Manager Parameter Store natively supports SecureString parameters, which use KMS to encrypt sensitive data like passwords and API keys.",
     "whyOthersAreWrong": {
-      "B": "This approach (Amazon S3 with SSE-S3) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (AWS KMS) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "B": "Amazon S3 with SSE-S3 encrypts files at rest but is not a dedicated parameter management service and lacks granular versioning and parameter-level IAM access controls.",
+      "C": "AWS KMS is a key management service used to encrypt and decrypt data, but it is not a storage service for configuration files or database passwords.",
       "D": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements."
     },
     "learningObjective": "Implement secure architectural controls and access policies with AWS Systems Manager.",
@@ -501,8 +501,8 @@
     ],
     "explanation": "C is correct. DynamoDB is a fully managed NoSQL key-value database that delivers single-digit millisecond performance. Global Tables provide multi-region replication for global users.",
     "whyOthersAreWrong": {
-      "A": "This approach (Amazon RDS for PostgreSQL) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Amazon DocumentDB) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "A": "Amazon RDS for PostgreSQL is a relational database that does not natively provide multi-region, active-active replication with single-digit millisecond latency at massive scale.",
+      "B": "Amazon DocumentDB is a document database compatible with MongoDB, but DynamoDB Global Tables is specifically optimized for single-digit millisecond latency key-value access globally.",
       "D": "Aurora Serverless dynamically scales instance capacity (ACUs) up and down, but does not automatically manage horizontal read replica counts or multi-Region write endpoints."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
@@ -532,9 +532,9 @@
     ],
     "explanation": "A is correct. AWS Managed Microsoft AD allows you to run a fully managed Active Directory and set up trust relationships with existing on-premises AD environments.",
     "whyOthersAreWrong": {
-      "B": "This approach (AD Connector) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Simple AD) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (AWS IAM Identity Center) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "AD Connector is a directory gateway that redirects directory requests to an on-premises Microsoft Active Directory, it does not act as a standalone managed AD in the cloud.",
+      "C": "Simple AD is a standalone managed directory powered by Samba 4, but it does not support establishing trust relationships with an existing on-premises Microsoft Active Directory.",
+      "D": "AWS IAM Identity Center (formerly SSO) provides centralized SSO authentication, but is not a managed Active Directory service that can establish AD trusts."
     },
     "learningObjective": "Design an efficient cloud migration strategy leveraging AWS IAM.",
     "topic": "AWS IAM",
@@ -561,7 +561,7 @@
     "explanation": "A is correct. S3 Event Notifications can seamlessly trigger Lambda functions upon object creation. Lambda can quickly parse the file and publish to SNS if keywords are found.",
     "whyOthersAreWrong": {
       "B": "Macie does not do real-time alerting on object creation easily without scheduling.",
-      "C": "This approach (Run an EC2 instance to constantly poll the S3 bucket and parse logs.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "Running an EC2 instance to constantly poll the S3 bucket requires managing the server, ensuring high availability, and wastes compute resources during idle periods, significantly increasing operational overhead.",
       "D": "AWS CloudTrail provides an audit log of API management events; it does not actively block API calls or perform automated threat prevention on its own."
     },
     "learningObjective": "Design a solution using Amazon S3 that minimizes ongoing operational maintenance.",
@@ -591,9 +591,9 @@
     ],
     "explanation": "B is correct. Application Load Balancers (ALBs) support HTTPS listeners (terminating SSL) and can forward traffic to targets over HTTPS (re-encryption).",
     "whyOthersAreWrong": {
-      "A": "This approach (Classic Load Balancer only) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Network Load Balancer (NLB)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Gateway Load Balancer (GWLB)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "The Classic Load Balancer is a legacy service and is not recommended for modern web applications requiring advanced HTTP/HTTPS routing, SNI, or WAF integration.",
+      "C": "Network Load Balancers operate at Layer 4 and pass TCP/TLS traffic directly through without terminating or inspecting the application layer (Layer 7) traffic.",
+      "D": "Gateway Load Balancers are used to deploy, scale, and manage third-party virtual appliances (like firewalls) transparently, not for standard web application SSL/TLS termination."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon EC2.",
     "topic": "Amazon EC2",

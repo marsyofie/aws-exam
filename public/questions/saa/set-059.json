@@ -47,9 +47,9 @@
     ],
     "explanation": "Multi-site active-active runs full production capacity concurrently in two or more Regions with data continuously replicated/synchronized, giving near-zero RPO and an RTO of minutes (often just a DNS shift) since the second Region is already serving live traffic. Backup and restore has the highest RTO/RPO (hours). Pilot light keeps only core data/services running and must scale up the rest before serving traffic. Warm standby runs a scaled-down but functional copy that must scale up under load \u2014 better than pilot light but still slower and with more data-loss exposure than active-active.",
     "whyOthersAreWrong": {
-      "A": "This approach (Backup and restore) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "This approach (Pilot light) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Warm standby) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Backup and restore has the highest RTO and RPO, often taking hours to recover, which fails the near-zero RPO and minutes RTO requirement.",
+      "B": "Pilot light keeps only core components running and requires time to scale up the remaining infrastructure during a disaster, resulting in an RTO higher than minutes.",
+      "C": "Warm standby runs a scaled-down version of the environment and requires scaling up during failover, which does not provide the lowest possible RTO compared to an active-active setup."
     },
     "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon Route 53.",
     "topic": "Amazon Route 53",
@@ -110,9 +110,9 @@
     ],
     "explanation": "Security groups provide stateful firewall filtering at the instance/ENI layer, while Network ACLs provide an additional stateless layer of packet filtering at the subnet boundary, together creating defense in depth at the network layer.",
     "whyOthersAreWrong": {
-      "C": "This approach (An IAM password policy requiring complex passwords) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
+      "C": "An IAM password policy improves identity security but does not provide network-layer defense.",
       "D": "S3 Versioning preserves previous versions of modified or deleted objects, but does not prevent public exposure or enforce bucket access controls.",
-      "E": "This approach (RDS automated backups) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "E": "RDS automated backups provide data protection and recovery, not network-layer security."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -143,7 +143,7 @@
     "whyOthersAreWrong": {
       "C": "Removes automation entirely and doesn't scale operationally.",
       "D": "Affects when scaling decisions are made, not what happens during termination.",
-      "A": "This approach (Enable termination protection on the instance) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Termination protection completely prevents the instance from being terminated, breaking the Auto Scaling group's ability to scale in dynamically."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon CloudWatch.",
     "topic": "Amazon CloudWatch",
@@ -171,7 +171,7 @@
     ],
     "explanation": "Multi-AZ maintains a synchronous standby in a different AZ and performs automatic failover (via a DNS CNAME flip) typically within 60\u2013120 seconds of a detected failure, with no manual intervention. A read replica is asynchronous and is designed for read scaling, not automatic HA failover (promoting it to primary is a manual, non-automatic action).",
     "whyOthersAreWrong": {
-      "C": "This approach introduces significant downtime and possible data loss.",
+      "C": "A manual snapshot-restore process introduces significant downtime and requires human intervention, failing the automatic failover requirement.",
       "D": "Removes all of RDS's managed HA/backup capabilities.",
       "A": "Standard read replicas use asynchronous replication and can lag behind the primary instance, which risks data loss during an unmanaged failover."
     },
@@ -201,9 +201,9 @@
     ],
     "explanation": "An organization trail centrally captures API activity from every member account and can deliver it to one S3 bucket owned by a separate, tightly restricted log-archive account \u2014 member account admins have no permissions on that bucket, and combining a deny-delete bucket policy with S3 Object Lock (compliance mode) or MFA delete makes the logs effectively immutable.",
     "whyOthersAreWrong": {
-      "A": "Leaves logs inside each member account where a compromised or malicious admin could tamper with or delete them. Options C and D don't provide the required API-call audit trail (CloudTrail is the API activity service; VPC Flow Logs only records network flow metadata).",
-      "C": "This approach (Rely on CloudWatch Logs retention alone in each account) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Centralize only VPC Flow Logs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Leaves logs inside each member account where a compromised or malicious admin could tamper with or delete them.",
+      "C": "CloudWatch Logs retention does not natively collect API activity across accounts into a tamper-evident, centralized structure without custom engineering.",
+      "D": "VPC Flow Logs only records network traffic metadata, not the API calls required for the audit trail."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
     "topic": "Amazon S3",
@@ -262,7 +262,7 @@
     ],
     "explanation": "Routing S3 traffic through a Gateway VPC endpoint avoids NAT Gateway per-GB data processing charges entirely, and caching static content at CloudFront edge locations reduces repeated data transfer out from the origin to users.",
     "whyOthersAreWrong": {
-      "C": "This approach changes compute capacity, not data transfer cost.",
+      "C": "Increasing EC2 instance size changes compute capacity and cost, but does not affect data transfer costs.",
       "D": "Multi-AZ actually adds a small amount of replication data transfer between AZs and is chosen for availability, not cost reduction.",
       "E": "Affects storage performance cost, not network data transfer cost."
     },
@@ -294,8 +294,8 @@
     "explanation": "Provisioned Concurrency pre-initializes a specified number of execution environments (running init code, e.g., loading the ML model) ahead of invocations, eliminating cold-start latency for those warmed environments. Increasing timeout allows a slow init to finish without erroring but does nothing to reduce the latency itself. Reducing memory would likely make cold starts (and general execution) slower, since Lambda CPU scales with memory.",
     "whyOthersAreWrong": {
       "D": "This option is unrelated to cold-start latency and changes the invocation model entirely.",
-      "A": "This approach (Increase the function's timeout setting) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Reduce the function's memory allocation) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Increasing the timeout allows the function to run longer but does not reduce the initial cold-start delay experienced by the user.",
+      "C": "Reducing memory also reduces the allocated CPU, which would increase the time it takes to load the ML model and worsen the cold-start delay."
     },
     "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
     "topic": "AWS Lambda",
@@ -323,7 +323,7 @@
     "explanation": "API Gateway can cache responses per stage/method with a configurable TTL, so repeated identical requests are served directly from the cache without invoking the backend at all, cutting both latency and Lambda invocation cost.",
     "whyOthersAreWrong": {
       "B": "May modestly speed up individual invocations but does not eliminate unnecessary ones.",
-      "C": "This approach changes the communication model but doesn't address caching for repeated request/response pairs.",
+      "C": "A WebSocket API changes the communication model to bidirectional but does not natively address caching repeated request/response pairs for a REST API.",
       "D": "This option increases how many concurrent invocations are allowed, not how many are avoided."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Lambda to satisfy workload requirements.",
@@ -351,9 +351,9 @@
     ],
     "explanation": "Lambda scales automatically per-request (subject to concurrency limits), handling traffic spikes without pre-provisioned capacity, and incurs no compute charge while idle since billing is per invocation/duration \u2014 a strong fit for unpredictable, bursty traffic. Options A, C, and D all keep compute running continuously (paying for idle capacity) and require manual or Auto Scaling configuration to react to spikes, which is slower than Lambda's native per-request scaling.",
     "whyOthersAreWrong": {
-      "A": "This approach (EC2 On-Demand instance running continuously) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Reserved EC2 Instances sized for peak traffic) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (ECS on EC2 running continuously) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "An On-Demand EC2 instance running continuously incurs charges even when idle and requires manual or auto-scaling management to handle spikes.",
+      "C": "Reserved EC2 instances require capacity planning and incur costs for the entire term regardless of whether the instances are active or idle.",
+      "D": "ECS on EC2 requires managing the underlying EC2 instances and pays for compute capacity even when there is no traffic."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
     "topic": "Amazon EC2",
@@ -411,9 +411,9 @@
     ],
     "explanation": "A cluster placement group packs instances close together within a single AZ on the same underlying low-latency, high-throughput network fabric, which is exactly suited to tightly-coupled HPC/MPI-style workloads. A spread placement group does the opposite \u2014 it deliberately spreads instances across distinct underlying hardware to minimize correlated failure, which is better for small numbers of critical, isolated instances, not low-latency clustering. A partition placement group is designed for large distributed systems like Hadoop/Cassandra that need failure isolation across partitions, not minimum latency. No placement group gives no such locality guarantee.",
     "whyOthersAreWrong": {
-      "A": "This approach (Spread placement group) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Partition placement group) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (No placement group (default)) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "A spread placement group physically separates instances to minimize correlated failures, which increases network latency between them.",
+      "C": "A partition placement group is designed to isolate failures for large distributed and big data workloads, not to minimize latency between nodes.",
+      "D": "No placement group means instances are placed based on available capacity, providing no guarantees for low network latency."
     },
     "learningObjective": "Optimize workload throughput and latency using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -469,8 +469,8 @@
     ],
     "explanation": "Account-level S3 Block Public Access acts as a preventive guardrail overriding any bucket policy/ACL that would otherwise grant public access, and an AWS Config managed rule provides continuous, automated compliance evaluation with drift detection \u2014 wiring it to SNS delivers the required real-time alerting.",
     "whyOthersAreWrong": {
-      "A": "This approach is not continuous and misses drift between reviews.",
-      "C": "This approach is a point-in-time manual check, not continuous monitoring.",
+      "A": "A manual review is point-in-time and fails to provide continuous monitoring or real-time alerting for configuration drift.",
+      "C": "The IAM policy simulator allows testing policies manually but does not provide continuous automated monitoring of deployed bucket configurations.",
       "D": "Only secures access patterns for buckets fronted by that specific CloudFront distribution, not the account as a whole."
     },
     "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
@@ -500,9 +500,9 @@
     ],
     "explanation": "Trusted Advisor's cost optimization category specifically flags idle/underutilized EC2 instances, unassociated Elastic IPs, low-utilization EBS volumes, and Reserved Instance/Savings Plans opportunities out of the box, with Compute Optimizer adding ML-based rightsizing recommendations. CloudTrail logs API activity, not resource utilization. AWS Config tracks configuration state/compliance, not cost efficiency. VPC Flow Logs capture network traffic metadata, unrelated to idle-resource cost detection.",
     "whyOthersAreWrong": {
-      "B": "This approach (AWS CloudTrail) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (VPC Flow Logs) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "CloudTrail records API activity for auditing purposes, but does not analyze resource utilization or provide cost optimization recommendations.",
+      "C": "AWS Config tracks configuration state and compliance, but does not identify idle compute resources or analyze cost efficiency.",
+      "D": "VPC Flow Logs capture network traffic information, which does not provide insights into idle compute resources or unattached Elastic IPs."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -563,8 +563,8 @@
     "explanation": "EFS Elastic Throughput automatically scales I/O throughput up or down to match the actual workload in real time, with no capacity planning and no coupling to how much data is stored \u2014 ideal for unpredictable, bursty, high-throughput access patterns. Bursting mode ties available throughput to file system size and relies on accumulated burst credits, which can be limiting for smaller but bursty datasets.",
     "whyOthersAreWrong": {
       "C": "Reintroduces a single point of failure and manual NFS administration.",
-      "D": "This approach is not a POSIX shared file system and doesn't fit a render farm's concurrent read/write needs.",
-      "A": "This approach (EFS Bursting Throughput mode, whose throughput is tied to the file system's storage size) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "S3 with client-side caching does not provide a POSIX-compliant shared file system, which is typically required for concurrent render-farm workloads.",
+      "A": "EFS Bursting Throughput mode ties throughput to the amount of data stored and uses burst credits, which can restrict performance for bursty workloads on small file systems."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EFS.",
     "topic": "Amazon EFS",

@@ -47,9 +47,9 @@
     ],
     "explanation": "Latency-based routing continuously measures network latency between users and each AWS Region hosting a record, and automatically returns the record for whichever healthy region currently offers the lowest measured latency to that particular user \u2014 exactly the \"fastest response time, automatically, per user\" requirement. Enabling health checks and target health evaluation on each record ensures Route 53 automatically excludes any region that is currently failing health checks, with no manual location mapping or bias tuning required.",
     "whyOthersAreWrong": {
-      "A": "This approach (Geolocation routing policy, mapping each continent to its nearest region, with health checks enabled on each record.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "This approach (Weighted routing policy with equal weights across all three regions and health checks enabled to remove unhealthy endpoints from rotation.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Geolocation routing maps users based on their static geographic location rather than measured network latency, and requires manual configuration of geographic mappings.",
+      "B": "Geoproximity routing requires configuring Route 53 Traffic Flow and manual bias tuning to shift traffic boundaries between regions, failing the requirement to avoid managing bias percentages.",
+      "D": "Weighted routing distributes traffic based on arbitrary configured proportions across endpoints without evaluating client-to-region network latency."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Route 53.",
     "topic": "Amazon Route 53",
@@ -70,18 +70,17 @@
       "B": "com.amazonaws.region.ssmmessages",
       "C": "com.amazonaws.region.ec2messages",
       "D": "com.amazonaws.region.ec2",
-      "E": "com.amazonaws.region.s3 F. com.amazonaws.region.kms"
+      "E": "com.amazonaws.region.s3"
     },
     "correctAnswers": [
       "A",
       "B",
-      "A"
+      "C"
     ],
-    "explanation": "Nd C Why This Is Correct Session Manager connectivity from an instance in a private subnet with no internet access requires three interface endpoints working together: com.amazonaws.region.ssm for the core Systems Manager service API calls, com.amazonaws.region.ssmmessages for the actual interactive Session Manager data channel, and com.amazonaws.region.ec2messages for the channel the SSM Agent uses to poll for and acknowledge commands. All three must exist for a session to establish and function.",
+    "explanation": "Session Manager connectivity from an instance in a private subnet with no internet access requires three interface endpoints working together: com.amazonaws.region.ssm for the core Systems Manager service API calls, com.amazonaws.region.ssmmessages for the actual interactive Session Manager data channel, and com.amazonaws.region.ec2messages for the channel the SSM Agent uses to poll for and acknowledge commands. All three must exist for a session to establish and function.",
     "whyOthersAreWrong": {
-      "C": "This approach (com.amazonaws.region.ec2messages) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (com.amazonaws.region.ec2) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (com.amazonaws.region.s3 F. com.amazonaws.region.kms) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "The ec2 endpoint is for EC2 service management API calls (such as RunInstances or StopInstances), not for SSM Agent communication or Session Manager interactive shell traffic.",
+      "E": "The S3 endpoint is for accessing Amazon S3 object storage; it is not required for establishing interactive Session Manager shell connections."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
@@ -111,10 +110,10 @@
     ],
     "explanation": "AWS CloudFormation StackSets can automatically deploy a standard IAM role \u2014 trusted only by the Shared-Services account's CI/CD role \u2014 into every existing member account and, when configured for automatic deployment to the Organization, into every future member account as well, with the role's permissions defined and audited in a single place. The pipeline then uses sts:AssumeRole to obtain short-lived, temporary credentials scoped to that role for each deployment run, meeting every stated requirement: no long-term keys, centrally defined permissions, automatic onboarding of new accounts, and time-limited credentials per run.",
     "whyOthersAreWrong": {
-      "A": "Distributing root user access keys violates all AWS security best practices and grants unrestricted administrative power across the entire organization.",
-      "C": "This approach (Create a single IAM role in the AWS Organizations management account with administrator permissions, and have the pipeline assume that one role, relying on its implicit access to resources in all member accounts.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "E": "Creating individual IAM users with AdministratorAccess in every account introduces severe credential sprawl, lacks centralized auditability, and violates the principle of least privilege."
+      "A": "Creating 200 individual IAM users with long-term access keys creates significant credential sprawl and security risk, and requires manual setup for new accounts.",
+      "C": "An IAM role in the management account has no implicit permissions into member accounts; cross-account roles must be explicitly deployed in each target member account.",
+      "D": "IAM Identity Center is designed for human workforce authentication via single sign-on, not for automated headless CI/CD pipeline deployments across 200 accounts.",
+      "E": "A single shared access key pair lacks least-privilege scoping, fails to scale across accounts securely, and violates the requirement to avoid long-term credentials."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
     "topic": "AWS IAM",
@@ -136,18 +135,17 @@
       "B": "Run the EMR Spark ETL worker nodes primarily on Spot Instances to take advantage of significant discounts for interruption-tolerant batch processing.",
       "C": "Purchase a 3-year All Upfront Reserved Instance for the RDS PostgreSQL instance to maximize the discount for the long, stable commitment.",
       "D": "Purchase a Standard Reserved Instance specifically for the ECS Fargate tasks to lock in the lowest possible discounted rate for the 24/7 baseline.",
-      "E": "Run the EMR Spark ETL worker nodes primarily On-Demand to guarantee no task ever restarts due to interruption, since ETL jobs are time-sensitive. F. Purchase a 3-year All Upfront Reserved Instance for the EMR EC2 worker nodes to guarantee the deepest discount regardless of the nightly usage pattern."
+      "E": "Run the EMR Spark ETL worker nodes primarily On-Demand to guarantee no task ever restarts due to interruption, since ETL jobs are time-sensitive."
     },
     "correctAnswers": [
       "A",
       "B",
-      "A"
+      "C"
     ],
-    "explanation": "Nd C Why This Is Correct A Compute Savings Plan sized to the Fargate service's steady-state baseline is the correct discount mechanism for committed, predictable Fargate usage. Running the interruption-tolerant EMR Spark worker nodes primarily on Spot Instances captures a large discount for a workload the scenario explicitly says can tolerate node interruption and restart. A 3-year All Upfront Reserved Instance for the RDS PostgreSQL instance fits because that resource is genuinely steady-state, long-lived, and has no planned instance-family changes for three years \u2014 exactly the profile RIs are designed for.",
+    "explanation": "A Compute Savings Plan sized to the Fargate service's steady-state baseline is the correct discount mechanism for committed, predictable Fargate usage. Running the interruption-tolerant EMR Spark worker nodes primarily on Spot Instances captures a large discount for a workload the scenario explicitly says can tolerate node interruption and restart. A 3-year All Upfront Reserved Instance for the RDS PostgreSQL instance fits because that resource is genuinely steady-state, long-lived, and has no planned instance-family changes for three years.",
     "whyOthersAreWrong": {
-      "C": "This approach (Purchase a 3-year All Upfront Reserved Instance for the RDS PostgreSQL instance to maximize the discount for the long, stable commitment.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "D": "This approach (Purchase a Standard Reserved Instance specifically for the ECS Fargate tasks to lock in the lowest possible discounted rate for the 24/7 baseline.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "E": "This approach (Run the EMR Spark ETL worker nodes primarily On-Demand to guarantee no task ever restarts due to interruption, since ETL jobs are time-sensitive. F. Purchase a 3-year All Upfront Reserved Instance for the EMR EC2 worker nodes to guarantee the deepest discount regardless of the nightly usage pattern.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "D": "Standard Reserved Instances apply strictly to EC2 instances and cannot be applied to AWS Fargate serverless tasks; Fargate requires Compute Savings Plans.",
+      "E": "Running EMR worker nodes on On-Demand instances is significantly more expensive than Spot Instances, wasting budget on a batch ETL workload that explicitly tolerates interruptions."
     },
     "learningObjective": "Select the most cost-effective architecture using Amazon ECS to satisfy workload requirements.",
     "topic": "Amazon ECS",

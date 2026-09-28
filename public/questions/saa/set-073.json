@@ -105,9 +105,9 @@
     ],
     "explanation": "AWS RAM is the designed mechanism for sharing a centrally-owned Transit Gateway with other accounts in the same Organization; spoke accounts can create their own VPC attachments to the shared TGW, while route table associations and propagations remain governed by the owning central account, giving exactly the described separation of duties. A defeats the purpose of a hub-and-spoke design entirely, massively increases operational complexity, and loses centralized route control.",
     "whyOthersAreWrong": {
-      "B": "Granting spoke administrators direct IAM access to the shared TGW resource violates the requirement that spokes cannot modify routing or attachments beyond their own. D scales poorly: full-mesh VPC Peering among 15-plus VPCs grows in complexity with every pair, has no transitive routing, and loses the centralized route management a Transit Gateway hub-and-spoke design provides.",
-      "A": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "D": "This approach (Use VPC Peering between the central account's VPC and each of the 15 spoke VPCs instead of a Transit Gateway.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Recreating a Transit Gateway in each spoke account and peering them creates an unmanageable mesh of gateways and attachments, increasing costs and operational complexity.",
+      "B": "Granting spoke administrators direct IAM access to the shared central Transit Gateway violates least privilege and allows them to alter central routing tables and other spokes' attachments.",
+      "D": "VPC peering does not support transitive routing between spokes through a central VPC and requires managing dozens of individual point-to-point peering connections."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon VPC.",
     "topic": "Amazon VPC",
@@ -437,9 +437,9 @@
     ],
     "explanation": "A launch lifecycle hook pauses the instance in a wait state until custom initialization logic completes and explicitly signals completion, ensuring the instance only proceeds toward InService, and starts receiving ALB traffic, once it is truly ready and also passes target group health checks -- directly solving the premature-traffic problem. A only partially helps at best, since it does not prevent traffic from being sent to a not-yet-ready instance during the window before the first passing health check, and does not address insufficient initialization time. C removes load balancing, health checking, and connection draining entirely, an architectural downgrade with no benefit.",
     "whyOthersAreWrong": {
-      "B": "B is the opposite of a fix: setting the grace period to 0 removes the buffer time the ASG gives new instances before health check failures count against them, making the premature-traffic problem worse.",
-      "A": "This approach (Increase the ALB's health check interval to 5 minutes so it checks less frequently.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls.",
-      "C": "This approach (Remove the ALB and use DNS round-robin directly to instance IP addresses instead.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "A": "Increasing the health check interval slows down failure detection and does not guarantee the ALB will wait for custom startup scripts to complete before routing traffic.",
+      "B": "Setting the grace period to 0 removes the startup buffer entirely, causing the ASG to prematurely terminate instances while they are still booting.",
+      "C": "DNS round-robin lacks health checks, connection draining, and load balancing, severely harming application availability."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
     "topic": "Amazon EC2",
@@ -467,7 +467,7 @@
     "whyOthersAreWrong": {
       "C": "C is the cheapest option in raw terms, but provisioning an entire application stack from scratch after a disaster typically takes considerably longer than 4 hours for anything beyond trivial workloads, risking failure to meet the stated RTO.",
       "D": "D is not a viable modern DR strategy for these targets at all, since tape retrieval and manual rebuild would take far longer than 4 hours.",
-      "B": "This approach (Multi-site active/active: run a full production-scale duplicate environment continuously in AWS, synchronized in real time with on-premises, for the fastest possible failover with near-zero RTO and RPO.) fails to satisfy the scenario constraints with the required operational efficiency, cost effectiveness, or security controls."
+      "B": "Multi-site active/active requires running full-scale duplicate production infrastructure 24/7 in AWS, making it the most expensive DR strategy and violating the lowest-cost constraint."
     },
     "learningObjective": "Select the most cost-effective architecture using AWS Architecture to satisfy workload requirements.",
     "topic": "AWS Architecture",
@@ -525,7 +525,7 @@
     "whyOthersAreWrong": {
       "A": "Direct Lambda-to-Lambda chaining creates tight coupling, has no centralized visibility into workflow state, and pushes retry and compensation logic into ad-hoc application code.",
       "B": "A shared queue with fully decentralized compensation logic and no central orchestrator makes it very difficult to reliably coordinate multi-step compensating transactions.",
-      "D": "This approach introduces unnecessary per-step latency and reinvents workflow state management compared to AWS Step Functions."
+      "D": "Using EventBridge Scheduler to poll a database every minute and invoke services independently creates an incredibly complex, brittle architecture compared to native Step Functions state machines."
     },
     "learningObjective": "Architect a reliable and scalable cloud solution using AWS Step Functions.",
     "topic": "AWS Step Functions",
