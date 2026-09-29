@@ -1,626 +1,616 @@
 [
-    {
-        "id": "saa-1281",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company runs a critical Aurora MySQL cluster and wants a disaster recovery copy in a separate AWS account (owned by a different team for blast-radius isolation) and a separate region, updated at least daily, that can be restored quickly if the primary account or region is compromised (e.g., by a security incident affecting the primary account's credentials). Which two mechanisms achieve secure, cross-account, cross-region DR snapshot copies?",
-        "answerType": "multiple",
-        "answerInstruction": "Choose TWO answers.",
-        "options": {
-            "A": "Configure automated RDS/Aurora snapshots in the primary account, then use AWS Backup cross-account, cross-region copy (via an organization-wide backup policy or an account-level backup vault with appropriate KMS key and resource-based vault access policy) to copy snapshots into a backup vault owned by the separate DR account in the separate region.",
-            "B": "Manually share each snapshot with the DR account's root user via the RDS console every day, and have someone in the DR account manually copy and re-encrypt it into the DR region.",
-            "C": "Use RDS's native snapshot sharing (ModifyDBSnapshotAttribute to add the DR account ID) combined with a scheduled Lambda (running with a least-privilege IAM role) in the DR account that copies the shared snapshot cross-region into the DR account's own KMS-encrypted target, triggered automatically after each new snapshot.",
-            "D": "Rely on Aurora's default automated backups within the primary account, since automated backups are inherently replicated to all other AWS accounts and regions for compliance purposes.",
-            "E": "Store the DR snapshots unencrypted to simplify the cross-account copy process, since encryption keys cannot be shared across accounts."
-        },
-        "correctAnswers": [
-            "A",
-            "C"
-        ],
-        "explanation": "AWS Backup with cross-account, cross-region copy is the managed, AWS-recommended way to achieve exactly this: snapshots (backups) taken in the primary account are automatically copied into a backup vault in a separate DR account and region, governed by vault access policies and the appropriate KMS key permissions for cross-account decrypt/re-encrypt, all orchestrated centrally and auditable — satisfying blast-radius isolation (a compromise of the primary account's credentials doesn't grant write/delete access to the separate DR account's vault) and automation (no manual daily action required). The native RDS snapshot-sharing plus scheduled Lambda approach is a valid, if more custom, alternative: ModifyDBSnapshotAttribute shares a snapshot with the DR account, and a least-privilege Lambda function running in the DR account (not the primary account, which matters for blast-radius isolation since the automation's credentials live in the account meant to survive a primary-account compromise) can automatically detect and copy the shared snapshot cross-region into its own encrypted target, achieving the same outcome via native APIs.",
-        "whyOthersAreWrong": {
-            "B": "This option is explicitly manual, error-prone, and doesn't scale to a reliable 'at least daily' cadence, contradicting the automation and reliability implied by a real DR requirement, and sharing directly to a root user is not a least-privilege pattern.",
-            "D": "This option is factually incorrect. Aurora's automated backups are stored within the same account and are not automatically replicated to other AWS accounts or regions; cross-account/cross-region copying always requires explicit configuration (as in A or C), it is never an automatic default behavior.",
-            "E": "Storing DR snapshots unencrypted severely violates data protection policies; encrypted snapshots can easily be shared across accounts using customer managed KMS keys."
-        },
-        "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with AWS IAM.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "RDS",
-            "Aurora",
-            "Lambda",
-            "Security"
-        ]
+  {
+    "id": "saa-1281",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a critical Aurora MySQL cluster and wants a disaster recovery copy in a separate AWS account (owned by a different team for blast-radius isolation) and a separate region, updated at least daily, that can be restored quickly if the primary account or region is compromised (e.g., by a security incident affecting the primary account's credentials). Which two mechanisms achieve secure, cross-account, cross-region DR snapshot copies?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure automated RDS/Aurora snapshots in the primary account, then use AWS Backup cross-account, cross-region copy (via an organization-wide backup policy or an account-level backup vault with appropriate KMS key and resource-based vault access policy) to copy snapshots into a backup vault owned by the separate DR account in the separate region.",
+      "B": "Manually share each snapshot with the DR account's root user via the RDS console every day, and have someone in the DR account manually copy and re-encrypt it into the DR region.",
+      "C": "Use RDS's native snapshot sharing (ModifyDBSnapshotAttribute to add the DR account ID) combined with a scheduled Lambda (running with a least-privilege IAM role) in the DR account that copies the shared snapshot cross-region into the DR account's own KMS-encrypted target, triggered automatically after each new snapshot.",
+      "D": "Rely on Aurora's default automated backups within the primary account, since automated backups are inherently replicated to all other AWS accounts and regions for compliance purposes.",
+      "E": "Store the DR snapshots unencrypted to simplify the cross-account copy process, since encryption keys cannot be shared across accounts."
     },
-    {
-        "id": "saa-1282",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's application team stores non-sensitive configuration values (feature flags, service URLs) that change frequently and are read by hundreds of Lambda invocations per second, as well as sensitive database credentials that rotate periodically and are read comparatively rarely. Both categories currently live in AWS Secrets Manager, and the team is concerned about the cost of Secrets Manager's per-10,000-API-calls pricing given the high read frequency of the configuration values. What is the most cost-effective adjustment?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Move the frequently-read, non-sensitive configuration values to AWS Systems Manager Parameter Store (Standard tier, which has no per-API-call charge for standard parameter retrieval within request limits), while keeping the sensitive, infrequently-read, rotation-requiring database credentials in Secrets Manager to retain its native automatic rotation capability.",
-            "B": "Move everything, including the database credentials, to Parameter Store Standard tier, since Parameter Store is always the cheaper option for all secret types.",
-            "C": "Keep everything in Secrets Manager but add CloudFront in front of the Secrets Manager API to cache responses and reduce API call costs.",
-            "D": "Increase the Lambda function's timeout so it makes fewer Secrets Manager calls per unit time."
-        },
-        "correctAnswers": [
-            "A"
-        ],
-        "explanation": "This scenario calls for matching each data category to the AWS parameter/secret store best suited to its cost and feature profile: SSM Parameter Store Standard tier has no additional charge for standard parameter API calls (within normal request-rate limits) and is well-suited to frequently-read, non-sensitive configuration data like feature flags and service URLs, directly eliminating the described per-call cost concern for that high-volume traffic; meanwhile, the sensitive database credentials, which are read comparatively rarely but require periodic automatic rotation, are best kept in Secrets Manager specifically because Secrets Manager provides native, built-in automatic rotation integration (via rotation Lambda functions) that Parameter Store does not offer in the same integrated way — so the low read frequency means Secrets Manager's per-call cost there remains modest, while its rotation capability is retained where it matters.",
-        "whyOthersAreWrong": {
-            "B": "Loses Secrets Manager's native rotation capability for the sensitive credentials, which would then require the team to build custom rotation tooling around Parameter Store — a functional regression and added engineering burden not justified purely by cost, especially since the credentials are read infrequently and their existing Secrets Manager cost is likely small.",
-            "C": "Putting CloudFront in front of the Secrets Manager API is an invalid architecture; CloudFront caches HTTP web content, not AWS API calls.",
-            "D": "Doesn't address the actual driver of API call volume (hundreds of reads per second across many concurrent Lambda invocations, which is a function of traffic volume, not of any single invocation's internal timeout setting) and changing timeout has no logical relationship to how many times the function calls out to Secrets Manager per unit of incoming traffic."
-        },
-        "learningObjective": "Select the most cost-effective architecture using AWS Systems Manager to satisfy workload requirements.",
-        "topic": "AWS Systems Manager",
-        "tags": [
-            "Systems Manager",
-            "Lambda",
-            "CloudFront",
-            "Secrets Manager",
-            "Cost Optimization"
-        ]
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "AWS Backup with cross-account, cross-region copy is the managed, AWS-recommended way to achieve exactly this: snapshots (backups) taken in the primary account are automatically copied into a backup vault in a separate DR account and region, governed by vault access policies and the appropriate KMS key permissions for cross-account decrypt/re-encrypt, all orchestrated centrally and auditable — satisfying blast-radius isolation (a compromise of the primary account's credentials doesn't grant write/delete access to the separate DR account's vault) and automation (no manual daily action required). The native RDS snapshot-sharing plus scheduled Lambda approach is a valid, if more custom, alternative: ModifyDBSnapshotAttribute shares a snapshot with the DR account, and a least-privilege Lambda function running in the DR account (not the primary account, which matters for blast-radius isolation since the automation's credentials live in the account meant to survive a primary-account compromise) can automatically detect and copy the shared snapshot cross-region into its own encrypted target, achieving the same outcome via native APIs.",
+    "whyOthersAreWrong": {
+      "B": "This option is explicitly manual, error-prone, and doesn't scale to a reliable 'at least daily' cadence, contradicting the automation and reliability implied by a real DR requirement, and sharing directly to a root user is not a least-privilege pattern.",
+      "D": "This option is factually incorrect. Aurora's automated backups are stored within the same account and are not automatically replicated to other AWS accounts or regions; cross-account/cross-region copying always requires explicit configuration (as in A or C), it is never an automatic default behavior.",
+      "E": "Storing DR snapshots unencrypted severely violates data protection policies; encrypted snapshots can easily be shared across accounts using customer managed KMS keys."
     },
-    {
-        "id": "saa-1283",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company runs a globally distributed observability pipeline where hundreds of microservices across many accounts emit custom application traces. The company wants to correlate these traces to visualize end-to-end request latency across service boundaries (including through SQS, Lambda, and ECS hops) to identify which specific downstream service is responsible for slow requests, without building custom distributed tracing infrastructure. Which AWS service should be adopted?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "AWS CloudTrail, since it records API calls across all services and can be used to reconstruct request flow across microservices.",
-            "B": "AWS X-Ray, which provides distributed tracing by capturing and correlating trace segments/subsegments across service boundaries (including native integrations with Lambda, ECS, SQS, API Gateway, and other services) into a unified service map and trace timeline, enabling identification of latency bottlenecks across the full request path.",
-            "C": "Amazon CloudWatch Logs Insights alone, since custom log queries can reconstruct end-to-end tracing across services if log formats are made consistent.",
-            "D": "VPC Flow Logs, since they capture the network path a request takes across every hop between services."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "AWS X-Ray is purpose-built for distributed tracing: it captures trace segments and subsegments emitted by instrumented application code and native AWS service integrations (Lambda, ECS/Fargate, API Gateway, SQS via automatic context propagation for supported flows, and more), correlates them via a trace ID that's propagated across service boundaries, and renders both a service map (visualizing dependencies and where latency/errors concentrate) and per-request trace timelines — directly answering 'which specific downstream service is responsible for slow requests' across a complex multi-hop, multi-account request path, without the company needing to build this correlation infrastructure themselves. CloudTrail records control-plane/management API calls (who did what administrative action against AWS resources), not application-level request tracing or data-plane request latency between microservices — it has no concept of an application trace ID or request-scoped correlation across a business transaction. CloudWatch Logs Insights can query and filter log content, but reconstructing true distributed tracing (accurate cross-service latency breakdown, causally correct parent-child span relationships, service maps) from raw logs requires building and maintaining significant custom correlation logic and consistent trace-ID propagation across every service — which is precisely the 'custom distributed tracing infrastructure' the requirement explicitly wants to avoid building, whereas X-Ray provides this natively.",
-        "whyOthersAreWrong": {
-            "D": "VPC Flow Logs capture IP-layer network flow metadata (source/destination IP, port, bytes, accept/reject) for ENIs — they have no visibility into application-layer request/response semantics, request IDs, or business-transaction correlation, and cannot show which downstream service call within a request was responsible for added latency.",
-            "A": "AWS CloudTrail records AWS control-plane API activity rather than application data-plane requests, and cannot provide microservice latency tracing or service maps.",
-            "C": "CloudWatch Logs Insights queries raw log streams, but lacks native distributed trace correlation and service mapping, requiring heavy custom parsing to trace cross-service latency."
-        },
-        "learningObjective": "Optimize workload throughput and latency using Amazon ECS.",
-        "topic": "Amazon ECS",
-        "tags": [
-            "ECS",
-            "CloudWatch",
-            "VPC",
-            "Lambda",
-            "High Availability"
-        ]
+    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with AWS IAM.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "RDS",
+      "Aurora",
+      "Lambda",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1282",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application team stores non-sensitive configuration values (feature flags, service URLs) that change frequently and are read by hundreds of Lambda invocations per second, as well as sensitive database credentials that rotate periodically and are read comparatively rarely. Both categories currently live in AWS Secrets Manager, and the team is concerned about the cost of Secrets Manager's per-10,000-API-calls pricing given the high read frequency of the configuration values. What is the most cost-effective adjustment?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Move the frequently-read, non-sensitive configuration values to AWS Systems Manager Parameter Store (Standard tier, which has no per-API-call charge for standard parameter retrieval within request limits), while keeping the sensitive, infrequently-read, rotation-requiring database credentials in Secrets Manager to retain its native automatic rotation capability.",
+      "B": "Move everything, including the database credentials, to Parameter Store Standard tier, since Parameter Store is always the cheaper option for all secret types.",
+      "C": "Keep everything in Secrets Manager but add CloudFront in front of the Secrets Manager API to cache responses and reduce API call costs.",
+      "D": "Increase the Lambda function's timeout so it makes fewer Secrets Manager calls per unit time."
     },
-    {
-        "id": "saa-1284",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company runs a nightly batch ETL job on a fleet of EC2 instances that processes several terabytes of data over roughly 4 hours each night, then the instances sit completely idle for the remaining 20 hours. The job is not particularly interruption-tolerant (a failure requires restarting the whole batch from the beginning, which is costly in time). What is the most cost-effective compute strategy given these constraints?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Run the fleet as On-Demand instances but use EC2 Instance Scheduler (or a simple Lambda/EventBridge Scheduler-triggered start/stop) to automatically start the fleet before the nightly job and stop (not just idle) the instances immediately after, so the company only pays for the ~4 hours of actual usage per day instead of 24.",
-            "B": "Purchase a 1-year Reserved Instance for the fleet, since RIs are always the most cost-effective option regardless of usage pattern.",
-            "C": "Use Spot Instances for the entire fleet to minimize hourly cost, accepting the interruption risk since Spot is always the cheapest option for batch workloads.",
-            "D": "Leave the instances running 24/7 in a stopped-but-billed state during idle hours, since stopped EC2 instances are billed at a reduced rate close to zero."
-        },
-        "correctAnswers": [
-            "A"
-        ],
-        "explanation": "Because the workload only actually needs compute for about 4 out of 24 hours daily, and stopped (not running) EC2 instances incur no compute/instance-hour charges (only storage costs for any attached EBS volumes persist while stopped), automatically starting the fleet right before the nightly job and fully stopping it immediately afterward (via EC2 Instance Scheduler, or a simple EventBridge Scheduler rule invoking Lambda to call StartInstances/StopInstances) means the company pays for roughly 4 hours of On-Demand compute per day instead of 24 — an ~83% reduction in compute-hours billed, achieved with no interruption risk to the batch job, which matters given the stated low interruption tolerance.",
-        "whyOthersAreWrong": {
-            "B": "Reserved Instances require a continuous baseline of usage to be cost-effective; for highly intermittent or spiky workloads, On-Demand or Spot is cheaper.",
-            "C": "Directly conflicts with the stated constraint that the job 'is not particularly interruption-tolerant' and a full restart is costly — Spot Instances can be reclaimed with only a two-minute warning, which for a job where any interruption requires restarting the entire multi-hour batch from scratch creates unacceptable risk of the job simply failing to complete overnight; 'Spot is always cheapest for batch workloads' is also an oversimplification that ignores workload interruption tolerance as a prerequisite.",
-            "D": "This option is factually incorrect. a stopped EC2 instance is not billed for compute/instance-hours at all (not 'a reduced rate close to zero,' but genuinely zero for the compute portion); however, simply leaving instances in a stopped state without a start/stop automation strategy doesn't by itself capture the scheduling benefit as cleanly or reliably as an explicit scheduler-driven start/stop approach, and 'reduced rate close to zero' as stated is an inaccurate characterization of stopped-instance billing that could mislead cost expectations."
-        },
-        "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
-        "topic": "Amazon EC2",
-        "tags": [
-            "EC2",
-            "Lambda",
-            "EventBridge",
-            "Glue",
-            "Cost Optimization"
-        ]
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "This scenario calls for matching each data category to the AWS parameter/secret store best suited to its cost and feature profile: SSM Parameter Store Standard tier has no additional charge for standard parameter API calls (within normal request-rate limits) and is well-suited to frequently-read, non-sensitive configuration data like feature flags and service URLs, directly eliminating the described per-call cost concern for that high-volume traffic; meanwhile, the sensitive database credentials, which are read comparatively rarely but require periodic automatic rotation, are best kept in Secrets Manager specifically because Secrets Manager provides native, built-in automatic rotation integration (via rotation Lambda functions) that Parameter Store does not offer in the same integrated way — so the low read frequency means Secrets Manager's per-call cost there remains modest, while its rotation capability is retained where it matters.",
+    "whyOthersAreWrong": {
+      "B": "Loses Secrets Manager's native rotation capability for the sensitive credentials, which would then require the team to build custom rotation tooling around Parameter Store — a functional regression and added engineering burden not justified purely by cost, especially since the credentials are read infrequently and their existing Secrets Manager cost is likely small.",
+      "C": "Putting CloudFront in front of the Secrets Manager API is an invalid architecture; CloudFront caches HTTP web content, not AWS API calls.",
+      "D": "Doesn't address the actual driver of API call volume (hundreds of reads per second across many concurrent Lambda invocations, which is a function of traffic volume, not of any single invocation's internal timeout setting) and changing timeout has no logical relationship to how many times the function calls out to Secrets Manager per unit of incoming traffic."
     },
-    {
-        "id": "saa-1285",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's security team wants to detect and automatically remediate S3 buckets that are accidentally made public across all 80 accounts in their organization, and wants this to happen continuously (not just at scheduled intervals) with the ability to prove compliance status historically for audits. Which two AWS capabilities should be combined?",
-        "answerType": "multiple",
-        "answerInstruction": "Choose TWO answers.",
-        "options": {
-            "A": "S3 Block Public Access enabled at the AWS Organizations account/OU level (via an SCP-adjacent Organizations policy or centrally enforced setting) as a preventative control that blocks public bucket policies/ACLs from taking effect in the first place, regardless of individual bucket-level settings.",
-            "B": "AWS Config with a managed rule (e.g., s3-bucket-public-read-prohibited / s3-bucket-public-write-prohibited) deployed via a Config aggregator/organization-wide Config rule, with automatic remediation via an SSM Automation document that removes public access when a bucket is found non-compliant, and Config's continuous recording providing a historical compliance timeline for audits.",
-            "C": "A daily cron-triggered script that lists all buckets across all accounts and manually inspects ACLs, storing results in a spreadsheet for the audit team.",
-            "D": "Amazon Macie configured to automatically revoke public bucket policies as its primary function.",
-            "E": "Rely solely on manual quarterly security reviews of bucket policies across all 80 accounts, since automated remediation is considered too risky for production buckets."
-        },
-        "correctAnswers": [
-            "A",
-            "B"
-        ],
-        "explanation": "S3 Block Public Access enforced at the organization/account level is the strongest preventative control available — when enabled centrally (via Organizations-level enforcement, which can be locked down so individual account owners cannot disable it), it blocks public bucket policies and ACLs from taking effect regardless of what gets configured at the bucket level, stopping the accidental-public-exposure problem before it ever becomes live, which is more robust than any purely detective control. AWS Config with the relevant managed rules deployed organization-wide provides the continuous (not scheduled/periodic) detective and remediation layer the requirement asks for: Config continuously evaluates resource configuration against the rule, can trigger automatic remediation via SSM Automation the moment a bucket is found non-compliant (defense-in-depth alongside the preventative Block Public Access control, useful for any bucket-level configuration Block Public Access doesn't fully cover or during transition periods), and Config's continuous configuration history/timeline is specifically designed to support exactly the kind of historical compliance audit trail described.",
-        "whyOthersAreWrong": {
-            "C": "Using a daily cron script to inspect ACLs is a reactive, slow process that introduces a 24-hour window where public buckets could be exposed, compared to real-time Config rules.",
-            "D": "This option mischaracterizes Amazon Macie, which is a data security service focused on discovering and classifying sensitive data (like PII) within S3 and alerting on findings related to sensitive data exposure — it is not designed to automatically revoke public bucket policies as a primary remediation function; that capability belongs to Config remediation / Block Public Access, not Macie.",
-            "E": "Explicitly rejects automation and continuous monitoring in favor of infrequent (quarterly) manual review, which directly fails the stated requirement for continuous detection and remediation, leaving buckets exposed for up to a full quarter between reviews."
-        },
-        "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "Organizations",
-            "S3",
-            "Lambda",
-            "Security"
-        ]
+    "learningObjective": "Select the most cost-effective architecture using AWS Systems Manager to satisfy workload requirements.",
+    "topic": "AWS Systems Manager",
+    "tags": [
+      "Systems Manager",
+      "Lambda",
+      "CloudFront",
+      "Secrets Manager",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-1283",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a globally distributed observability pipeline where hundreds of microservices across many accounts emit custom application traces. The company wants to correlate these traces to visualize end-to-end request latency across service boundaries (including through SQS, Lambda, and ECS hops) to identify which specific downstream service is responsible for slow requests, without building custom distributed tracing infrastructure. Which AWS service should be adopted?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS CloudTrail, since it records API calls across all services and can be used to reconstruct request flow across microservices.",
+      "B": "AWS X-Ray, which provides distributed tracing by capturing and correlating trace segments/subsegments across service boundaries (including native integrations with Lambda, ECS, SQS, API Gateway, and other services) into a unified service map and trace timeline, enabling identification of latency bottlenecks across the full request path.",
+      "C": "Amazon CloudWatch Logs Insights alone, since custom log queries can reconstruct end-to-end tracing across services if log formats are made consistent.",
+      "D": "VPC Flow Logs, since they capture the network path a request takes across every hop between services."
     },
-    {
-        "id": "saa-1286",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "An application is hosted on Amazon ECS Fargate. The development team wants to deploy updates with zero downtime. If an update causes a high error rate, the system must automatically stop the deployment and revert to the previous version. Which deployment strategy should the solutions architect implement?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Use the ECS rolling update deployment type. Enable the ECS deployment circuit breaker and configure CloudWatch alarms to trigger a rollback if error rates increase.",
-            "B": "Configure the ECS service to use a blue/green deployment strategy using Amazon Route 53 weighted routing to shift traffic between two independent ECS clusters.",
-            "C": "Create an AWS Auto Scaling lifecycle hook that pauses the deployment, runs an AWS Lambda function to check error rates, and then continues or cancels the deployment.",
-            "D": "Deploy the application using AWS Elastic Beanstalk with an immutable deployment policy."
-        },
-        "correctAnswers": [
-            "A"
-        ],
-        "explanation": "The ECS deployment circuit breaker, integrated with CloudWatch alarms, provides native, zero-downtime rolling updates with automatic rollback capabilities for ECS services.",
-        "whyOthersAreWrong": {
-            "B": "Managing two independent ECS clusters and updating Route 53 records is overly complex and higher overhead than native ECS deployment features.",
-            "C": "ECS Fargate does not use EC2 Auto Scaling lifecycle hooks.",
-            "D": "The application is already hosted on ECS Fargate; migrating it to Elastic Beanstalk is unnecessary and out of scope."
-        },
-        "learningObjective": "Implement zero-downtime deployments and automated rollbacks on Amazon ECS.",
-        "topic": "Amazon ECS",
-        "tags": [
-            "ECS",
-            "deployment",
-            "circuit breaker"
-        ]
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "AWS X-Ray is purpose-built for distributed tracing: it captures trace segments and subsegments emitted by instrumented application code and native AWS service integrations (Lambda, ECS/Fargate, API Gateway, SQS via automatic context propagation for supported flows, and more), correlates them via a trace ID that's propagated across service boundaries, and renders both a service map (visualizing dependencies and where latency/errors concentrate) and per-request trace timelines — directly answering 'which specific downstream service is responsible for slow requests' across a complex multi-hop, multi-account request path, without the company needing to build this correlation infrastructure themselves. CloudTrail records control-plane/management API calls (who did what administrative action against AWS resources), not application-level request tracing or data-plane request latency between microservices — it has no concept of an application trace ID or request-scoped correlation across a business transaction. CloudWatch Logs Insights can query and filter log content, but reconstructing true distributed tracing (accurate cross-service latency breakdown, causally correct parent-child span relationships, service maps) from raw logs requires building and maintaining significant custom correlation logic and consistent trace-ID propagation across every service — which is precisely the 'custom distributed tracing infrastructure' the requirement explicitly wants to avoid building, whereas X-Ray provides this natively.",
+    "whyOthersAreWrong": {
+      "D": "VPC Flow Logs capture IP-layer network flow metadata (source/destination IP, port, bytes, accept/reject) for ENIs — they have no visibility into application-layer request/response semantics, request IDs, or business-transaction correlation, and cannot show which downstream service call within a request was responsible for added latency.",
+      "A": "AWS CloudTrail records AWS control-plane API activity rather than application data-plane requests, and cannot provide microservice latency tracing or service maps.",
+      "C": "CloudWatch Logs Insights queries raw log streams, but lacks native distributed trace correlation and service mapping, requiring heavy custom parsing to trace cross-service latency."
     },
-    {
-        "id": "saa-1287",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's data platform ingests clickstream events via Amazon Kinesis Data Streams, processed by a fleet of consumer applications using the Kinesis Client Library (KCL). As traffic grew, consumers began falling behind (increasing iterator age), even though the number of consumer application instances was increased. Investigation shows the stream has only 4 shards, and all consumer instances are competing for records from the same 4 shards, limiting parallelism regardless of how many consumer instances are added. What is the most direct fix?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Increase the consumer application's EC2 instance size (vertical scaling) so each instance can process shard records faster, without changing the stream's shard count.",
-            "B": "Increase the number of shards on the Kinesis Data Stream (via UpdateShardCount, or by migrating to on-demand capacity mode which manages shard count automatically based on throughput), since KCL parallelism is fundamentally bounded by shard count — each shard can only be actively processed by one consumer instance within a given consumer group at a time, so with only 4 shards, no more than 4 consumer instances can do useful concurrent work regardless of fleet size.",
-            "C": "Enable enhanced fan-out on the stream, which increases the number of shards automatically to match consumer demand.",
-            "D": "Add more consumer application instances beyond the current fleet size, since KCL automatically increases shard count to match the number of running consumer instances."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "Kinesis Data Streams' fundamental unit of parallelism is the shard: within the Kinesis Client Library's consumer group model, each shard is processed by exactly one worker (lease) at a time, so a stream with only 4 shards can never be productively processed by more than 4 concurrently active consumer workers — adding a 5th, 10th, or 50th instance provides no additional throughput because there are no more shards' worth of work to distribute, which precisely matches the described symptom (adding instances didn't help, iterator age kept increasing). The direct fix is increasing shard count, either explicitly via UpdateShardCount (which requires planning around shard-splitting mechanics and cost) or by switching the stream to on-demand capacity mode, which automatically scales shard count based on observed throughput, removing this class of problem going forward.",
-        "whyOthersAreWrong": {
-            "A": "Vertical scaling can incrementally help per-shard processing speed but is fundamentally capped by the same 4-shard ceiling — you can only ever have 4 shards' worth of *parallel* processing regardless of how powerful any single instance is, so this does not resolve the structural parallelism bottleneck, only marginally improves throughput within it.",
-            "C": "This option mischaracterizes enhanced fan-out, which is a feature that gives each registered consumer a dedicated 2 MB/sec/shard throughput pipe (via HTTP/2 push) to avoid contention among multiple consumer applications reading the same stream — it does not change or automatically increase shard count at all.",
-            "D": "This option describes a nonexistent, backwards mechanism — shard count is a property of the stream configured by the stream owner (or auto-managed by on-demand mode based on throughput), not something KCL or consumer instance count ever influences or increases automatically."
-        },
-        "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
-        "topic": "Amazon Kinesis",
-        "tags": [
-            "Kinesis",
-            "EC2",
-            "Cost Optimization"
-        ]
+    "learningObjective": "Optimize workload throughput and latency using Amazon ECS.",
+    "topic": "Amazon ECS",
+    "tags": [
+      "ECS",
+      "CloudWatch",
+      "VPC",
+      "Lambda",
+      "High Availability"
+    ]
+  },
+  {
+    "id": "saa-1284",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a nightly batch ETL job on a fleet of EC2 instances that processes several terabytes of data over roughly 4 hours each night, then the instances sit completely idle for the remaining 20 hours. The job is not particularly interruption-tolerant (a failure requires restarting the whole batch from the beginning, which is costly in time). What is the most cost-effective compute strategy given these constraints?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Run the fleet as On-Demand instances but use EC2 Instance Scheduler (or a simple Lambda/EventBridge Scheduler-triggered start/stop) to automatically start the fleet before the nightly job and stop (not just idle) the instances immediately after, so the company only pays for the ~4 hours of actual usage per day instead of 24.",
+      "B": "Purchase a 1-year Reserved Instance for the fleet, since RIs are always the most cost-effective option regardless of usage pattern.",
+      "C": "Use Spot Instances for the entire fleet to minimize hourly cost, accepting the interruption risk since Spot is always the cheapest option for batch workloads.",
+      "D": "Leave the instances running 24/7 in a stopped-but-billed state during idle hours, since stopped EC2 instances are billed at a reduced rate close to zero."
     },
-    {
-        "id": "saa-1288",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's CI/CD pipeline runs in a 'Tooling' AWS account and needs to deploy CloudFormation stacks into three separate 'Workload' accounts (Dev, Staging, Prod) owned by different teams, without giving the Tooling account's pipeline long-lived credentials for any Workload account, and while ensuring the pipeline can only assume a role with a scoped-down set of deployment permissions (not full admin) in each Workload account. Which two elements are required to achieve this securely?",
-        "answerType": "multiple",
-        "answerInstruction": "Choose TWO answers.",
-        "options": {
-            "A": "In each Workload account, create an IAM role with a trust policy that allows the specific Tooling account's CI/CD execution role ARN as the trusted principal (ideally also with an sts:ExternalId condition), and attach a permissions policy scoped to only the specific CloudFormation, and underlying resource, actions the pipeline needs — not AdministratorAccess.",
-            "B": "Configure the Tooling account's CI/CD pipeline execution role with permission to call sts:AssumeRole targeting the specific cross-account role ARN in each Workload account, and have the pipeline explicitly assume the appropriate role before executing deployment actions in that account.",
-            "C": "Create long-lived IAM access keys for a dedicated deployment IAM user in each Workload account and store them as encrypted pipeline secrets.",
-            "D": "Grant the Tooling account's pipeline role AdministratorAccess in every Workload account to avoid permission errors during deployment, then rely on manual code review to prevent misuse.",
-            "E": "Use the same single IAM role, with the same permissions, across Dev, Staging, and Prod, since using different roles per environment adds unnecessary complexity."
-        },
-        "correctAnswers": [
-            "A",
-            "B"
-        ],
-        "explanation": "This is the standard secure cross-account CI/CD deployment pattern: each Workload account defines a role that trusts only the Tooling account's specific pipeline execution role (not the whole account broadly, and ideally with an external ID for additional confused-deputy protection) and grants only the specific permissions the deployment pipeline actually needs (e.g., scoped CloudFormation actions plus the specific resource-type permissions the templates provision) rather than AdministratorAccess, enforcing least privilege per account. The Tooling account's pipeline role is granted only the ability to call sts:AssumeRole against those specific target role ARNs, and the pipeline logic explicitly assumes the correct role for whichever account/environment it's deploying to at that step — this means no long-lived credentials ever need to exist for the Workload accounts, access is fully auditable via CloudTrail (showing exactly which role was assumed and what actions it performed), and access can be revoked instantly by modifying/deleting the trust relationship.",
-        "whyOthersAreWrong": {
-            "C": "Reintroduces long-lived credentials distributed across multiple accounts, which is exactly the risk profile the requirement explicitly wants to avoid (broader blast radius if leaked, harder to rotate/revoke, no temporary-credential expiry).",
-            "D": "This option violates the explicit 'scoped-down... not full admin' requirement directly, and relying on manual code review as the only safeguard against a fully privileged automated pipeline is a weak, human-dependent control that doesn't provide a technical enforcement boundary.",
-            "E": "Undermines environment isolation and the principle of least privilege at the account level — Prod deployment permissions should typically be more restrictive/gated (e.g., requiring manual approval steps) than Dev, and using identical unrestricted permissions across all three environments increases blast radius if the pipeline or its credentials in one context are compromised or misconfigured, affecting Prod just as easily as Dev."
-        },
-        "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "CloudTrail",
-            "Security"
-        ]
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Because the workload only actually needs compute for about 4 out of 24 hours daily, and stopped (not running) EC2 instances incur no compute/instance-hour charges (only storage costs for any attached EBS volumes persist while stopped), automatically starting the fleet right before the nightly job and fully stopping it immediately afterward (via EC2 Instance Scheduler, or a simple EventBridge Scheduler rule invoking Lambda to call StartInstances/StopInstances) means the company pays for roughly 4 hours of On-Demand compute per day instead of 24 — an ~83% reduction in compute-hours billed, achieved with no interruption risk to the batch job, which matters given the stated low interruption tolerance.",
+    "whyOthersAreWrong": {
+      "B": "Reserved Instances require a continuous baseline of usage to be cost-effective; for highly intermittent or spiky workloads, On-Demand or Spot is cheaper.",
+      "C": "Directly conflicts with the stated constraint that the job 'is not particularly interruption-tolerant' and a full restart is costly — Spot Instances can be reclaimed with only a two-minute warning, which for a job where any interruption requires restarting the entire multi-hour batch from scratch creates unacceptable risk of the job simply failing to complete overnight; 'Spot is always cheapest for batch workloads' is also an oversimplification that ignores workload interruption tolerance as a prerequisite.",
+      "D": "This option is factually incorrect. a stopped EC2 instance is not billed for compute/instance-hours at all (not 'a reduced rate close to zero,' but genuinely zero for the compute portion); however, simply leaving instances in a stopped state without a start/stop automation strategy doesn't by itself capture the scheduling benefit as cleanly or reliably as an explicit scheduler-driven start/stop approach, and 'reduced rate close to zero' as stated is an inaccurate characterization of stopped-instance billing that could mislead cost expectations."
     },
-    {
-        "id": "saa-1289",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's data science team runs sporadic, large Spark jobs on EMR (varying from a few times a week to several times a day, each lasting 1–4 hours) and complains about long queue times waiting for a persistent, always-on EMR cluster shared across the team to have capacity. The team wants to reduce both cost and queue times. What is the best architectural change?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Increase the size of the existing persistent EMR cluster significantly to eliminate queueing, accepting higher constant cost.",
-            "B": "Move to a transient EMR cluster model: launch a new EMR cluster on demand for each job (or use EMR on EC2 with auto-termination, or EMR Serverless), sized appropriately for that specific job, and automatically terminate the cluster when the job completes, so compute is only paid for during actual job execution and jobs no longer compete for shared, fixed cluster capacity.",
-            "C": "Switch entirely to Amazon Redshift for all Spark workloads, since Redshift eliminates cluster provisioning and queueing entirely for any workload type.",
-            "D": "Keep the persistent cluster but reduce its size to lower cost, accepting that queue times will increase further as a trade-off."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "The transient/on-demand cluster model — whether via EMR on EC2 clusters that are launched per-job and auto-terminate on completion, or EMR Serverless (which removes cluster management entirely and scales workers automatically to the job's needs) — directly addresses both stated pain points: cost is reduced because compute is billed only for the duration of actual job execution rather than for a persistent cluster sitting idle between sporadic jobs, and queue times are reduced (often eliminated) because each job gets its own appropriately-sized cluster/capacity rather than competing with other jobs for a shared, fixed-size persistent cluster's resources.",
-        "whyOthersAreWrong": {
-            "A": "This option addresses queueing at the cost of making the core cost problem worse (a bigger persistent cluster running 24/7 costs significantly more, especially given the workload is described as sporadic rather than needing constant capacity), which fails half the stated goal.",
-            "C": "Makes a sweeping, incorrect claim — Redshift is a data warehouse service with a fundamentally different execution and query model than Spark; it is not a general drop-in replacement for arbitrary Spark job workloads (custom Spark code, ML pipelines, etc.), and migrating would require substantial rework rather than being a straightforward infrastructure change, and Redshift Serverless, while queueless in its own model, still isn't 'Spark' and doesn't run existing Spark jobs.",
-            "D": "Actively worsens the explicitly stated queue-time complaint while only partially addressing cost, representing a worse trade-off than option B, which improves both dimensions simultaneously rather than trading one for the other."
-        },
-        "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
-        "topic": "Amazon EC2",
-        "tags": [
-            "EC2",
-            "Lambda",
-            "Cost Optimization"
-        ]
+    "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2",
+      "Lambda",
+      "EventBridge",
+      "Glue",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-1285",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's security team wants to detect and automatically remediate S3 buckets that are accidentally made public across all 80 accounts in their organization, and wants this to happen continuously (not just at scheduled intervals) with the ability to prove compliance status historically for audits. Which two AWS capabilities should be combined?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "S3 Block Public Access enabled at the AWS Organizations account/OU level (via an SCP-adjacent Organizations policy or centrally enforced setting) as a preventative control that blocks public bucket policies/ACLs from taking effect in the first place, regardless of individual bucket-level settings.",
+      "B": "AWS Config with a managed rule (e.g., s3-bucket-public-read-prohibited / s3-bucket-public-write-prohibited) deployed via a Config aggregator/organization-wide Config rule, with automatic remediation via an SSM Automation document that removes public access when a bucket is found non-compliant, and Config's continuous recording providing a historical compliance timeline for audits.",
+      "C": "A daily cron-triggered script that lists all buckets across all accounts and manually inspects ACLs, storing results in a spreadsheet for the audit team.",
+      "D": "Amazon Macie configured to automatically revoke public bucket policies as its primary function.",
+      "E": "Rely solely on manual quarterly security reviews of bucket policies across all 80 accounts, since automated remediation is considered too risky for production buckets."
     },
-    {
-        "id": "saa-1290",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's RDS PostgreSQL Multi-AZ instance experienced a failover during a recent AZ impairment. Post-incident review shows the application layer took nearly 6 minutes to resume normal operation, well beyond the typical 60–120 second RDS Multi-AZ failover time, because the application's connection pool held onto stale connections to the old primary's IP and did not detect the DNS endpoint change quickly. What should be changed at the application layer to align actual recovery time with RDS's failover capability?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Configure the application's database driver/connection pool to use a short DNS TTL-respecting resolution strategy and implement connection validation (e.g., a lightweight 'SELECT 1' health check) so stale/broken connections are detected and evicted from the pool quickly, and ensure the client library reconnects using the RDS endpoint's DNS name (not a cached/pinned IP address) so it picks up the new primary's IP after Route 53-style DNS update during failover.",
-            "B": "Increase the RDS instance's failover timeout setting so the database waits longer before failing over, giving the application more time to catch up.",
-            "C": "Disable connection pooling entirely and have the application open a brand-new TCP connection for every single query, since this guarantees the application always uses the current primary's IP.",
-            "D": "Switch from Multi-AZ to a Single-AZ RDS instance, since Multi-AZ failover is what introduced the DNS change that confused the application in the first place."
-        },
-        "correctAnswers": [
-            "A"
-        ],
-        "explanation": "RDS Multi-AZ failover works by updating the DNS CNAME record for the instance endpoint to point to the new primary's IP address; the actual gap between database-side failover completing and application-side recovery is very often exactly this described symptom — client-side DNS caching beyond the record's TTL, and/or a connection pool holding onto TCP connections to the old (now-standby or unreachable) primary's cached IP without validating connection health, meaning the application keeps retrying against a dead connection instead of re-resolving DNS and reconnecting; the fix is ensuring the driver/pool respects the endpoint's short TTL, actively validates/evicts broken connections (so failed queries trigger a fresh connection attempt rather than infinite retry against a stale socket), and always connects via the DNS hostname rather than any pinned/cached IP.",
-        "whyOthersAreWrong": {
-            "B": "Doesn't address the actual problem at all — the database side of failover already completed quickly (60–120 seconds, as noted); the 6-minute delay was entirely attributable to the application layer's stale-connection handling, so tuning a database-side failover timeout (which in any case isn't really a customer-tunable RDS parameter in the way described) would not change application-side reconnection behavior.",
-            "C": "Disabling connection pooling forces the application to create a new TCP connection and TLS handshake for every query, severely degrading database performance and latency.",
-            "D": "Switching to a Single-AZ RDS instance eliminates high availability and ensures the database goes completely offline during any underlying hardware failure."
-        },
-        "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
-        "topic": "Amazon RDS",
-        "tags": [
-            "RDS",
-            "Route 53",
-            "High Availability"
-        ]
+    "correctAnswers": [
+      "A",
+      "B"
+    ],
+    "explanation": "S3 Block Public Access enforced at the organization/account level is the strongest preventative control available — when enabled centrally (via Organizations-level enforcement, which can be locked down so individual account owners cannot disable it), it blocks public bucket policies and ACLs from taking effect regardless of what gets configured at the bucket level, stopping the accidental-public-exposure problem before it ever becomes live, which is more robust than any purely detective control. AWS Config with the relevant managed rules deployed organization-wide provides the continuous (not scheduled/periodic) detective and remediation layer the requirement asks for: Config continuously evaluates resource configuration against the rule, can trigger automatic remediation via SSM Automation the moment a bucket is found non-compliant (defense-in-depth alongside the preventative Block Public Access control, useful for any bucket-level configuration Block Public Access doesn't fully cover or during transition periods), and Config's continuous configuration history/timeline is specifically designed to support exactly the kind of historical compliance audit trail described.",
+    "whyOthersAreWrong": {
+      "C": "Using a daily cron script to inspect ACLs is a reactive, slow process that introduces a 24-hour window where public buckets could be exposed, compared to real-time Config rules.",
+      "D": "This option mischaracterizes Amazon Macie, which is a data security service focused on discovering and classifying sensitive data (like PII) within S3 and alerting on findings related to sensitive data exposure — it is not designed to automatically revoke public bucket policies as a primary remediation function; that capability belongs to Config remediation / Block Public Access, not Macie.",
+      "E": "Explicitly rejects automation and continuous monitoring in favor of infrequent (quarterly) manual review, which directly fails the stated requirement for continuous detection and remediation, leaving buckets exposed for up to a full quarter between reviews."
     },
-    {
-        "id": "saa-1291",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's Auto Scaling group terminates instances during scale-in events, but the application running on those instances needs up to 90 seconds to gracefully drain in-flight requests, deregister from the load balancer, flush logs, and close database connections cleanly before termination; currently instances are killed abruptly, causing dropped requests and connection errors. What should be configured to fix this?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Increase the Auto Scaling group's cooldown period to 90 seconds, since cooldown periods delay termination of individual instances during scale-in.",
-            "B": "Configure an Auto Scaling group lifecycle hook on the EC2_INSTANCE_TERMINATING transition with a 90-second (or greater) heartbeat timeout, so the instance enters a Terminating:Wait state and Auto Scaling delays actual termination until the application signals completion (via CompleteLifecycleAction) or the timeout expires — combined with ALB connection draining (deregistration delay) configured to a value at least as long as the graceful shutdown time.",
-            "C": "Set the ALB's idle timeout to 90 seconds, since idle timeout controls how long the load balancer waits before terminating an EC2 instance during scale-in.",
-            "D": "Disable scale-in protection entirely, since scale-in protection is what causes abrupt termination in the first place."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "An Auto Scaling lifecycle hook on the EC2_INSTANCE_TERMINATING transition is exactly the mechanism designed for this requirement: when a scale-in event selects an instance for termination, the lifecycle hook pauses the instance in a Terminating:Wait state (rather than immediately terminating it) for up to the configured heartbeat timeout, giving the application time to complete its graceful shutdown sequence (drain requests, deregister, flush logs, close connections) and then explicitly signal completion via CompleteLifecycleAction (or let the timeout elapse as a safety net) before Auto Scaling proceeds with actual termination; pairing this with the ALB target group's deregistration delay (connection draining) set to at least the graceful shutdown duration ensures the load balancer also stops sending new requests to the draining instance while allowing in-flight requests to complete.",
-        "whyOthersAreWrong": {
-            "A": "Misunderstands cooldown periods, which control the time Auto Scaling waits *between* scaling activities (to avoid over-reacting to rapidly changing metrics) — they do not delay or pause the termination of an individual instance already selected for scale-in, so this would not give the application any additional graceful-shutdown time.",
-            "C": "Misapplies ALB idle timeout, which controls how long the load balancer keeps an idle (no data sent) connection open before closing it — it has nothing to do with EC2 instance termination timing during Auto Scaling scale-in events; deregistration delay (connection draining), not idle timeout, is the relevant ALB setting, and even that alone doesn't pause the underlying EC2 termination itself the way a lifecycle hook does.",
-            "D": "This option is directly counterproductive and based on a misunderstanding — scale-in protection is an opt-in feature that prevents a *specific* instance from being terminated during scale-in at all (used to protect long-running or stateful work), it is not the cause of abrupt termination for instances that are, in fact, selected to scale in; disabling something that isn't causing the problem does nothing to introduce graceful shutdown behavior."
-        },
-        "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-        "topic": "Amazon EC2",
-        "tags": [
-            "EC2"
-        ]
+    "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "Organizations",
+      "S3",
+      "Lambda",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1286",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An application is hosted on Amazon ECS Fargate. The development team wants to deploy updates with zero downtime. If an update causes a high error rate, the system must automatically stop the deployment and revert to the previous version. Which deployment strategy should the solutions architect implement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use the ECS rolling update deployment type. Enable the ECS deployment circuit breaker and configure CloudWatch alarms to trigger a rollback if error rates increase.",
+      "B": "Configure the ECS service to use a blue/green deployment strategy using Amazon Route 53 weighted routing to shift traffic between two independent ECS clusters.",
+      "C": "Create an AWS Auto Scaling lifecycle hook that pauses the deployment, runs an AWS Lambda function to check error rates, and then continues or cancels the deployment.",
+      "D": "Deploy the application using AWS Elastic Beanstalk with an immutable deployment policy."
     },
-    {
-        "id": "saa-1292",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's application team wants developers to be able to launch EC2 instances of any size within a specific VPC for testing purposes, but must be prevented from launching EC2 instances with public IP addresses under any circumstances, across all current and future accounts in a specific OU. What is the most robust control to enforce this?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Ask each account's administrator to manually configure the default VPC and subnets to not auto-assign public IPs, and trust developers not to override this setting when launching instances.",
-            "B": "Attach a Service Control Policy to the OU that denies ec2:RunInstances when the request includes a condition where ec2:AssociatePublicIpAddress is true (using the appropriate SCP condition key), which enforces the restriction at the Organizations layer for every current and future account in that OU, regardless of any IAM permissions or VPC-level defaults.",
-            "C": "Configure security groups in every VPC to deny all inbound traffic from 0.0.0.0/0, since this achieves the same effect as blocking public IP assignment.",
-            "D": "Use AWS Config to detect instances with public IPs after launch and send a notification to the security team for manual follow-up."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "A Service Control Policy (SCP) applying a deny rule with the ec2:AssociatePublicIpAddress condition key to the ec2:RunInstances action provides a central, preventive guardrail. Because SCPs are enforced at the AWS Organizations layer above IAM, this control cannot be bypassed by account administrators and automatically applies to all existing and newly created accounts within the OU.",
-        "whyOthersAreWrong": {
-            "A": "Disabling public IP auto-assignment on subnets is a default setting that developers can override during instance launch, and it requires manual administration across every new subnet and account.",
-            "C": "Security group rules control network traffic flow to an instance interface, but they do not prevent an instance from being provisioned with a routable public IP address.",
-            "D": "AWS Config rules operate detectively after resources have already been launched, failing to satisfy the requirement to prevent public IP attachment under any circumstances."
-        },
-        "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with AWS IAM.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "VPC",
-            "Organizations",
-            "EC2",
-            "Security"
-        ]
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "The ECS deployment circuit breaker, integrated with CloudWatch alarms, provides native, zero-downtime rolling updates with automatic rollback capabilities for ECS services.",
+    "whyOthersAreWrong": {
+      "B": "Managing two independent ECS clusters and updating Route 53 records is overly complex and higher overhead than native ECS deployment features.",
+      "C": "ECS Fargate does not use EC2 Auto Scaling lifecycle hooks.",
+      "D": "The application is already hosted on ECS Fargate; migrating it to Elastic Beanstalk is unnecessary and out of scope."
     },
-    {
-        "id": "saa-1293",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's ECS Fargate-based API experiences degraded p99 latency under load, and X-Ray traces show most of the added latency occurs during TLS handshake and DNS resolution for outbound calls to a third-party payment API, not within the application's own business logic. The third-party API's DNS record has a very short TTL (5 seconds) and the payment API is called on nearly every request. Which two changes would most directly reduce this latency?",
-        "answerType": "multiple",
-        "answerInstruction": "Choose TWO answers.",
-        "options": {
-            "A": "Implement HTTP connection/keep-alive reuse in the application's HTTP client (persistent connections with connection pooling) so TCP and TLS handshakes are amortized across many requests to the same third-party host instead of being repeated on every single outbound call.",
-            "B": "Increase the ECS task's CPU and memory allocation significantly, since more compute resources always reduce network handshake latency.",
-            "C": "Implement application-level DNS caching with a sensible minimum TTL floor (while still respecting reasonable staleness bounds) to avoid re-resolving DNS on every request when the upstream TTL is unusually short, reducing repeated resolution overhead without meaningfully risking staleness given a 5-second TTL is already extremely short relative to typical caching windows discussed for such optimizations.",
-            "D": "Switch the ECS service from Fargate to EC2 launch type, since EC2 instances inherently have faster network stacks than Fargate tasks.",
-            "E": "Enable ECS Service Connect exclusively, since it fully eliminates TLS handshake overhead for any outbound call, including calls to external third-party APIs."
-        },
-        "correctAnswers": [
-            "A",
-            "C"
-        ],
-        "explanation": "Reusing persistent HTTP connections with keep-alive and connection pooling directly targets the described bottleneck: if the application is establishing a brand-new TCP connection and performing a full TLS handshake for nearly every request to the same third-party host, that repeated handshake cost is almost certainly the dominant contributor to the observed latency — connection reuse amortizes that cost across many logical requests over a single long-lived connection, which is the standard, highest-leverage fix for exactly this symptom pattern. Thoughtful application-level DNS caching complementarily reduces the overhead of re-resolving the third-party hostname on every request; while the record's short TTL exists for the third-party's own traffic-management reasons, an application can still apply a small sensible caching floor to avoid a full DNS lookup literally every single call, cutting resolution-related latency while accepting a small, bounded staleness risk that's reasonable to trade off against the measured performance impact.",
-        "whyOthersAreWrong": {
-            "B": "Increasing CPU and memory does not resolve network-level latency issues like TCP handshakes or cross-region routing.",
-            "D": "Repeats a common but false assumption — Fargate's network performance is not inherently slower than EC2 launch type for typical application traffic patterns, and the described bottleneck (repeated handshakes/DNS lookups to an external third party) is an application-level connection-management issue that would occur identically regardless of launch type; switching launch types doesn't change how the application manages its outbound HTTP connections.",
-            "E": "Overstates ECS Service Connect's scope — Service Connect is designed to simplify and secure service-to-service communication *between ECS services within the same cluster/namespace*, not to intercept, accelerate, or eliminate TLS handshakes for calls to arbitrary external third-party APIs outside the cluster's service mesh, so it would have no effect on the described payment API latency."
-        },
-        "learningObjective": "Optimize workload throughput and latency using Amazon ECS.",
-        "topic": "Amazon ECS",
-        "tags": [
-            "ECS",
-            "EC2",
-            "Route 53",
-            "Cost Optimization",
-            "Networking"
-        ]
+    "learningObjective": "Implement zero-downtime deployments and automated rollbacks on Amazon ECS.",
+    "topic": "Amazon ECS",
+    "tags": [
+      "ECS",
+      "deployment",
+      "circuit breaker"
+    ]
+  },
+  {
+    "id": "saa-1287",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's data platform ingests clickstream events via Amazon Kinesis Data Streams, processed by a fleet of consumer applications using the Kinesis Client Library (KCL). As traffic grew, consumers began falling behind (increasing iterator age), even though the number of consumer application instances was increased. Investigation shows the stream has only 4 shards, and all consumer instances are competing for records from the same 4 shards, limiting parallelism regardless of how many consumer instances are added. What is the most direct fix?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the consumer application's EC2 instance size (vertical scaling) so each instance can process shard records faster, without changing the stream's shard count.",
+      "B": "Increase the number of shards on the Kinesis Data Stream (via UpdateShardCount, or by migrating to on-demand capacity mode which manages shard count automatically based on throughput), since KCL parallelism is fundamentally bounded by shard count — each shard can only be actively processed by one consumer instance within a given consumer group at a time, so with only 4 shards, no more than 4 consumer instances can do useful concurrent work regardless of fleet size.",
+      "C": "Enable enhanced fan-out on the stream, which increases the number of shards automatically to match consumer demand.",
+      "D": "Add more consumer application instances beyond the current fleet size, since KCL automatically increases shard count to match the number of running consumer instances."
     },
-    {
-        "id": "saa-1294",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's Well-Architected review flags that their multi-account environment has no consistent way to prevent individual teams from provisioning expensive resources (like large GPU instances or Redshift clusters) without approval, and finance keeps discovering large unexpected charges after the fact. The company wants proactive, preventative cost governance, not just after-the-fact alerting, while still allowing teams reasonable autonomy for approved resource types and sizes. What combination of controls best fits this goal?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Rely exclusively on AWS Budgets with alert notifications sent to finance after a spending threshold is crossed each month.",
-            "B": "Use Service Control Policies to deny specific high-cost actions/resource types or instance families that require approval (e.g., denying ec2:RunInstances for GPU instance families, or redshift:CreateCluster) at the OU level for teams that haven't been granted an exception, combined with AWS Budgets and Cost Anomaly Detection for ongoing visibility into approved spend, and a request/exception process (e.g., via a ticket or Service Catalog product) for teams that legitimately need access to restricted resource types.",
-            "C": "Require every team to manually request a temporary AWS support case for permission each time they want to launch any EC2 instance, regardless of type or size.",
-            "D": "Set IAM policies (not SCPs) at the individual user level in each account to deny expensive resource types, trusting that this is sufficient since IAM policies are easier to manage than SCPs."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "This combination directly satisfies 'proactive, preventative' governance while preserving reasonable autonomy: SCPs provide a true preventative control by denying specific high-cost actions or resource families (GPU instance types, Redshift cluster creation, etc.) at the OU level, meaning teams without an explicit, granted exception simply cannot provision these resources in the first place — no approval-after-the-fact needed, and no reliance on IAM configuration within individual accounts that could be misconfigured or bypassed by an account administrator. Layering AWS Budgets and Cost Anomaly Detection on top provides ongoing visibility and early warning for the spend that *is* approved and allowed, catching unexpected patterns even within permitted resource types, while an exception/request process (e.g., a Service Catalog product with approval workflow, or a lightweight ticketing process) gives teams with a legitimate need a clear path to gain access to restricted resource types without loosening the guardrail for everyone — this combination is exactly the preventative-plus-detective, autonomy-preserving governance model the company is asking for.",
-        "whyOthersAreWrong": {
-            "A": "AWS Budgets alert the finance team after the money has already been spent, failing to proactively prevent the overspending before it happens.",
-            "C": "Requiring manual support cases for every single EC2 launch creates severe operational bottlenecks and destroys team autonomy, directly contradicting the requirement to allow autonomy for approved resource types.",
-            "D": "Individual account IAM policies can be modified or bypassed by account administrators and do not provide an unbypassable, organization-wide preventive guardrail like Service Control Policies (SCPs) attached at the OU level."
-        },
-        "learningObjective": "Select the most cost-effective architecture using AWS IAM to satisfy workload requirements.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "EC2",
-            "Step Functions",
-            "Organizations",
-            "Security"
-        ]
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Kinesis Data Streams' fundamental unit of parallelism is the shard: within the Kinesis Client Library's consumer group model, each shard is processed by exactly one worker (lease) at a time, so a stream with only 4 shards can never be productively processed by more than 4 concurrently active consumer workers — adding a 5th, 10th, or 50th instance provides no additional throughput because there are no more shards' worth of work to distribute, which precisely matches the described symptom (adding instances didn't help, iterator age kept increasing). The direct fix is increasing shard count, either explicitly via UpdateShardCount (which requires planning around shard-splitting mechanics and cost) or by switching the stream to on-demand capacity mode, which automatically scales shard count based on observed throughput, removing this class of problem going forward.",
+    "whyOthersAreWrong": {
+      "A": "Vertical scaling can incrementally help per-shard processing speed but is fundamentally capped by the same 4-shard ceiling — you can only ever have 4 shards' worth of *parallel* processing regardless of how powerful any single instance is, so this does not resolve the structural parallelism bottleneck, only marginally improves throughput within it.",
+      "C": "This option mischaracterizes enhanced fan-out, which is a feature that gives each registered consumer a dedicated 2 MB/sec/shard throughput pipe (via HTTP/2 push) to avoid contention among multiple consumer applications reading the same stream — it does not change or automatically increase shard count at all.",
+      "D": "This option describes a nonexistent, backwards mechanism — shard count is a property of the stream configured by the stream owner (or auto-managed by on-demand mode based on throughput), not something KCL or consumer instance count ever influences or increases automatically."
     },
-    {
-        "id": "saa-1295",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company's global application uses an Application Load Balancer and EC2 Auto Scaling group in a single region, with an RDS PostgreSQL Multi-AZ database. A Well-Architected review determines the application's actual business requirement is: 'the application must survive the loss of any single Availability Zone with zero data loss and less than 5 minutes of downtime, but a full regional outage is an acceptable (if undesirable) risk given the extremely low likelihood and the cost of full multi-region redundancy relative to the business's risk tolerance.' Which statement about the current architecture is most accurate?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "The current architecture is already well-aligned with the stated requirement, since ALB and Auto Scaling naturally span multiple AZs when configured with subnets in multiple AZs, and RDS Multi-AZ provides synchronous replication with automatic failover (typically 60–120 seconds) and zero data loss for a single-AZ failure — assuming the ASG and target groups are indeed configured across at least two AZs, this meets the stated AZ-failure requirement without the added cost and complexity of a multi-region design that the stated risk tolerance doesn't call for.",
-            "B": "The architecture is fundamentally insufficient and must be redesigned as multi-region active-active regardless of stated risk tolerance, since any single-region architecture is considered a Well-Architected violation.",
-            "C": "RDS Multi-AZ does not provide zero data loss during failover, so the architecture cannot meet the stated requirement without switching to asynchronous cross-region replication.",
-            "D": "ALB and Auto Scaling groups cannot span multiple Availability Zones within a single region, so a multi-region deployment is required even just to tolerate a single AZ failure."
-        },
-        "correctAnswers": [
-            "A"
-        ],
-        "explanation": "This question tests whether a design is appropriately matched to actual, explicitly stated business requirements and risk tolerance — a core Well-Architected principle is that resilience investment should match business need, not maximize theoretical resilience regardless of cost. Given the stated requirement is specifically AZ-failure resilience (not regional-failure resilience, which is explicitly called out as an accepted risk), a correctly configured single-region architecture with an ALB and Auto Scaling group spanning multiple AZs (both are natively multi-AZ-capable within a region when subnets from multiple AZs are attached) and RDS Multi-AZ (which uses synchronous, not asynchronous, replication to a standby in a second AZ, meaning committed transactions are durably written to both before being acknowledged, achieving zero data loss for an AZ failure, with typical automatic failover times of 60–120 seconds, well under the 5-minute target) already satisfies the stated requirement precisely, and does so without the substantial added cost, operational complexity, and data-consistency challenges of full multi-region active-active redundancy that the business has explicitly said isn't justified by its risk tolerance.",
-        "whyOthersAreWrong": {
-            "B": "Reflects a common exam misconception — the Well-Architected Framework does not mandate multi-region architecture as a blanket requirement; it explicitly emphasizes making resilience trade-offs appropriate to business impact and cost, and 'any single-region architecture is a violation' is not a Well-Architected principle.",
-            "C": "This option is factually incorrect. RDS Multi-AZ (the classic Multi-AZ deployment with a synchronous standby, as opposed to read replicas which are asynchronous) is specifically designed to provide zero data loss (RPO of zero) for the failure scenarios it protects against, including AZ-level failures, precisely because replication to the standby is synchronous.",
-            "D": "This option is factually incorrect. both ALB and EC2 Auto Scaling groups are explicitly designed to span multiple Availability Zones within a single AWS region (this is their standard, intended, and commonly used configuration), and doing so is sufficient to tolerate single-AZ failures without requiring any multi-region deployment at all."
-        },
-        "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
-        "topic": "Amazon EC2",
-        "tags": [
-            "EC2",
-            "RDS",
-            "High Availability",
-            "Cost Optimization",
-            "Networking"
-        ]
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
+    "topic": "Amazon Kinesis",
+    "tags": [
+      "Kinesis",
+      "EC2",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-1288",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's CI/CD pipeline runs in a 'Tooling' AWS account and needs to deploy CloudFormation stacks into three separate 'Workload' accounts (Dev, Staging, Prod) owned by different teams, without giving the Tooling account's pipeline long-lived credentials for any Workload account, and while ensuring the pipeline can only assume a role with a scoped-down set of deployment permissions (not full admin) in each Workload account. Which two elements are required to achieve this securely?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "In each Workload account, create an IAM role with a trust policy that allows the specific Tooling account's CI/CD execution role ARN as the trusted principal (ideally also with an sts:ExternalId condition), and attach a permissions policy scoped to only the specific CloudFormation, and underlying resource, actions the pipeline needs — not AdministratorAccess.",
+      "B": "Configure the Tooling account's CI/CD pipeline execution role with permission to call sts:AssumeRole targeting the specific cross-account role ARN in each Workload account, and have the pipeline explicitly assume the appropriate role before executing deployment actions in that account.",
+      "C": "Create long-lived IAM access keys for a dedicated deployment IAM user in each Workload account and store them as encrypted pipeline secrets.",
+      "D": "Grant the Tooling account's pipeline role AdministratorAccess in every Workload account to avoid permission errors during deployment, then rely on manual code review to prevent misuse.",
+      "E": "Use the same single IAM role, with the same permissions, across Dev, Staging, and Prod, since using different roles per environment adds unnecessary complexity."
     },
-    {
-        "id": "saa-1296",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company uses AWS Organizations with a Security OU containing all member accounts. The security team must guarantee that no IAM principal in any member account, including the root user, can ever disable AWS CloudTrail, delete CloudTrail logs, or leave the Organization, regardless of the permissions attached to their IAM identity. Which approach enforces this requirement most effectively?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Attach an IAM permissions boundary to every IAM role and user in each member account that denies cloudtrail:StopLogging, cloudtrail:DeleteTrail, and organizations:LeaveOrganization.",
-            "B": "Create a Service Control Policy (SCP) with explicit Deny statements for the relevant actions and attach it to the Security OU.",
-            "C": "Configure an AWS Config rule with automatic remediation that re-enables CloudTrail whenever it detects it has been disabled.",
-            "D": "Create an IAM group policy in each account that denies the actions and require all users to be members of that group.",
-            "E": "Enable AWS CloudTrail Insights and configure an EventBridge rule that alerts the security team when logging is stopped."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "SCPs are the only construct that apply organization-wide, including to the root user, and they set a permission ceiling that no identity-based policy in the account can override. An explicit Deny in an SCP attached at the OU level guarantees the restriction across every current and future account and principal in that OU.",
-        "whyOthersAreWrong": {
-            "A": "Permissions boundaries only limit the maximum permissions of the specific identities they are attached to; they must be applied consistently everywhere (including future identities) and do not restrict the root user, so coverage gaps and root-user bypass are both possible.",
-            "C": "Config remediation is reactive (detect-and-fix after the fact), not preventive, so it does not stop the action from happening and CloudTrail could be disabled and logs deleted before remediation runs.",
-            "D": "IAM group policies are identity-based, apply only to users who are members of the group, do not affect the root user or other roles, and can be modified or bypassed by anyone with IAM administrative rights in that account.",
-            "E": "This is a detective control that only generates a notification after the fact; it does not prevent the disabling of CloudTrail."
-        },
-        "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "Organizations",
-            "EventBridge",
-            "CloudTrail",
-            "Security"
-        ]
+    "correctAnswers": [
+      "A",
+      "B"
+    ],
+    "explanation": "This is the standard secure cross-account CI/CD deployment pattern: each Workload account defines a role that trusts only the Tooling account's specific pipeline execution role (not the whole account broadly, and ideally with an external ID for additional confused-deputy protection) and grants only the specific permissions the deployment pipeline actually needs (e.g., scoped CloudFormation actions plus the specific resource-type permissions the templates provision) rather than AdministratorAccess, enforcing least privilege per account. The Tooling account's pipeline role is granted only the ability to call sts:AssumeRole against those specific target role ARNs, and the pipeline logic explicitly assumes the correct role for whichever account/environment it's deploying to at that step — this means no long-lived credentials ever need to exist for the Workload accounts, access is fully auditable via CloudTrail (showing exactly which role was assumed and what actions it performed), and access can be revoked instantly by modifying/deleting the trust relationship.",
+    "whyOthersAreWrong": {
+      "C": "Reintroduces long-lived credentials distributed across multiple accounts, which is exactly the risk profile the requirement explicitly wants to avoid (broader blast radius if leaked, harder to rotate/revoke, no temporary-credential expiry).",
+      "D": "This option violates the explicit 'scoped-down... not full admin' requirement directly, and relying on manual code review as the only safeguard against a fully privileged automated pipeline is a weak, human-dependent control that doesn't provide a technical enforcement boundary.",
+      "E": "Undermines environment isolation and the principle of least privilege at the account level — Prod deployment permissions should typically be more restrictive/gated (e.g., requiring manual approval steps) than Dev, and using identical unrestricted permissions across all three environments increases blast radius if the pipeline or its credentials in one context are compromised or misconfigured, affecting Prod just as easily as Dev."
     },
-    {
-        "id": "saa-1297",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A solutions architect must grant an application running in Account B (111111111111) read/write access to a single S3 bucket that resides in Account A (222222222222). The application in Account B already runs using an EC2 instance profile role. Company policy prohibits the use of long-lived IAM access keys anywhere in the environment. Which combination of steps satisfies the requirement using AWS security best practices?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "In Account A, create an IAM user with an access key and share the credentials with the team managing Account B's application.",
-            "B": "In Account A, add a bucket policy granting Account B's instance profile role ARN access, and make the bucket public with a randomized name known only to the application.",
-            "C": "In Account A, create an IAM role with a trust policy allowing Account B's instance role to assume it, and attach an S3 permissions policy; in Account B, grant the instance role permission to call sts:AssumeRole on that ARN.",
-            "D": "In Account B, create a new IAM user, generate an access key, store it in AWS Secrets Manager in Account A, and have the application in Account B retrieve it across accounts.",
-            "E": "Enable S3 Cross-Region Replication from Account A's bucket to a new bucket created in Account B."
-        },
-        "correctAnswers": [
-            "C"
-        ],
-        "explanation": "Cross-account role assumption (STS AssumeRole) is the AWS-recommended pattern: Account A owns a role with a trust policy scoped to Account B's role ARN and an attached permissions policy scoped to the bucket, while Account B's instance profile is granted sts:AssumeRole rights. This uses only short-lived, automatically rotated temporary credentials and keeps access auditable and revocable.",
-        "whyOthersAreWrong": {
-            "A": "This introduces a long-lived static access key, which violates the stated policy and is a security anti-pattern regardless of policy, since keys can be leaked and are not automatically rotated.",
-            "B": "Making a bucket public is never an appropriate way to share access between trusted accounts; it exposes the data to the entire internet regardless of the bucket name being 'randomized', since the name can be discovered.",
-            "D": "This still relies on a static, long-lived access key (violating policy) and adds unnecessary complexity and an insecure cross-account secret retrieval pattern.",
-            "E": "Cross-Region Replication copies objects between buckets; it does not grant an application in another account programmatic access to the source bucket and does not solve the described access requirement."
-        },
-        "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
-        "topic": "AWS IAM",
-        "tags": [
-            "IAM",
-            "S3",
-            "EC2",
-            "Secrets Manager",
-            "Security"
-        ]
+    "learningObjective": "Implement secure architectural controls and access policies with AWS IAM.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "CloudTrail",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1289",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's data science team runs sporadic, large Spark jobs on EMR (varying from a few times a week to several times a day, each lasting 1–4 hours) and complains about long queue times waiting for a persistent, always-on EMR cluster shared across the team to have capacity. The team wants to reduce both cost and queue times. What is the best architectural change?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the size of the existing persistent EMR cluster significantly to eliminate queueing, accepting higher constant cost.",
+      "B": "Move to a transient EMR cluster model: launch a new EMR cluster on demand for each job (or use EMR on EC2 with auto-termination, or EMR Serverless), sized appropriately for that specific job, and automatically terminate the cluster when the job completes, so compute is only paid for during actual job execution and jobs no longer compete for shared, fixed cluster capacity.",
+      "C": "Switch entirely to Amazon Redshift for all Spark workloads, since Redshift eliminates cluster provisioning and queueing entirely for any workload type.",
+      "D": "Keep the persistent cluster but reduce its size to lower cost, accepting that queue times will increase further as a trade-off."
     },
-    {
-        "id": "saa-1298",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A financial services company takes nightly EBS snapshots of a database volume in us-east-1 and must copy them to eu-west-1 for disaster recovery. Compliance requires that the data remain encrypted at rest in both regions using customer-managed keys that the company fully controls, without manually re-encrypting the data during the copy process. What is the most operationally efficient way to meet this requirement?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Create a multi-Region AWS KMS key in us-east-1, encrypt the source snapshot with it, and copy the snapshot to eu-west-1 specifying the replica key; AWS automatically re-encrypts the copy using the replica key without re-encrypting the underlying plaintext data.",
-            "B": "Create separate single-Region customer-managed KMS keys in each Region and specify the destination Region's key when calling the CopySnapshot API.",
-            "C": "Decrypt the snapshot before copying it, transfer it to eu-west-1 over a VPN connection, and re-encrypt it manually with a new key in the destination Region.",
-            "D": "Use the AWS managed key (aws/ebs) in both Regions, since AWS manages replication of managed keys automatically across Regions at no cost.",
-            "E": "Export the snapshot to an S3 bucket with SSE-S3 encryption, enable Cross-Region Replication to a bucket in eu-west-1, and import it as a new snapshot."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "This is the standard, supported, and simplest pattern: create a customer-managed key natively in each Region, and when copying the snapshot cross-Region, specify the destination Region's CMK. AWS handles the decrypt/re-encrypt transparently as part of the CopySnapshot operation, keeping the data encrypted at rest throughout with keys the company fully manages in each Region.",
-        "whyOthersAreWrong": {
-            "A": "Multi-Region KMS keys share the same key material across Regions to make client-side cryptography portable, but EBS/EBS snapshot cross-Region copy operations always decrypt with the source key and re-encrypt with the destination Region's specified key as part of the copy process regardless of key type; more importantly, AWS explicitly documents multi-Region keys as related but independent keys, not literally the 'same' KMS key for this workflow, making this description of the mechanism incorrect and unnecessarily complex compared to using ordinary Regional CMKs.",
-            "C": "Manually decrypting data and transporting it in plaintext (even over VPN) violates the requirement to keep data encrypted at rest and introduces unnecessary operational risk and effort.",
-            "D": "AWS managed keys (aws/ebs) are not shared or replicated across Regions, and the company does not control their key policies or rotation, failing the 'fully controls' requirement.",
-            "E": "This introduces a far more complex, higher-latency, and error-prone workflow (export to S3, replicate, re-import) when a native snapshot copy with a destination CMK accomplishes the same goal in one step."
-        },
-        "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon S3.",
-        "topic": "Amazon S3",
-        "tags": [
-            "S3",
-            "KMS",
-            "Security",
-            "High Availability",
-            "Cost Optimization"
-        ]
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "The transient/on-demand cluster model — whether via EMR on EC2 clusters that are launched per-job and auto-terminate on completion, or EMR Serverless (which removes cluster management entirely and scales workers automatically to the job's needs) — directly addresses both stated pain points: cost is reduced because compute is billed only for the duration of actual job execution rather than for a persistent cluster sitting idle between sporadic jobs, and queue times are reduced (often eliminated) because each job gets its own appropriately-sized cluster/capacity rather than competing with other jobs for a shared, fixed-size persistent cluster's resources.",
+    "whyOthersAreWrong": {
+      "A": "This option addresses queueing at the cost of making the core cost problem worse (a bigger persistent cluster running 24/7 costs significantly more, especially given the workload is described as sporadic rather than needing constant capacity), which fails half the stated goal.",
+      "C": "Makes a sweeping, incorrect claim — Redshift is a data warehouse service with a fundamentally different execution and query model than Spark; it is not a general drop-in replacement for arbitrary Spark job workloads (custom Spark code, ML pipelines, etc.), and migrating would require substantial rework rather than being a straightforward infrastructure change, and Redshift Serverless, while queueless in its own model, still isn't 'Spark' and doesn't run existing Spark jobs.",
+      "D": "Actively worsens the explicitly stated queue-time complaint while only partially addressing cost, representing a worse trade-off than option B, which improves both dimensions simultaneously rather than trading one for the other."
     },
-    {
-        "id": "saa-1299",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A containerized application runs as an Amazon ECS service on Fargate. The application needs read access to a database password stored in AWS Secrets Manager at container startup, and the security team requires that the ECS agent (not application code) inject the secret as an environment variable so the secret value never appears in the task definition in plaintext or in CloudTrail data events generated by application-level API calls. Which configuration meets this requirement?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Store the secret value directly as an environment variable in the container definition of the task definition.",
-            "B": "Reference the Secrets Manager secret ARN in the 'secrets' field of the container definition, and grant the task execution role permission to call secretsmanager:GetSecretValue and kms:Decrypt.",
-            "C": "Reference the Secrets Manager secret ARN in the 'secrets' field of the container definition, and grant the task role permission to call secretsmanager:GetSecretValue and kms:Decrypt.",
-            "D": "Have the application code call the Secrets Manager GetSecretValue API directly at startup using credentials from the task role.",
-            "E": "Store the secret in a private Amazon ECR repository as a build-time argument and reference it through the container image."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "The ECS-native secrets injection feature uses the 'secrets' field, which is resolved by the ECS agent using the task EXECUTION role at container startup, before the application even runs. This keeps the secret out of the task definition and out of application-level CloudTrail data events since the application itself never calls Secrets Manager.",
-        "whyOthersAreWrong": {
-            "A": "This stores the credential in plaintext directly in the task definition, which is visible to anyone with DescribeTaskDefinition permission and is the exact anti-pattern the security team wants to avoid.",
-            "C": "The task role governs permissions used by the application code running inside the container at runtime, not the pre-launch secret injection performed by the ECS agent; the ECS agent uses the execution role for this operation, so granting only the task role would cause the injection to fail.",
-            "D": "This requires application code to make the API call directly, which is precisely what the security team wants to avoid, and it would generate CloudTrail data events tied to application activity.",
-            "E": "Embedding secrets in container images or build arguments bakes the credential into the image layers, which is a serious security anti-pattern since the secret persists in the image and ECR repository indefinitely."
-        },
-        "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
-        "topic": "Amazon ECS",
-        "tags": [
-            "ECS",
-            "IAM",
-            "KMS",
-            "Secrets Manager",
-            "Security"
-        ]
+    "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2",
+      "Lambda",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-1290",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's RDS PostgreSQL Multi-AZ instance experienced a failover during a recent AZ impairment. Post-incident review shows the application layer took nearly 6 minutes to resume normal operation, well beyond the typical 60–120 second RDS Multi-AZ failover time, because the application's connection pool held onto stale connections to the old primary's IP and did not detect the DNS endpoint change quickly. What should be changed at the application layer to align actual recovery time with RDS's failover capability?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure the application's database driver/connection pool to use a short DNS TTL-respecting resolution strategy and implement connection validation (e.g., a lightweight 'SELECT 1' health check) so stale/broken connections are detected and evicted from the pool quickly, and ensure the client library reconnects using the RDS endpoint's DNS name (not a cached/pinned IP address) so it picks up the new primary's IP after Route 53-style DNS update during failover.",
+      "B": "Increase the RDS instance's failover timeout setting so the database waits longer before failing over, giving the application more time to catch up.",
+      "C": "Disable connection pooling entirely and have the application open a brand-new TCP connection for every single query, since this guarantees the application always uses the current primary's IP.",
+      "D": "Switch from Multi-AZ to a Single-AZ RDS instance, since Multi-AZ failover is what introduced the DNS change that confused the application in the first place."
     },
-    {
-        "id": "saa-1300",
-        "exam": "AWS Certified Solutions Architect - Associate",
-        "question": "A company has an existing unencrypted Amazon Aurora MySQL DB cluster running in production that cannot tolerate more than a 5-minute maintenance window. Compliance now mandates that the cluster's storage be encrypted at rest using AWS KMS. What is the correct approach, given that Aurora does not support enabling encryption in-place on an existing unencrypted cluster?",
-        "answerType": "single",
-        "answerInstruction": "Choose the correct answer.",
-        "options": {
-            "A": "Modify the DB cluster and enable the 'Enable encryption' option, which will encrypt the storage during the next maintenance window.",
-            "B": "Take a manual snapshot of the unencrypted cluster, copy the snapshot while specifying a KMS key to produce an encrypted snapshot, and restore a new encrypted cluster from that snapshot; then cut over the application to the new endpoint.",
-            "C": "Enable default EBS encryption at the account level, then reboot the Aurora cluster to apply encryption to existing storage.",
-            "D": "Create an AWS Config rule that automatically enables encryption on the cluster when drift is detected.",
-            "E": "Add a read replica with encryption enabled, promote the encrypted replica to be the new primary, and delete the original cluster."
-        },
-        "correctAnswers": [
-            "B"
-        ],
-        "explanation": "This is the documented and only supported path: take a snapshot, copy it (specifying a KMS key, which triggers encryption during the copy), and restore a new cluster from the encrypted snapshot copy. It requires planning a cutover (e.g., using a maintenance window, DNS/CNAME change, or connection string update) but is the correct mechanism.",
-        "whyOthersAreWrong": {
-            "A": "There is no in-place 'enable encryption' modification for an existing unencrypted RDS/Aurora cluster; encryption must be set at creation time, so this option does not exist as described.",
-            "C": "Default EBS encryption at the account level only affects newly created EBS volumes going forward and has no relationship to Aurora's underlying storage encryption model, which is managed independently through the RDS/Aurora encryption setting at cluster creation.",
-            "D": "AWS Config can detect and report on encryption drift but cannot retroactively enable storage encryption on an existing Aurora cluster since this isn't a modifiable in-place attribute.",
-            "E": "Aurora does not support creating an encrypted read replica of an unencrypted source cluster; replicas inherit the encryption state of the source cluster, so this approach is not technically possible."
-        },
-        "learningObjective": "Implement secure architectural controls and access policies with Amazon RDS.",
-        "topic": "Amazon RDS",
-        "tags": [
-            "RDS",
-            "Aurora",
-            "Route 53",
-            "KMS",
-            "Security"
-        ]
-    }
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "RDS Multi-AZ failover works by updating the DNS CNAME record for the instance endpoint to point to the new primary's IP address; the actual gap between database-side failover completing and application-side recovery is very often exactly this described symptom — client-side DNS caching beyond the record's TTL, and/or a connection pool holding onto TCP connections to the old (now-standby or unreachable) primary's cached IP without validating connection health, meaning the application keeps retrying against a dead connection instead of re-resolving DNS and reconnecting; the fix is ensuring the driver/pool respects the endpoint's short TTL, actively validates/evicts broken connections (so failed queries trigger a fresh connection attempt rather than infinite retry against a stale socket), and always connects via the DNS hostname rather than any pinned/cached IP.",
+    "whyOthersAreWrong": {
+      "B": "Doesn't address the actual problem at all — the database side of failover already completed quickly (60–120 seconds, as noted); the 6-minute delay was entirely attributable to the application layer's stale-connection handling, so tuning a database-side failover timeout (which in any case isn't really a customer-tunable RDS parameter in the way described) would not change application-side reconnection behavior.",
+      "C": "Disabling connection pooling forces the application to create a new TCP connection and TLS handshake for every query, severely degrading database performance and latency.",
+      "D": "Switching to a Single-AZ RDS instance eliminates high availability and ensures the database goes completely offline during any underlying hardware failure."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
+    "topic": "Amazon RDS",
+    "tags": [
+      "RDS",
+      "Route 53",
+      "High Availability"
+    ]
+  },
+  {
+    "id": "saa-1291",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's Auto Scaling group terminates instances during scale-in events, but the application running on those instances needs up to 90 seconds to gracefully drain in-flight requests, deregister from the load balancer, flush logs, and close database connections cleanly before termination; currently instances are killed abruptly, causing dropped requests and connection errors. What should be configured to fix this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the Auto Scaling group's cooldown period to 90 seconds, since cooldown periods delay termination of individual instances during scale-in.",
+      "B": "Configure an Auto Scaling group lifecycle hook on the EC2_INSTANCE_TERMINATING transition with a 90-second (or greater) heartbeat timeout, so the instance enters a Terminating:Wait state and Auto Scaling delays actual termination until the application signals completion (via CompleteLifecycleAction) or the timeout expires — combined with ALB connection draining (deregistration delay) configured to a value at least as long as the graceful shutdown time.",
+      "C": "Set the ALB's idle timeout to 90 seconds, since idle timeout controls how long the load balancer waits before terminating an EC2 instance during scale-in.",
+      "D": "Disable scale-in protection entirely, since scale-in protection is what causes abrupt termination in the first place."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "An Auto Scaling lifecycle hook on the EC2_INSTANCE_TERMINATING transition is exactly the mechanism designed for this requirement: when a scale-in event selects an instance for termination, the lifecycle hook pauses the instance in a Terminating:Wait state (rather than immediately terminating it) for up to the configured heartbeat timeout, giving the application time to complete its graceful shutdown sequence (drain requests, deregister, flush logs, close connections) and then explicitly signal completion via CompleteLifecycleAction (or let the timeout elapse as a safety net) before Auto Scaling proceeds with actual termination; pairing this with the ALB target group's deregistration delay (connection draining) set to at least the graceful shutdown duration ensures the load balancer also stops sending new requests to the draining instance while allowing in-flight requests to complete.",
+    "whyOthersAreWrong": {
+      "A": "Misunderstands cooldown periods, which control the time Auto Scaling waits *between* scaling activities (to avoid over-reacting to rapidly changing metrics) — they do not delay or pause the termination of an individual instance already selected for scale-in, so this would not give the application any additional graceful-shutdown time.",
+      "C": "Misapplies ALB idle timeout, which controls how long the load balancer keeps an idle (no data sent) connection open before closing it — it has nothing to do with EC2 instance termination timing during Auto Scaling scale-in events; deregistration delay (connection draining), not idle timeout, is the relevant ALB setting, and even that alone doesn't pause the underlying EC2 termination itself the way a lifecycle hook does.",
+      "D": "This option is directly counterproductive and based on a misunderstanding — scale-in protection is an opt-in feature that prevents a *specific* instance from being terminated during scale-in at all (used to protect long-running or stateful work), it is not the cause of abrupt termination for instances that are, in fact, selected to scale in; disabling something that isn't causing the problem does nothing to introduce graceful shutdown behavior."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2"
+    ]
+  },
+  {
+    "id": "saa-1292",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's application team wants developers to be able to launch EC2 instances of any size within a specific VPC for testing purposes, but must be prevented from launching EC2 instances with public IP addresses under any circumstances, across all current and future accounts in a specific OU. What is the most robust control to enforce this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Ask each account's administrator to manually configure the default VPC and subnets to not auto-assign public IPs, and trust developers not to override this setting when launching instances.",
+      "B": "Attach a Service Control Policy to the OU that denies ec2:RunInstances when the request includes a condition where ec2:AssociatePublicIpAddress is true (using the appropriate SCP condition key), which enforces the restriction at the Organizations layer for every current and future account in that OU, regardless of any IAM permissions or VPC-level defaults.",
+      "C": "Configure security groups in every VPC to deny all inbound traffic from 0.0.0.0/0, since this achieves the same effect as blocking public IP assignment.",
+      "D": "Use AWS Config to detect instances with public IPs after launch and send a notification to the security team for manual follow-up."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "A Service Control Policy (SCP) applying a deny rule with the ec2:AssociatePublicIpAddress condition key to the ec2:RunInstances action provides a central, preventive guardrail. Because SCPs are enforced at the AWS Organizations layer above IAM, this control cannot be bypassed by account administrators and automatically applies to all existing and newly created accounts within the OU.",
+    "whyOthersAreWrong": {
+      "A": "Disabling public IP auto-assignment on subnets is a default setting that developers can override during instance launch, and it requires manual administration across every new subnet and account.",
+      "C": "Security group rules control network traffic flow to an instance interface, but they do not prevent an instance from being provisioned with a routable public IP address.",
+      "D": "AWS Config rules operate detectively after resources have already been launched, failing to satisfy the requirement to prevent public IP attachment under any circumstances."
+    },
+    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with AWS IAM.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "VPC",
+      "Organizations",
+      "EC2",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1293",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's ECS Fargate-based API experiences degraded p99 latency under load, and X-Ray traces show most of the added latency occurs during TLS handshake and DNS resolution for outbound calls to a third-party payment API, not within the application's own business logic. The third-party API's DNS record has a very short TTL (5 seconds) and the payment API is called on nearly every request. Which two changes would most directly reduce this latency?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Implement HTTP connection/keep-alive reuse in the application's HTTP client (persistent connections with connection pooling) so TCP and TLS handshakes are amortized across many requests to the same third-party host instead of being repeated on every single outbound call.",
+      "B": "Increase the ECS task's CPU and memory allocation significantly, since more compute resources always reduce network handshake latency.",
+      "C": "Implement application-level DNS caching with a sensible minimum TTL floor (while still respecting reasonable staleness bounds) to avoid re-resolving DNS on every request when the upstream TTL is unusually short, reducing repeated resolution overhead without meaningfully risking staleness given a 5-second TTL is already extremely short relative to typical caching windows discussed for such optimizations.",
+      "D": "Switch the ECS service from Fargate to EC2 launch type, since EC2 instances inherently have faster network stacks than Fargate tasks.",
+      "E": "Enable ECS Service Connect exclusively, since it fully eliminates TLS handshake overhead for any outbound call, including calls to external third-party APIs."
+    },
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "Reusing persistent HTTP connections with keep-alive and connection pooling directly targets the described bottleneck: if the application is establishing a brand-new TCP connection and performing a full TLS handshake for nearly every request to the same third-party host, that repeated handshake cost is almost certainly the dominant contributor to the observed latency — connection reuse amortizes that cost across many logical requests over a single long-lived connection, which is the standard, highest-leverage fix for exactly this symptom pattern. Thoughtful application-level DNS caching complementarily reduces the overhead of re-resolving the third-party hostname on every request; while the record's short TTL exists for the third-party's own traffic-management reasons, an application can still apply a small sensible caching floor to avoid a full DNS lookup literally every single call, cutting resolution-related latency while accepting a small, bounded staleness risk that's reasonable to trade off against the measured performance impact.",
+    "whyOthersAreWrong": {
+      "B": "Increasing CPU and memory does not resolve network-level latency issues like TCP handshakes or cross-region routing.",
+      "D": "Repeats a common but false assumption — Fargate's network performance is not inherently slower than EC2 launch type for typical application traffic patterns, and the described bottleneck (repeated handshakes/DNS lookups to an external third party) is an application-level connection-management issue that would occur identically regardless of launch type; switching launch types doesn't change how the application manages its outbound HTTP connections.",
+      "E": "Overstates ECS Service Connect's scope — Service Connect is designed to simplify and secure service-to-service communication *between ECS services within the same cluster/namespace*, not to intercept, accelerate, or eliminate TLS handshakes for calls to arbitrary external third-party APIs outside the cluster's service mesh, so it would have no effect on the described payment API latency."
+    },
+    "learningObjective": "Optimize workload throughput and latency using Amazon ECS.",
+    "topic": "Amazon ECS",
+    "tags": [
+      "ECS",
+      "EC2",
+      "Route 53",
+      "Cost Optimization",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-1294",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's Well-Architected review flags that their multi-account environment has no consistent way to prevent individual teams from provisioning expensive resources (like large GPU instances or Redshift clusters) without approval, and finance keeps discovering large unexpected charges after the fact. The company wants proactive, preventative cost governance, not just after-the-fact alerting, while still allowing teams reasonable autonomy for approved resource types and sizes. What combination of controls best fits this goal?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Rely exclusively on AWS Budgets with alert notifications sent to finance after a spending threshold is crossed each month.",
+      "B": "Use Service Control Policies to deny specific high-cost actions/resource types or instance families that require approval (e.g., denying ec2:RunInstances for GPU instance families, or redshift:CreateCluster) at the OU level for teams that haven't been granted an exception, combined with AWS Budgets and Cost Anomaly Detection for ongoing visibility into approved spend, and a request/exception process (e.g., via a ticket or Service Catalog product) for teams that legitimately need access to restricted resource types.",
+      "C": "Require every team to manually request a temporary AWS support case for permission each time they want to launch any EC2 instance, regardless of type or size.",
+      "D": "Set IAM policies (not SCPs) at the individual user level in each account to deny expensive resource types, trusting that this is sufficient since IAM policies are easier to manage than SCPs."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "This combination directly satisfies 'proactive, preventative' governance while preserving reasonable autonomy: SCPs provide a true preventative control by denying specific high-cost actions or resource families (GPU instance types, Redshift cluster creation, etc.) at the OU level, meaning teams without an explicit, granted exception simply cannot provision these resources in the first place — no approval-after-the-fact needed, and no reliance on IAM configuration within individual accounts that could be misconfigured or bypassed by an account administrator. Layering AWS Budgets and Cost Anomaly Detection on top provides ongoing visibility and early warning for the spend that *is* approved and allowed, catching unexpected patterns even within permitted resource types, while an exception/request process (e.g., a Service Catalog product with approval workflow, or a lightweight ticketing process) gives teams with a legitimate need a clear path to gain access to restricted resource types without loosening the guardrail for everyone — this combination is exactly the preventative-plus-detective, autonomy-preserving governance model the company is asking for.",
+    "whyOthersAreWrong": {
+      "A": "AWS Budgets alert the finance team after the money has already been spent, failing to proactively prevent the overspending before it happens.",
+      "C": "Requiring manual support cases for every single EC2 launch creates severe operational bottlenecks and destroys team autonomy, directly contradicting the requirement to allow autonomy for approved resource types.",
+      "D": "Individual account IAM policies can be modified or bypassed by account administrators and do not provide an unbypassable, organization-wide preventive guardrail like Service Control Policies (SCPs) attached at the OU level."
+    },
+    "learningObjective": "Select the most cost-effective architecture using AWS IAM to satisfy workload requirements.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "EC2",
+      "Step Functions",
+      "Organizations",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1295",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company's global application uses an Application Load Balancer and EC2 Auto Scaling group in a single region, with an RDS PostgreSQL Multi-AZ database. A Well-Architected review determines the application's actual business requirement is: 'the application must survive the loss of any single Availability Zone with zero data loss and less than 5 minutes of downtime, but a full regional outage is an acceptable (if undesirable) risk given the extremely low likelihood and the cost of full multi-region redundancy relative to the business's risk tolerance.' Which statement about the current architecture is most accurate?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "The current architecture is already well-aligned with the stated requirement, since ALB and Auto Scaling naturally span multiple AZs when configured with subnets in multiple AZs, and RDS Multi-AZ provides synchronous replication with automatic failover (typically 60–120 seconds) and zero data loss for a single-AZ failure — assuming the ASG and target groups are indeed configured across at least two AZs, this meets the stated AZ-failure requirement without the added cost and complexity of a multi-region design that the stated risk tolerance doesn't call for.",
+      "B": "The architecture is fundamentally insufficient and must be redesigned as multi-region active-active regardless of stated risk tolerance, since any single-region architecture is considered a Well-Architected violation.",
+      "C": "RDS Multi-AZ does not provide zero data loss during failover, so the architecture cannot meet the stated requirement without switching to asynchronous cross-region replication.",
+      "D": "ALB and Auto Scaling groups cannot span multiple Availability Zones within a single region, so a multi-region deployment is required even just to tolerate a single AZ failure."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "This question tests whether a design is appropriately matched to actual, explicitly stated business requirements and risk tolerance — a core Well-Architected principle is that resilience investment should match business need, not maximize theoretical resilience regardless of cost. Given the stated requirement is specifically AZ-failure resilience (not regional-failure resilience, which is explicitly called out as an accepted risk), a correctly configured single-region architecture with an ALB and Auto Scaling group spanning multiple AZs (both are natively multi-AZ-capable within a region when subnets from multiple AZs are attached) and RDS Multi-AZ (which uses synchronous, not asynchronous, replication to a standby in a second AZ, meaning committed transactions are durably written to both before being acknowledged, achieving zero data loss for an AZ failure, with typical automatic failover times of 60–120 seconds, well under the 5-minute target) already satisfies the stated requirement precisely, and does so without the substantial added cost, operational complexity, and data-consistency challenges of full multi-region active-active redundancy that the business has explicitly said isn't justified by its risk tolerance.",
+    "whyOthersAreWrong": {
+      "B": "Reflects a common exam misconception — the Well-Architected Framework does not mandate multi-region architecture as a blanket requirement; it explicitly emphasizes making resilience trade-offs appropriate to business impact and cost, and 'any single-region architecture is a violation' is not a Well-Architected principle.",
+      "C": "This option is factually incorrect. RDS Multi-AZ (the classic Multi-AZ deployment with a synchronous standby, as opposed to read replicas which are asynchronous) is specifically designed to provide zero data loss (RPO of zero) for the failure scenarios it protects against, including AZ-level failures, precisely because replication to the standby is synchronous.",
+      "D": "This option is factually incorrect. both ALB and EC2 Auto Scaling groups are explicitly designed to span multiple Availability Zones within a single AWS region (this is their standard, intended, and commonly used configuration), and doing so is sufficient to tolerate single-AZ failures without requiring any multi-region deployment at all."
+    },
+    "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "EC2",
+      "RDS",
+      "High Availability",
+      "Cost Optimization",
+      "Networking"
+    ]
+  },
+  {
+    "id": "saa-1296",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company uses AWS Organizations with a Security OU containing all member accounts. The security team must guarantee that no IAM principal in any member account, including the root user, can ever disable AWS CloudTrail, delete CloudTrail logs, or leave the Organization, regardless of the permissions attached to their IAM identity. Which approach enforces this requirement most effectively?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach an IAM permissions boundary to every IAM role and user in each member account that denies cloudtrail:StopLogging, cloudtrail:DeleteTrail, and organizations:LeaveOrganization.",
+      "B": "Create a Service Control Policy (SCP) with explicit Deny statements for the relevant actions and attach it to the Security OU.",
+      "C": "Configure an AWS Config rule with automatic remediation that re-enables CloudTrail whenever it detects it has been disabled.",
+      "D": "Create an IAM group policy in each account that denies the actions and require all users to be members of that group."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "SCPs are the only construct that apply organization-wide, including to the root user, and they set a permission ceiling that no identity-based policy in the account can override. An explicit Deny in an SCP attached at the OU level guarantees the restriction across every current and future account and principal in that OU.",
+    "whyOthersAreWrong": {
+      "A": "Permissions boundaries only limit the maximum permissions of the specific identities they are attached to; they must be applied consistently everywhere (including future identities) and do not restrict the root user, so coverage gaps and root-user bypass are both possible.",
+      "C": "Config remediation is reactive (detect-and-fix after the fact), not preventive, so it does not stop the action from happening and CloudTrail could be disabled and logs deleted before remediation runs.",
+      "D": "IAM group policies are identity-based, apply only to users who are members of the group, do not affect the root user or other roles, and can be modified or bypassed by anyone with IAM administrative rights in that account."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "Organizations",
+      "EventBridge",
+      "CloudTrail",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1297",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A solutions architect must grant an application running in Account B (111111111111) read/write access to a single S3 bucket that resides in Account A (222222222222). The application in Account B already runs using an EC2 instance profile role. Company policy prohibits the use of long-lived IAM access keys anywhere in the environment. Which combination of steps satisfies the requirement using AWS security best practices?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "In Account A, create an IAM user with an access key and share the credentials with the team managing Account B's application.",
+      "B": "In Account A, add a bucket policy granting Account B's instance profile role ARN access, and make the bucket public with a randomized name known only to the application.",
+      "C": "In Account A, create an IAM role with a trust policy allowing Account B's instance role to assume it, and attach an S3 permissions policy; in Account B, grant the instance role permission to call sts:AssumeRole on that ARN.",
+      "D": "In Account B, create a new IAM user, generate an access key, store it in AWS Secrets Manager in Account A, and have the application in Account B retrieve it across accounts."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "Cross-account role assumption (STS AssumeRole) is the AWS-recommended pattern: Account A owns a role with a trust policy scoped to Account B's role ARN and an attached permissions policy scoped to the bucket, while Account B's instance profile is granted sts:AssumeRole rights. This uses only short-lived, automatically rotated temporary credentials and keeps access auditable and revocable.",
+    "whyOthersAreWrong": {
+      "A": "This introduces a long-lived static access key, which violates the stated policy and is a security anti-pattern regardless of policy, since keys can be leaked and are not automatically rotated.",
+      "B": "Making a bucket public is never an appropriate way to share access between trusted accounts; it exposes the data to the entire internet regardless of the bucket name being 'randomized', since the name can be discovered.",
+      "D": "This still relies on a static, long-lived access key (violating policy) and adds unnecessary complexity and an insecure cross-account secret retrieval pattern."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
+    "topic": "AWS IAM",
+    "tags": [
+      "IAM",
+      "S3",
+      "EC2",
+      "Secrets Manager",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1298",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial services company takes nightly EBS snapshots of a database volume in us-east-1 and must copy them to eu-west-1 for disaster recovery. Compliance requires that the data remain encrypted at rest in both regions using customer-managed keys that the company fully controls, without manually re-encrypting the data during the copy process. What is the most operationally efficient way to meet this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a multi-Region AWS KMS key in us-east-1, encrypt the source snapshot with it, and copy the snapshot to eu-west-1 specifying the replica key; AWS automatically re-encrypts the copy using the replica key without re-encrypting the underlying plaintext data.",
+      "B": "Create separate single-Region customer-managed KMS keys in each Region and specify the destination Region's key when calling the CopySnapshot API.",
+      "C": "Decrypt the snapshot before copying it, transfer it to eu-west-1 over a VPN connection, and re-encrypt it manually with a new key in the destination Region.",
+      "D": "Use the AWS managed key (aws/ebs) in both Regions, since AWS manages replication of managed keys automatically across Regions at no cost."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "This is the standard, supported, and simplest pattern: create a customer-managed key natively in each Region, and when copying the snapshot cross-Region, specify the destination Region's CMK. AWS handles the decrypt/re-encrypt transparently as part of the CopySnapshot operation, keeping the data encrypted at rest throughout with keys the company fully manages in each Region.",
+    "whyOthersAreWrong": {
+      "A": "Multi-Region KMS keys share the same key material across Regions to make client-side cryptography portable, but EBS/EBS snapshot cross-Region copy operations always decrypt with the source key and re-encrypt with the destination Region's specified key as part of the copy process regardless of key type; more importantly, AWS explicitly documents multi-Region keys as related but independent keys, not literally the 'same' KMS key for this workflow, making this description of the mechanism incorrect and unnecessarily complex compared to using ordinary Regional CMKs.",
+      "C": "Manually decrypting data and transporting it in plaintext (even over VPN) violates the requirement to keep data encrypted at rest and introduces unnecessary operational risk and effort.",
+      "D": "AWS managed keys (aws/ebs) are not shared or replicated across Regions, and the company does not control their key policies or rotation, failing the 'fully controls' requirement."
+    },
+    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon S3.",
+    "topic": "Amazon S3",
+    "tags": [
+      "S3",
+      "KMS",
+      "Security",
+      "High Availability",
+      "Cost Optimization"
+    ]
+  },
+  {
+    "id": "saa-1299",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A containerized application runs as an Amazon ECS service on Fargate. The application needs read access to a database password stored in AWS Secrets Manager at container startup, and the security team requires that the ECS agent (not application code) inject the secret as an environment variable so the secret value never appears in the task definition in plaintext or in CloudTrail data events generated by application-level API calls. Which configuration meets this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store the secret value directly as an environment variable in the container definition of the task definition.",
+      "B": "Reference the Secrets Manager secret ARN in the 'secrets' field of the container definition, and grant the task execution role permission to call secretsmanager:GetSecretValue and kms:Decrypt.",
+      "C": "Reference the Secrets Manager secret ARN in the 'secrets' field of the container definition, and grant the task role permission to call secretsmanager:GetSecretValue and kms:Decrypt.",
+      "D": "Have the application code call the Secrets Manager GetSecretValue API directly at startup using credentials from the task role."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "The ECS-native secrets injection feature uses the 'secrets' field, which is resolved by the ECS agent using the task EXECUTION role at container startup, before the application even runs. This keeps the secret out of the task definition and out of application-level CloudTrail data events since the application itself never calls Secrets Manager.",
+    "whyOthersAreWrong": {
+      "A": "This stores the credential in plaintext directly in the task definition, which is visible to anyone with DescribeTaskDefinition permission and is the exact anti-pattern the security team wants to avoid.",
+      "C": "The task role governs permissions used by the application code running inside the container at runtime, not the pre-launch secret injection performed by the ECS agent; the ECS agent uses the execution role for this operation, so granting only the task role would cause the injection to fail.",
+      "D": "This requires application code to make the API call directly, which is precisely what the security team wants to avoid, and it would generate CloudTrail data events tied to application activity."
+    },
+    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
+    "topic": "Amazon ECS",
+    "tags": [
+      "ECS",
+      "IAM",
+      "KMS",
+      "Secrets Manager",
+      "Security"
+    ]
+  },
+  {
+    "id": "saa-1300",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has an existing unencrypted Amazon Aurora MySQL DB cluster running in production that cannot tolerate more than a 5-minute maintenance window. Compliance now mandates that the cluster's storage be encrypted at rest using AWS KMS. What is the correct approach, given that Aurora does not support enabling encryption in-place on an existing unencrypted cluster?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Modify the DB cluster and enable the 'Enable encryption' option, which will encrypt the storage during the next maintenance window.",
+      "B": "Take a manual snapshot of the unencrypted cluster, copy the snapshot while specifying a KMS key to produce an encrypted snapshot, and restore a new encrypted cluster from that snapshot; then cut over the application to the new endpoint.",
+      "C": "Enable default EBS encryption at the account level, then reboot the Aurora cluster to apply encryption to existing storage.",
+      "D": "Create an AWS Config rule that automatically enables encryption on the cluster when drift is detected."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "This is the documented and only supported path: take a snapshot, copy it (specifying a KMS key, which triggers encryption during the copy), and restore a new cluster from the encrypted snapshot copy. It requires planning a cutover (e.g., using a maintenance window, DNS/CNAME change, or connection string update) but is the correct mechanism.",
+    "whyOthersAreWrong": {
+      "A": "There is no in-place 'enable encryption' modification for an existing unencrypted RDS/Aurora cluster; encryption must be set at creation time, so this option does not exist as described.",
+      "C": "Default EBS encryption at the account level only affects newly created EBS volumes going forward and has no relationship to Aurora's underlying storage encryption model, which is managed independently through the RDS/Aurora encryption setting at cluster creation.",
+      "D": "AWS Config can detect and report on encryption drift but cannot retroactively enable storage encryption on an existing Aurora cluster since this isn't a modifiable in-place attribute."
+    },
+    "learningObjective": "Implement secure architectural controls and access policies with Amazon RDS.",
+    "topic": "Amazon RDS",
+    "tags": [
+      "RDS",
+      "Aurora",
+      "Route 53",
+      "KMS",
+      "Security"
+    ]
+  }
 ]
