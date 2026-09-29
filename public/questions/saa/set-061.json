@@ -92,88 +92,90 @@
   {
     "id": "saa-1204",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company's API has sporadic and unpredictable traffic, sometimes receiving zero requests for hours at a time. The team wants to pay only for actual compute time consumed, with no charge while idle.",
+    "question": "A company is launching a new API for a niche user base. The traffic patterns are highly sporadic and unpredictable; the API might receive hundreds of requests in a ten-minute window, and then sit completely idle for several hours with zero requests. The startup has strict financial constraints and wants a compute architecture where they pay only for the exact milliseconds of compute time consumed, incurring absolutely no charges while the API is idle. Which architecture best fulfills these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "An EC2 On-Demand instance running continuously",
-      "B": "AWS Lambda behind Amazon API Gateway",
-      "C": "Reserved EC2 Instances",
-      "D": "ECS tasks running continuously on EC2"
+      "A": "Provision an Amazon EC2 On-Demand instance running continuously to ensure it is always ready to receive requests.",
+      "B": "Deploy the backend logic using AWS Lambda functions sitting behind an Amazon API Gateway for fully serverless execution.",
+      "C": "Purchase a 1-year Standard Reserved EC2 Instance to reduce the hourly compute rate during the idle periods.",
+      "D": "Run the application continuously as an Amazon ECS task on EC2 instances managed by an Auto Scaling group."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Lambda's pricing model charges only for actual invocation time (rounded to the nearest millisecond) and the number of requests, with zero compute charge while no requests are arriving — a direct fit for sporadic, idle-heavy traffic. Options A, C, and D all keep compute capacity running (and billing) continuously, regardless of whether any requests arrive, which wastes spend during idle periods.",
+    "explanation": "B is correct because the combination of Amazon API Gateway and AWS Lambda provides a fully serverless architecture. AWS Lambda bills only for the exact milliseconds the function executes. When the API sits completely idle for hours, zero Lambda invocations occur, resulting in absolutely zero compute cost. Furthermore, it scales instantly to handle sudden bursts of hundreds of requests.",
     "whyOthersAreWrong": {
-      "A": "On-Demand EC2 instances incur continuous hourly charges even while idle and processing zero requests, violating the requirement to pay only for active compute time.",
-      "C": "Reserved Instances require a 1- or 3-year financial commitment and bill continuously regardless of utilization, making them wasteful for sporadic, unpredictable workloads.",
-      "D": "Continuous ECS tasks on EC2 keep underlying compute capacity running and billing 24/7, failing the constraint to have zero charges during idle periods."
+      "A": "An EC2 On-Demand instance incurs continuous hourly charges as long as it is in the 'running' state, even if it is sitting 100% idle and receiving zero requests.",
+      "C": "A Reserved Instance requires a commitment to pay for compute capacity 24/7. Paying continuously for an architecture that is idle for hours at a time is mathematically inefficient.",
+      "D": "ECS on EC2 requires provisioning and paying for the underlying EC2 instances continuously, violating the 'incurring absolutely no charges while idle' requirement."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Design fully serverless APIs using Amazon API Gateway and AWS Lambda to achieve instant scaling and zero compute costs during idle periods.",
+    "topic": "AWS Serverless Architecture",
     "tags": [
-      "EC2",
+      "Serverless",
       "Lambda",
-      "ECS"
+      "API Gateway",
+      "Cost Optimization"
     ]
   },
   {
     "id": "saa-1205",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company hosts a static website's assets in an S3 bucket in us-east-1. Users worldwide report high latency loading these assets. The company wants to reduce latency globally with edge caching, without duplicating the bucket into every Region.",
+    "question": "A global company hosts a static website consisting of high-resolution images and large CSS files in an Amazon S3 bucket located in the `us-east-1` Region. Users in Asia and Europe are complaining about unacceptably high latency when loading the website. The architecture team wants to significantly reduce asset load times for users worldwide by utilizing edge caching, but they do not want the operational overhead of replicating the S3 bucket into every single AWS Region. Which solution achieves this?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Create and manually synchronize a separate S3 bucket in every target Region",
-      "B": "Put an Amazon CloudFront distribution in front of the S3 origin",
-      "C": "Use Route 53 latency-based routing pointing to the single bucket",
-      "D": "Enable only S3 Transfer Acceleration"
+      "A": "Create separate Amazon S3 buckets in every target AWS Region and manually synchronize the static assets using a script.",
+      "B": "Provision an Amazon CloudFront distribution, configure the `us-east-1` S3 bucket as the origin, and serve the assets globally.",
+      "C": "Configure Amazon Route 53 latency-based routing to automatically point users to the single existing S3 bucket in `us-east-1`.",
+      "D": "Enable the Amazon S3 Transfer Acceleration feature on the existing bucket to speed up the delivery of the static assets."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "CloudFront caches content at edge locations around the world, so repeat requests for the same objects are served from a nearby edge cache instead of round-tripping to us-east-1, directly reducing latency for a global audience with no need to duplicate the origin bucket.",
+    "explanation": "B is correct because Amazon CloudFront is a global Content Delivery Network (CDN). By placing CloudFront in front of the single S3 bucket in `us-east-1`, CloudFront automatically caches copies of the static assets at its hundreds of Edge Locations around the world. When a user in Asia requests an image, they receive it instantly from the nearest Edge Location in Asia, dramatically reducing latency without requiring the company to manually replicate S3 buckets.",
     "whyOthersAreWrong": {
-      "A": "This option adds significant operational overhead (sync, consistency, cost) for something CloudFront already solves.",
-      "C": "Doesn't change where the object is served from — S3 (the origin) is still a single Region.",
-      "D": "Accelerates uploads over the AWS backbone; it does not cache or reduce latency for repeated downloads."
+      "A": "Manually creating and synchronizing buckets across every region introduces massive operational overhead and data storage costs, directly violating the prompt's constraints.",
+      "C": "Route 53 latency-based routing routes traffic to the region that provides the lowest latency. However, since the bucket only exists in one region (`us-east-1`), all users worldwide would still be routed to `us-east-1`, providing zero latency benefit.",
+      "D": "S3 Transfer Acceleration speeds up data *uploads* into S3 from clients over the internet; it is not a CDN designed to cache and serve static website content to viewers."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon S3.",
-    "topic": "Amazon S3",
+    "learningObjective": "Deploy Amazon CloudFront in front of Amazon S3 to cache static web assets globally, reducing latency without cross-region replication.",
+    "topic": "Amazon CloudFront",
     "tags": [
-      "S3",
+      "Networking",
+      "Content Delivery",
       "CloudFront",
-      "Route 53",
-      "Networking"
+      "Performance"
     ]
   },
   {
     "id": "saa-1206",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company needs DNS to automatically fail traffic over from its primary Region to a disaster-recovery Region if the primary endpoint becomes unhealthy, with minimal manual intervention.",
+    "question": "A critical application is deployed in a primary AWS Region (`us-east-1`) with a scaled-down, warm standby environment running in a disaster-recovery Region (`us-west-2`). The business requires the DNS architecture to automatically detect if the primary application endpoint becomes unresponsive and instantly route all new traffic to the disaster-recovery endpoint, requiring absolutely minimal manual intervention from the operations team during an outage. Which Amazon Route 53 configuration fulfills this requirement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Route 53 simple routing policy",
-      "B": "Route 53 failover routing policy with health checks on the primary endpoint",
-      "C": "Route 53 weighted routing policy split 50/50",
-      "D": "Route 53 geolocation routing policy"
+      "A": "Configure a Route 53 simple routing policy pointing to the primary endpoint, and manually update the record during an outage.",
+      "B": "Configure a Route 53 failover routing policy, associating active health checks with the primary application endpoint.",
+      "C": "Configure a Route 53 weighted routing policy, initially splitting the traffic 50/50 between the primary and secondary regions.",
+      "D": "Configure a Route 53 geolocation routing policy to force users to always connect to the primary region regardless of health."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Failover routing works with Route 53 health checks: DNS answers point to the primary record while it's healthy, and automatically switch to the secondary record when the health check detects the primary is failing — exactly the automated failover behavior required. Simple routing has no health-check-driven failover. Weighted routing splits traffic by fixed percentage regardless of health. Geolocation routing routes based on the requester's location, not endpoint health.",
+    "explanation": "B is correct because a Route 53 failover routing policy is explicitly designed for active-passive disaster recovery scenarios. You configure a 'primary' record (pointing to `us-east-1`) and a 'secondary' record (pointing to `us-west-2`). You must attach a Route 53 health check to the primary record. If the health check fails, Route 53 automatically and immediately stops returning the primary IP address and begins returning the secondary IP address, seamlessly failing over traffic without manual intervention.",
     "whyOthersAreWrong": {
-      "A": "Simple routing returns preconfigured endpoints without health-check-based monitoring or automated failover capabilities.",
-      "C": "Weighted routing splits traffic based on configured ratios across endpoints and continues sending traffic to unhealthy endpoints unless paired with health checks in an active-active setup.",
-      "D": "Geolocation routing directs users based on their geographic location rather than the operational health of Regional endpoints."
+      "A": "A simple routing policy does not support automatic failover or health checks. Manually updating DNS records during an outage requires significant intervention, violating the requirements.",
+      "C": "A weighted routing policy (50/50) is used for active-active or canary deployments. If half the traffic is routed to the DR region normally, it is not a warm standby, and half the users will hit the broken primary region during an outage.",
+      "D": "Geolocation routing routes traffic based on the user's location. It does not automatically fail over based on endpoint health, meaning users would be continuously routed to a dead endpoint."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Route 53.",
+    "learningObjective": "Configure Amazon Route 53 failover routing policies with active health checks to implement automatic disaster recovery failover.",
     "topic": "Amazon Route 53",
     "tags": [
+      "Networking",
+      "Disaster Recovery",
       "Route 53",
-      "IAM",
       "High Availability"
     ]
   },
@@ -239,31 +241,31 @@
   {
     "id": "saa-1209",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A SaaS company serves dynamic, non-cacheable API responses from an Application Load Balancer in a single AWS Region to users spread across multiple continents, and wants to reduce their latency without deploying the application into additional Regions.",
+    "question": "A Software-as-a-Service (SaaS) company hosts a dynamic, highly personalized web application behind an Application Load Balancer (ALB) in a single AWS Region. The API responses are entirely user-specific and strictly non-cacheable. Users spread across multiple continents are experiencing high latency due to erratic routing across the public internet. The company wants to reduce this latency and jitter without the massive architectural effort of deploying the application into additional AWS Regions. Which solution should the architect implement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Configure CloudFront to aggressively cache the dynamic content",
-      "B": "Put AWS Global Accelerator in front of the ALB, routing users over the AWS global network backbone to the nearest healthy entry point",
-      "C": "Use Route 53 simple routing",
-      "D": "Enable S3 Transfer Acceleration"
+      "A": "Configure an Amazon CloudFront distribution to aggressively cache the dynamic, user-specific API responses at the edge.",
+      "B": "Deploy AWS Global Accelerator in front of the ALB to route user traffic over the highly optimized AWS global network backbone.",
+      "C": "Utilize an Amazon Route 53 simple routing policy to direct the users to the nearest regional internet service provider.",
+      "D": "Enable the Amazon S3 Transfer Acceleration feature to speed up the delivery of the dynamic API responses."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Global Accelerator routes client traffic onto the AWS global network backbone from the nearest edge location, which reduces the number of internet hops/congestion points to reach the single-Region ALB, improving latency for dynamic, non-cacheable content without needing to replicate the application into more Regions. CloudFront caching doesn't help non-cacheable dynamic responses (though Global Accelerator and CloudFront can be complementary for different content types). Route 53 simple routing provides no performance optimization, just DNS resolution to a fixed target. S3 Transfer Acceleration is unrelated to API traffic served from an ALB.",
+    "explanation": "B is correct because AWS Global Accelerator provides two static Anycast IP addresses that act as a fixed entry point to your application. When a global user connects to the IP, their traffic enters the AWS global network at the closest Edge Location and is routed over AWS's highly optimized, dedicated backbone directly to the ALB. This bypasses the congested, erratic public internet, significantly reducing latency and jitter for dynamic, non-cacheable applications.",
     "whyOthersAreWrong": {
-      "A": "CloudFront caching is ineffective for dynamic, non-cacheable API responses that require fresh data directly from the origin server on every request.",
-      "C": "Route 53 simple routing resolves the domain name to the ALB endpoint without optimizing the network path over the AWS global private backbone.",
-      "D": "S3 Transfer Acceleration speeds up uploads to Amazon S3 buckets, but cannot be used to accelerate HTTP/HTTPS API traffic directed to an Application Load Balancer."
+      "A": "The prompt explicitly states the API responses are 'strictly non-cacheable' (because they are highly personalized). CloudFront caching will not work and could expose user data to the wrong users.",
+      "C": "Route 53 simple routing just resolves a DNS name to an IP address. It does not alter the physical path the network packets take over the public internet, so it does nothing to reduce jitter or routing latency.",
+      "D": "S3 Transfer Acceleration speeds up data transfers into Amazon S3. The application is hosted on an ALB, not S3, making this completely irrelevant."
     },
-    "learningObjective": "Optimize workload throughput and latency using AWS CloudFront.",
-    "topic": "AWS CloudFront",
+    "learningObjective": "Implement AWS Global Accelerator to improve global network performance and reduce latency for dynamic, non-cacheable applications hosted in a single region.",
+    "topic": "AWS Global Accelerator",
     "tags": [
-      "CloudFront",
-      "Route 53",
-      "S3",
-      "Networking"
+      "Networking",
+      "Performance",
+      "Global Architecture",
+      "Global Accelerator"
     ]
   },
   {
@@ -300,63 +302,61 @@
   {
     "id": "saa-1211",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A public-facing web application behind an Application Load Balancer is being probed with SQL injection and cross-site scripting payloads from a range of source IPs. The security team wants to block these malicious HTTP request patterns at the edge without modifying application code.",
+    "question": "A security team is monitoring a public-facing web application deployed behind an Application Load Balancer (ALB). The application logs reveal aggressive, targeted probing attempts originating from various malicious IP addresses. These probes contain blatant SQL injection (SQLi) and cross-site scripting (XSS) payloads in the HTTP headers and query strings. The team urgently needs to block these specific Layer 7 malicious request patterns at the edge without requiring the developers to modify the application code. Which AWS service provides this protection?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Add deny rules for the offending IPs in the EC2 instance security groups",
-      "B": "Attach AWS WAF with AWS Managed Rule groups (e.g., SQLi and XSS rule sets) to the ALB",
-      "C": "Add deny entries in the subnet's Network ACL",
-      "D": "Enable AWS Shield Advanced"
+      "A": "Manually add deny rules for the offending IP addresses directly into the Amazon EC2 instance security groups.",
+      "B": "Attach AWS WAF to the ALB and configure a Web ACL utilizing the AWS Managed Rules sets for SQLi and XSS protection.",
+      "C": "Add strict deny entries in the private subnet's Network ACL to block the malicious HTTP request payloads.",
+      "D": "Enable AWS Shield Advanced to actively filter the malicious Layer 7 HTTP payloads before they reach the ALB."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS WAF inspects Layer 7 HTTP(S) request content — headers, query strings, and body — and AWS Managed Rules include pre-built rule groups specifically for SQL injection and XSS patterns.",
+    "explanation": "B is correct because AWS WAF (Web Application Firewall) is a Layer 7 security service designed specifically to inspect incoming HTTP/HTTPS requests. By attaching a Web ACL to the Application Load Balancer and utilizing AWS Managed Rules (which are pre-configured, automatically updated rule sets maintained by AWS security experts), WAF natively identifies and blocks common web exploits like SQL injection (SQLi) and cross-site scripting (XSS) instantly, without any code changes.",
     "whyOthersAreWrong": {
-      "A": "Security groups operate at Layer 4 (transport layer) filtering IP addresses and ports, and cannot inspect HTTP request payloads for SQL injection or XSS patterns.",
-      "C": "Network ACLs operate at Layer 3 and 4 evaluating packet headers and CIDR blocks, lacking the Layer 7 deep-packet inspection needed to detect web exploits.",
-      "D": "Shield Advanced protects against DDoS/network-layer attacks and does not provide payload-level request filtering."
+      "A": "First, Security Groups do not inspect Layer 7 HTTP payloads (they only look at IP/Port). Second, Security Groups do not support 'deny' rules; they are allow-only.",
+      "C": "Network ACLs operate at Layer 4 (IP/Port). They cannot inspect the contents of an HTTP header or query string to detect an XSS or SQLi payload.",
+      "D": "AWS Shield Advanced provides robust protection against massive Layer 3 and Layer 4 volumetric Distributed Denial of Service (DDoS) attacks. It does not actively inspect Layer 7 HTTP request strings for application exploits."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS WAF.",
+    "learningObjective": "Deploy AWS WAF with AWS Managed Rules on an Application Load Balancer to instantly protect applications from common Layer 7 web exploits (SQLi, XSS).",
     "topic": "AWS WAF",
     "tags": [
-      "WAF",
-      "VPC",
-      "EC2",
       "Security",
-      "Networking"
+      "WAF",
+      "Web Application",
+      "ALB"
     ]
   },
   {
     "id": "saa-1212",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to right-size its EC2 fleet based on actual historical CPU, memory, and network utilization metrics, using AWS's machine-learning-based recommendations rather than manually estimating appropriate instance sizes.",
+    "question": "A company operates a massive fleet of Amazon EC2 instances across multiple accounts. The finance team suspects that many instances are severely over-provisioned. They want a service that automatically analyzes actual historical CPU, memory, and network utilization metrics and uses machine learning to generate specific, actionable instance right-sizing recommendations (e.g., downsizing from `m5.2xlarge` to `m5.large`). They explicitly want to avoid manually reviewing dashboards to estimate appropriate sizes. Which AWS service provides this functionality?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Compute Optimizer",
-      "B": "AWS Budgets",
-      "C": "AWS Cost Explorer forecasting alone",
-      "D": "Manually reviewing CloudWatch dashboards for every instance"
+      "A": "Enable AWS Compute Optimizer to analyze historical utilization metrics and provide machine-learning-backed rightsizing recommendations.",
+      "B": "Configure AWS Budgets to alert the finance team whenever an EC2 instance exceeds its allocated monthly spending limit.",
+      "C": "Utilize AWS Cost Explorer forecasting to manually predict the future compute utilization of the EC2 instance fleet.",
+      "D": "Hire an operations engineer to manually review the Amazon CloudWatch dashboards for every single EC2 instance monthly."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Compute Optimizer analyzes historical utilization metrics using machine learning and provides specific rightsizing recommendations (instance family/size changes) for EC2, along with EBS, Lambda, and ECS on Fargate. AWS Budgets alerts on spend thresholds, not utilization-based sizing. Cost Explorer forecasting projects future cost/usage trends, not per-resource rightsizing recommendations.",
+    "explanation": "A is correct because AWS Compute Optimizer is a machine learning-based service that analyzes historical utilization metrics from Amazon CloudWatch. It identifies EC2 instances, EBS volumes, and Lambda functions that are over-provisioned or under-provisioned. It then generates highly specific, actionable recommendations (e.g., suggesting an exact instance type change) to help customers right-size their workloads and reduce costs without manual effort.",
     "whyOthersAreWrong": {
-      "D": "This option is manual, doesn't scale across a large fleet, and lacks ML-driven, data-backed recommendations.",
-      "B": "AWS Budgets tracks spending and usage against predefined cost thresholds to send alerts, but does not analyze workload telemetry to recommend EC2 instance right-sizing.",
-      "C": "AWS Cost Explorer forecasting predicts future spending trends based on past billings, but does not provide machine-learning-driven compute rightsizing recommendations."
+      "B": "AWS Budgets allows you to set custom billing alerts. It does not analyze CPU/Memory utilization or provide rightsizing recommendations.",
+      "C": "AWS Cost Explorer forecasting predicts future *billing costs* based on past spending trends. It does not analyze compute utilization metrics or suggest changing instance types.",
+      "D": "The prompt explicitly states the company wants to 'avoid manually reviewing dashboards to estimate appropriate sizes'."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon ECS.",
-    "topic": "Amazon ECS",
+    "learningObjective": "Utilize AWS Compute Optimizer to automatically analyze historical metrics and generate ML-backed rightsizing recommendations for AWS compute resources.",
+    "topic": "AWS Compute Optimizer",
     "tags": [
-      "ECS",
+      "Cost Optimization",
+      "Compute Optimizer",
       "EC2",
-      "Lambda",
-      "CloudWatch",
-      "Cost Optimization"
+      "Management"
     ]
   },
   {
@@ -419,30 +419,31 @@
   {
     "id": "saa-1215",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A transactional database on EC2 requires the lowest latency and highest sustained IOPS block storage available, needing performance well beyond what General Purpose SSD volumes can deliver.",
+    "question": "A financial institution is migrating an extremely high-performance, mission-critical transactional database to an Amazon EC2 instance. The database requires the absolute lowest latency and highest sustained IOPS block storage available in the AWS cloud. The performance requirements go well beyond the maximum capabilities of standard General Purpose SSD volumes, and the business is willing to pay a premium for guaranteed IOPS performance. Which Amazon EBS volume type MUST the architect provision?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "gp3",
-      "B": "io2 (Provisioned IOPS SSD)",
-      "C": "st1 (Throughput Optimized HDD)",
-      "D": "sc1 (Cold HDD)"
+      "A": "Provision a `gp3` (General Purpose SSD) volume to independently tune the IOPS and throughput performance.",
+      "B": "Provision an `io2` (Provisioned IOPS SSD) volume to achieve sub-millisecond latency and massive guaranteed IOPS.",
+      "C": "Provision an `st1` (Throughput Optimized HDD) volume to provide the highest sustained throughput for the database.",
+      "D": "Provision an `sc1` (Cold HDD) volume to provide the absolute lowest storage cost for the transactional database."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Io2 (Provisioned IOPS SSD) io2 Provisioned IOPS volumes are purpose-built for latency-sensitive, IOPS-intensive transactional workloads, supporting far higher IOPS ceilings and higher durability than gp3, with IOPS provisioned independently of volume size. gp3 supports respectable baseline IOPS but has a materially lower maximum than io2. st1 and sc1 (C, D) are HDD-based volumes optimized for large sequential throughput workloads (e.g., big data, log processing), not low-latency random-access transactional I/O.",
+    "explanation": "B is correct because Amazon EBS `io2` (Provisioned IOPS SSD) volumes are explicitly designed for mission-critical, high-performance, IO-intensive database workloads. They provide the highest performance of any EBS volume type, offering sub-millisecond latency and allowing you to provision up to 256,000 IOPS per volume. They provide a strict 99.9% performance consistency guarantee, which is required for a workload that exceeds the capabilities of general-purpose storage.",
     "whyOthersAreWrong": {
-      "A": "gp3 volumes have an upper limit of 16,000 IOPS and higher latency variance compared to io2, which is insufficient for extreme IOPS-intensive transactional workloads.",
-      "C": "st1 volumes are magnetic HDDs designed for high-throughput sequential data processing and cannot be used as boot volumes or provide low-latency random I/O.",
-      "D": "sc1 volumes are low-cost magnetic HDDs intended for cold, infrequently accessed sequential storage, lacking the IOPS and low-latency response needed for transactional databases."
+      "A": "While `gp3` is excellent for most workloads, it maxes out at 16,000 IOPS and does not provide the sub-millisecond latency or the 99.9% consistency guarantees required by the absolute highest-performance transactional databases.",
+      "C": "Throughput Optimized HDD (`st1`) volumes are for large, sequential workloads (like big data or data warehousing). They are magnetic drives with terrible IOPS performance and high latency, making them entirely unsuitable for transactional databases.",
+      "D": "Cold HDD (`sc1`) is the cheapest EBS volume, designed for rarely accessed archival data. It offers the worst IOPS performance of all EBS volume types."
     },
-    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Select Amazon EBS Provisioned IOPS SSD (io2) volumes for mission-critical transactional databases requiring massive IOPS and sub-millisecond latency.",
+    "topic": "Amazon EBS",
     "tags": [
-      "EC2",
-      "High Availability",
-      "Networking"
+      "Storage",
+      "EBS",
+      "Performance",
+      "Databases"
     ]
   },
   {

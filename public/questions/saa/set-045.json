@@ -33,60 +33,60 @@
   {
     "id": "saa-882",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company runs an Amazon RDS MySQL database supporting a critical production workload. They need automatic failover to a standby with minimal manual intervention in the event of an AZ outage or instance failure, without requiring application-level read/write splitting logic. What should be configured?",
+    "question": "A company runs an Amazon RDS for MySQL database supporting a highly critical production web application. The business requires the database architecture to support automatic failover to a synchronous standby instance in the event of an Availability Zone outage or primary instance hardware failure. Crucially, the failover must occur automatically without requiring any manual administrator intervention or any application-level read/write splitting logic. What must be configured?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "RDS Read Replica in a different AZ",
-      "B": "RDS Multi-AZ deployment (synchronous standby)",
-      "C": "Manual snapshots taken every hour",
-      "D": "Aurora Global Database in a single region"
+      "A": "Provision an Amazon RDS Read Replica in a completely different Availability Zone.",
+      "B": "Configure the Amazon RDS database to use a Multi-AZ deployment architecture.",
+      "C": "Schedule automated Amazon RDS snapshots to be taken every single hour for quick recovery.",
+      "D": "Migrate to an Amazon Aurora Global Database spanning multiple AWS Regions."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "RDS Multi-AZ maintains a synchronously replicated standby in a different AZ and automatically fails over the DNS endpoint to the standby during an instance or AZ failure, typically within 60-120 seconds, with no application changes needed since the endpoint stays the same.",
+    "explanation": "B is correct because an Amazon RDS Multi-AZ deployment automatically provisions and maintains a synchronous standby replica in a different Availability Zone. In the event of infrastructure failure, Amazon RDS automatically fails over to the standby (by repointing the underlying DNS), ensuring high availability without manual intervention or application code changes.",
     "whyOthersAreWrong": {
-      "A": "A Read Replica is asynchronous and does not fail over automatically-manual promotion is required. Manual snapshots have a high RTO/RPO and require manual restore.",
-      "D": "Aurora Global Database is designed for cross-region DR, not simply for same-region AZ failover, and is unnecessary complexity/cost for this requirement.",
-      "C": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
+      "A": "An RDS Read Replica utilizes asynchronous replication and has a different endpoint URL. Promoting a read replica to primary requires manual intervention and application code changes to update the connection strings.",
+      "C": "Taking hourly snapshots is a backup strategy. Restoring from a snapshot takes significant time and requires manual intervention, violating the requirement for automatic failover.",
+      "D": "Aurora Global Database spans multiple regions for disaster recovery, not single-region high availability. Furthermore, failing over to a secondary region requires manual promotion of the secondary cluster."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
+    "learningObjective": "Deploy Amazon RDS Multi-AZ to achieve high availability and automatic failover within a single AWS Region.",
     "topic": "Amazon RDS",
     "tags": [
+      "Databases",
       "RDS",
-      "Aurora",
-      "Route 53",
-      "High Availability"
+      "High Availability",
+      "Architecture"
     ]
   },
   {
     "id": "saa-883",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company's Recovery Time Objective (RTO) is 15 minutes and Recovery Point Objective (RPO) is near-zero for a critical application currently running in a single AWS Region. They want a cost-conscious DR strategy in a second region. Which DR strategy BEST fits these requirements?",
+    "question": "A company's critical application currently runs entirely in a single AWS Region. Their disaster recovery (DR) requirements mandate a Recovery Time Objective (RTO) of 15 minutes and a near-zero Recovery Point Objective (RPO). They want a cost-conscious DR strategy in a secondary Region. They are willing to run a scaled-down version of their application infrastructure in the secondary Region, provided the database is continuously replicated. Which DR strategy BEST fits these specific requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Backup and Restore",
-      "B": "Pilot Light",
-      "C": "Warm Standby with a scaled-down but fully functional copy of the environment continuously running, using Aurora Global Database for near-zero RPO replication",
-      "D": "Multi-Site Active-Active across both regions at full production capacity at all times"
+      "A": "Implement a Backup and Restore strategy by copying daily snapshots to the secondary region.",
+      "B": "Utilize a Pilot Light strategy where only the database is running and compute is completely shut down.",
+      "C": "Deploy a Warm Standby strategy with a scaled-down application environment and continuous database replication.",
+      "D": "Configure a Multi-Site Active-Active architecture across both regions running at full production capacity."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Warm Standby keeps a scaled-down but fully functional version of the full system running in the DR region at all times, allowing a fast scale-up to full capacity (meeting a 15-minute RTO), while Aurora Global Database provides typically sub-second cross-region replication lag (satisfying near-zero RPO) far more cost-effectively than running full active-active capacity. Backup and Restore has an RTO measured in hours, failing the requirement. Pilot Light only keeps core data services running and requires provisioning compute at failover time, generally yielding a higher RTO than warm standby. Multi-Site Active-Active would meet the RTO/RPO but at significantly higher cost than necessary, violating the cost-conscious requirement.",
+    "explanation": "C is correct because a 'Warm Standby' strategy involves running a scaled-down version of the fully functional environment in the secondary region. Because the compute is already running (albeit scaled down) and the database is continuously replicating, it can easily meet the strict 15-minute RTO by simply scaling up the compute resources when a disaster occurs, while balancing costs better than Active-Active.",
     "whyOthersAreWrong": {
-      "A": "Backup and Restore has an RTO measured in several hours because the entire environment and data must be reconstructed from backups, failing the 15-minute RTO requirement.",
-      "B": "Pilot Light only maintains minimal core data components in the recovery region; provisioning and scaling up the full application tier during a disaster takes longer than the required 15-minute RTO.",
-      "D": "Multi-Site Active-Active keeps full production capacity running continuously in both regions, meeting the RTO/RPO but incurring substantial unnecessary infrastructure cost, violating the cost-conscious requirement."
+      "A": "Backup and Restore relies on daily snapshots, resulting in a 24-hour RPO, which drastically fails the near-zero RPO requirement. Rebuilding the environment would also fail the 15-minute RTO.",
+      "B": "In a Pilot Light strategy, the compute infrastructure is entirely shut down. Provisioning and configuring all compute resources from scratch during a disaster typically takes longer than 15 minutes, risking the RTO.",
+      "D": "Multi-Site Active-Active easily meets the RTO/RPO requirements, but it requires running full production capacity in both regions at all times, violating the requirement for a 'cost-conscious' strategy utilizing 'scaled-down' infrastructure."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon Aurora to satisfy workload requirements.",
-    "topic": "Amazon Aurora",
+    "learningObjective": "Select the Warm Standby disaster recovery strategy to balance rapid RTO/RPO requirements with infrastructure costs.",
+    "topic": "Disaster Recovery",
     "tags": [
-      "Aurora",
-      "High Availability",
-      "Cost Optimization"
+      "Architecture",
+      "Disaster Recovery",
+      "High Availability"
     ]
   },
   {
@@ -152,58 +152,61 @@
   {
     "id": "saa-886",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global application uses Route 53 for DNS and needs to route users to the AWS region with the lowest network latency, while automatically failing over to a healthy region if the primary region becomes unavailable. Which Route 53 routing policy combination is MOST appropriate?",
+    "question": "A global web application uses Amazon Route 53 for DNS resolution. The architecture spans the `us-east-1` and `eu-west-1` AWS Regions. The company needs to route users to the region that provides the lowest network latency for their specific location. Furthermore, the architecture must automatically fail over and route all users to the healthy region if the primary region goes offline. Which Route 53 routing policy combination is MOST appropriate?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Simple routing policy only",
-      "B": "Latency-based routing policy combined with Route 53 health checks",
-      "C": "Weighted routing policy with equal weights",
-      "D": "Geolocation routing policy only, with no health checks"
+      "A": "Implement a Simple routing policy with multiple A records pointing to both AWS regions.",
+      "B": "Combine a Latency-based routing policy with Route 53 health checks on both endpoints.",
+      "C": "Configure a Weighted routing policy with equal 50/50 weights pointing to both endpoints.",
+      "D": "Utilize a Geolocation routing policy strictly based on the user's country with no health checks."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Latency-based routing directs users to the region offering the lowest measured latency, and when combined with Route 53 health checks, unhealthy endpoints are automatically removed from consideration so traffic fails over to the next-best healthy region. Simple routing doesn't consider latency or health at all. Weighted routing with equal weights just splits traffic evenly regardless of latency or health. Geolocation without health checks routes strictly by user location and won't reroute automatically during an outage.",
+    "explanation": "B is correct because Latency-based routing ensures users are routed to the AWS Region that provides the lowest network latency. By associating Route 53 health checks with these latency records, Route 53 will automatically stop routing traffic to a region if its health check fails, natively providing the required automatic failover capability.",
     "whyOthersAreWrong": {
-      "A": "Simple routing cannot perform latency-based routing to direct users to the closest region and lacks automated health-check failover.",
-      "C": "Weighted routing distributes traffic strictly according to assigned static weights without measuring user latency or performing automatic health failover.",
-      "D": "Geolocation routing routes based on geographic IP origin rather than actual network latency, and without Route 53 health checks, it cannot redirect traffic during a regional disruption."
+      "A": "Simple routing cannot evaluate health checks or latency. It simply returns all IP addresses to the client, leading to random routing and no failover protection.",
+      "C": "Weighted routing distributes traffic randomly based on proportions, not based on the user's network latency.",
+      "D": "Geolocation routing routes based on physical borders, not actual network latency. Furthermore, without health checks, Route 53 would continue sending users to a failed region, causing an outage."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
+    "learningObjective": "Combine Amazon Route 53 Latency routing with health checks to provide high-performance, fault-tolerant global traffic management.",
     "topic": "Amazon Route 53",
     "tags": [
+      "Networking",
       "Route 53",
-      "IAM",
-      "Networking"
+      "Performance",
+      "Failover"
     ]
   },
   {
     "id": "saa-887",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company stores critical business documents in Amazon S3 and needs protection against accidental deletion by an application bug, while still allowing legitimate object updates and eventual deletion by authorized administrators after review. Which S3 feature should be enabled?",
+    "question": "A company stores critical business documents in an Amazon S3 bucket. The data must be protected against accidental deletion caused by potential application bugs. However, authorized administrators must still be able to legitimately update the documents over time, and eventually permanently delete them after an internal review process. Which Amazon S3 feature should be enabled to satisfy these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "S3 Object Lock in Compliance mode with an indefinite retention period",
-      "B": "S3 Versioning, so accidental deletes create a delete marker and prior versions remain recoverable",
-      "C": "S3 Transfer Acceleration",
-      "D": "S3 Requester Pays"
+      "A": "Configure Amazon S3 Object Lock in Compliance mode with an indefinite retention period.",
+      "B": "Enable Amazon S3 Versioning to ensure accidental deletes simply create a recoverable delete marker.",
+      "C": "Turn on the Amazon S3 Transfer Acceleration feature to securely route the traffic over the AWS backbone.",
+      "D": "Enable the Amazon S3 Requester Pays feature to deter unauthorized users from accessing the bucket."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "S3 Versioning preserves every version of an object; a DELETE request simply adds a delete marker rather than permanently erasing data, so administrators can restore the previous version by removing the delete marker-this balances recoverability with still allowing eventual, deliberate deletion. Object Lock in Compliance mode would prevent even authorized deletion until retention expires, which is more restrictive than required here. Transfer Acceleration speeds up uploads over long distances and is unrelated to data protection. Requester Pays shifts transfer costs to the requester and has nothing to do with deletion protection.",
+    "explanation": "B is correct because Amazon S3 Versioning protects against accidental deletion and overwrites. If an application bug deletes a file, S3 simply places a 'delete marker' over it, allowing administrators to recover the previous version. Because the objects are not locked, authorized administrators can still update or permanently delete the specific versions when necessary.",
     "whyOthersAreWrong": {
-      "A": "S3 Object Lock in Compliance mode prevents any user—including AWS account root and administrators—from deleting or modifying objects until the retention period expires, preventing legitimate review and deletion.",
-      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
-      "D": "S3 Requester Pays shifts the network transfer and request costs to the party accessing the data and provides no data protection or recovery capabilities."
+      "A": "S3 Object Lock in Compliance mode explicitly prevents ANY user (including administrators and the root user) from updating or deleting the objects. This violates the requirement that administrators must be able to update and eventually delete the documents.",
+      "C": "S3 Transfer Acceleration speeds up uploads and downloads over long distances. It provides zero protection against accidental data deletion.",
+      "D": "Requester Pays forces the downloading party to pay the data transfer costs. It is used for sharing large datasets publicly without incurring costs, not for preventing accidental deletion."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon S3.",
+    "learningObjective": "Enable Amazon S3 Versioning to protect objects from accidental deletion while maintaining administrative flexibility.",
     "topic": "Amazon S3",
     "tags": [
+      "Storage",
       "S3",
-      "Cost Optimization"
+      "Data Protection",
+      "Versioning"
     ]
   },
   {
@@ -238,30 +241,31 @@
   {
     "id": "saa-889",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to migrate a monolithic on-premises application's file storage to AWS, requiring POSIX-compliant shared file access from multiple EC2 instances across multiple AZs simultaneously, with automatic scaling of storage capacity. Which storage service should be used?",
+    "question": "A company is migrating a legacy monolithic application to AWS. The application's architecture heavily relies on a shared file system. To function correctly, the application requires POSIX-compliant shared file access from dozens of Amazon EC2 instances running simultaneously across multiple Availability Zones. The file system must also automatically scale its storage capacity up and down as files are added and removed. Which storage service must be used?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon EBS Multi-Attach",
-      "B": "Amazon EFS (Elastic File System)",
-      "C": "Amazon S3",
-      "D": "Instance Store"
+      "A": "Provision Amazon EBS Multi-Attach volumes to share block storage across the Availability Zones.",
+      "B": "Implement Amazon Elastic File System (EFS) and mount it concurrently across the EC2 instances.",
+      "C": "Store the files in an Amazon S3 bucket and access them using standard HTTP API calls.",
+      "D": "Utilize Amazon EC2 Instance Store volumes for high-performance, temporary shared access."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon EFS is a fully managed, POSIX-compliant, elastic NFS file system that can be mounted concurrently by many EC2 instances across multiple AZs, automatically scaling storage capacity up and down with usage. EBS Multi-Attach allows multiple instances to attach the same volume, but only within a single AZ and requires a cluster-aware file system-it doesn't natively provide POSIX shared access across AZs the way EFS does. S3 is object storage, not a POSIX file system, and isn't suitable for traditional file-system semantics required by many legacy applications.",
+    "explanation": "B is correct because Amazon Elastic File System (EFS) provides a fully managed, elastic, POSIX-compliant NFS file system that can be concurrently mounted by thousands of Amazon EC2 instances across multiple Availability Zones. It automatically scales its storage capacity as files are added or removed, meeting all requirements perfectly.",
     "whyOthersAreWrong": {
-      "D": "Instance Store is ephemeral, local to a single instance, and data is lost on stop/termination.",
-      "A": "Amazon EBS volumes are typically restricted to a single instance within a single Availability Zone and cannot provide shared multi-AZ file access.",
-      "C": "Amazon S3 is an object storage service accessed via REST APIs and does not provide native POSIX-compliant file system semantics such as file locking or directory hierarchies."
+      "A": "Amazon EBS Multi-Attach allows sharing a volume among multiple instances, but ONLY within a single Availability Zone. It cannot span multiple AZs, and it provides raw block storage, not a managed POSIX file system.",
+      "C": "Amazon S3 is an object store accessed via API calls. It does not provide a native POSIX-compliant file system interface that legacy applications can mount and interact with like a local drive.",
+      "D": "Instance Store volumes provide ephemeral, temporary block storage directly attached to a single physical host. They cannot be shared across instances and their data is lost if the instance stops."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon EFS.",
+    "learningObjective": "Use Amazon Elastic File System (EFS) for elastic, highly available, POSIX-compliant shared file storage across multiple Availability Zones.",
     "topic": "Amazon EFS",
     "tags": [
+      "Storage",
       "EFS",
-      "S3",
-      "EC2"
+      "Shared Storage",
+      "Architecture"
     ]
   },
   {
@@ -323,60 +327,61 @@
   {
     "id": "saa-892",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company needs to back up its on-premises VMware workloads directly to AWS to reduce reliance on local tape backup infrastructure, retaining backups for long-term compliance with automated lifecycle transitions to lower-cost storage. Which AWS service is purpose-built for this?",
+    "question": "An enterprise needs to back up its massive on-premises VMware virtual machine workloads directly to AWS. The goal is to eliminate their reliance on aging local tape backup infrastructure. They want a centralized AWS service that can integrate directly with VMware, manage the backup schedules, and automatically transition the older backups to lower-cost archival storage tiers for long-term compliance retention. Which AWS service is purpose-built for this?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS DataSync",
-      "B": "AWS Backup with AWS Storage Gateway (Volume Gateway) or direct integration for VMware workloads",
-      "C": "Amazon S3 Transfer Acceleration",
-      "D": "AWS Direct Connect alone"
+      "A": "Deploy the AWS DataSync agent to synchronize the virtual machine files to Amazon S3.",
+      "B": "Utilize AWS Backup in conjunction with an AWS Storage Gateway deployed on-premises.",
+      "C": "Enable the Amazon S3 Transfer Acceleration feature to speed up the manual backup uploads.",
+      "D": "Provision a dedicated AWS Direct Connect link to transfer the tape backups to the cloud."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Backup provides centralized, policy-based backup management, including support for backing up on-premises VMware workloads and applying lifecycle policies to transition backups to lower-cost storage tiers (such as S3 Glacier) for long-term retention, replacing tape-based processes. AWS DataSync is optimized for online data transfer/migration between on-premises storage and AWS, not backup lifecycle management. S3 Transfer Acceleration speeds up uploads over distance but has no backup/lifecycle capability. Direct Connect alone is just network connectivity, not a backup solution.",
+    "explanation": "B is correct because AWS Backup provides a centralized service to manage and automate backups across AWS services and on-premises workloads. Through direct integration (or via AWS Storage Gateway), AWS Backup can connect to on-premises VMware environments, schedule backups, and automatically transition those backups to cold storage tiers (like Glacier) for long-term compliance.",
     "whyOthersAreWrong": {
-      "A": "AWS DataSync is designed for fast data transfers and storage migrations, but lacks backup orchestration, retention scheduling, and automated lifecycle tiering for VMware VM backups.",
-      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
-      "D": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication."
+      "A": "AWS DataSync is a data transfer tool. While it can move files, it is not a backup management solution; it does not natively understand VMware snapshots, manage backup schedules, or enforce retention policies.",
+      "C": "Amazon S3 Transfer Acceleration speeds up API uploads. It does not provide any backup scheduling, VMware integration, or lifecycle management capabilities.",
+      "D": "AWS Direct Connect provides a dedicated network pipe. It provides the network transport, but it is not a backup software solution that can interface with VMware or manage backup lifecycles."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
-    "topic": "Amazon S3",
+    "learningObjective": "Leverage AWS Backup for centralized, automated backup management of on-premises VMware environments to the AWS cloud.",
+    "topic": "AWS Backup",
     "tags": [
-      "S3",
-      "IAM",
-      "Direct Connect",
-      "Backup",
-      "High Availability"
+      "Storage",
+      "Backups",
+      "Hybrid Cloud",
+      "VMware"
     ]
   },
   {
     "id": "saa-893",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company's application relies on a third-party payment API that occasionally experiences transient failures lasting a few seconds. Repeated immediate retries during these periods are overwhelming the third-party API and causing cascading failures. What pattern should be implemented in the application?",
+    "question": "A company's application relies on a third-party payment API. The API occasionally experiences transient failures lasting a few seconds due to rate limits or network blips. Currently, the application is configured to retry failed requests immediately and repeatedly, which is overwhelming the third-party API and causing cascading failures across the system. What architectural pattern should the developers implement to resolve this issue?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Retry immediately and indefinitely on every failure",
-      "B": "Implement exponential backoff with jitter for retries, and consider a circuit breaker to stop calling the API temporarily after repeated failures",
-      "C": "Remove all retry logic entirely",
-      "D": "Increase the number of concurrent threads calling the API to compensate for failures"
+      "A": "Configure the application to retry immediately and indefinitely on every failure to guarantee delivery.",
+      "B": "Implement exponential backoff with jitter for retries to gradually reduce the load on the API.",
+      "C": "Remove all retry logic entirely and simply drop the payment requests when failures occur.",
+      "D": "Increase the number of concurrent application threads calling the API to compensate for the failures."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Exponential backoff with jitter spreads out retry attempts over increasing intervals with randomization, reducing the thundering-herd effect on a struggling downstream service, while a circuit breaker pattern stops sending requests altogether for a cool-down period after repeated failures, giving the downstream service time to recover.",
+    "explanation": "B is correct because implementing exponential backoff with jitter is the AWS best practice for handling transient errors. Exponential backoff progressively increases the wait time between retries, and jitter adds randomness to the wait times. This prevents 'thundering herd' problems where many clients retry at the exact same moment, thereby drastically reducing the load on the struggling API.",
     "whyOthersAreWrong": {
-      "A": "Immediate indefinite retries is exactly the anti-pattern causing the cascading failure by storming the downstream service with requests.",
-      "C": "Removing all retry logic causes any transient network blip or temporary downstream throttle to immediately bubble up as an unhandled user-facing transaction failure.",
-      "D": "Increasing concurrent threads exacerbates the thundering-herd problem, exhausting local connection pools and completely overwhelming the third-party API."
+      "A": "Retrying immediately and indefinitely creates a tight loop that acts like a self-inflicted Denial of Service (DoS) attack against the struggling third-party API.",
+      "C": "Removing retry logic entirely means legitimate transient errors (like a 1-second network blip) will result in failed payments, severely degrading the user experience.",
+      "D": "Increasing concurrent threads to hammer a struggling API will only make the situation much worse, accelerating the cascading failure."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Architecture.",
-    "topic": "AWS Architecture",
+    "learningObjective": "Implement exponential backoff and jitter to gracefully handle transient API errors and prevent cascading failures.",
+    "topic": "Architecture",
     "tags": [
       "Architecture",
-      "Best Practices"
+      "Resilience",
+      "Best Practices",
+      "API"
     ]
   },
   {
@@ -474,90 +479,91 @@
   {
     "id": "saa-897",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company runs a fleet of EC2 instances behind an ALB in an Auto Scaling group. They want the ASG to automatically replace instances that are running but failing to respond correctly to application-level health checks (not just EC2 status checks). What should be configured?",
+    "question": "A company runs a fleet of Amazon EC2 instances behind an Application Load Balancer (ALB) managed by an Auto Scaling group (ASG). Currently, instances that freeze and stop serving HTTP requests are not being replaced by the ASG because the underlying EC2 hypervisor still reports the instance as 'running' and healthy. What configuration change is required to automatically replace these frozen instances?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "EC2 status check-based health checks only",
-      "B": "ALB target group health checks (HTTP/HTTPS) integrated with the Auto Scaling group's health check type set to ELB",
-      "C": "CloudWatch billing alarms",
-      "D": "Manually terminate unhealthy instances when noticed"
+      "A": "Rely exclusively on the default EC2 status check-based health checks configured in the ASG.",
+      "B": "Configure the Auto Scaling group to use ELB health checks instead of EC2 health checks.",
+      "C": "Create custom Amazon CloudWatch billing alarms to trigger the replacement of unresponsive EC2 instances.",
+      "D": "Write a custom AWS Lambda function to manually terminate unhealthy instances when they freeze."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Configuring the Auto Scaling group's health check type as ELB causes it to use the associated target group's HTTP/HTTPS health check results (application-level, e.g., checking a /health endpoint) rather than just the instance's EC2 status checks, so an instance that is running but returning errors gets marked unhealthy and automatically replaced. Default EC2 status checks only detect infrastructure-level failures (e.g., hardware or hypervisor issues), not application-level failures. CloudWatch billing alarms are unrelated to instance health. Manual termination doesn't scale and introduces delay, defeating the purpose of automated self-healing.",
+    "explanation": "B is correct because by default, Auto Scaling groups only use EC2 status checks (which only verify if the VM is powered on and reachable by the hypervisor). If an application crashes or freezes, the EC2 status check still passes. Changing the ASG health check type to 'ELB' forces the ASG to rely on the Application Load Balancer's HTTP/HTTPS health checks. If the application stops responding to HTTP pings, the ALB marks it unhealthy, and the ASG automatically terminates and replaces it.",
     "whyOthersAreWrong": {
-      "A": "EC2 status checks only verify hardware and hypervisor availability; they do not detect application crashes, hung processes, or HTTP 5xx errors.",
-      "C": "CloudWatch billing alarms monitor account spending and estimated charges, which are completely unrelated to application health or instance lifecycle replacement.",
-      "D": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents."
+      "A": "The prompt explicitly states that EC2 status checks are failing to detect the frozen application state. Relying on them will not fix the issue.",
+      "C": "CloudWatch billing alarms monitor financial spend. They have absolutely nothing to do with detecting unresponsive web applications.",
+      "D": "Writing custom Lambda scripts to terminate instances is a complex anti-pattern when ASG provides this exact capability natively via ELB health checks."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Configure Auto Scaling groups to use ELB health checks to automatically replace instances that fail at the application layer.",
+    "topic": "Amazon EC2 Auto Scaling",
     "tags": [
-      "EC2",
-      "CloudWatch",
-      "High Availability"
+      "Compute",
+      "Auto Scaling",
+      "High Availability",
+      "ALB"
     ]
   },
   {
     "id": "saa-898",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A media company serves large video files to a global audience and notices high latency for users far from the origin S3 bucket's region. What is the MOST effective way to reduce latency for these global users?",
+    "question": "A media company serves large training video files to a global audience directly from a single Amazon S3 bucket located in the `eu-central-1` Region. Users located in Asia and South America are reporting high latency and buffering issues due to the geographic distance from the origin bucket. What is the MOST effective architectural change to reduce latency for these global users?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Increase the S3 bucket's provisioned throughput",
-      "B": "Deploy Amazon CloudFront in front of the S3 origin to cache and serve content from edge locations near users",
-      "C": "Move the S3 bucket to every AWS region",
-      "D": "Enable S3 Versioning"
+      "A": "Increase the S3 bucket's provisioned throughput to handle the international download requests faster.",
+      "B": "Deploy Amazon CloudFront in front of the S3 origin to cache content at edge locations worldwide.",
+      "C": "Replicate the Amazon S3 bucket into every single AWS region to provide local copies.",
+      "D": "Enable the Amazon S3 Versioning feature to prevent the videos from being accidentally overwritten."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "CloudFront caches content at edge locations distributed globally, so subsequent requests are served from the location closest to the user rather than traveling back to the origin region, dramatically reducing latency for global audiences. S3 doesn't have a 'provisioned throughput' setting to increase in this sense .",
+    "explanation": "B is correct because Amazon CloudFront is a global Content Delivery Network (CDN). By placing CloudFront in front of the S3 bucket, the video files are cached at edge locations around the world. Users in Asia and South America will download the videos from an edge location geographically close to them, drastically reducing latency and buffering.",
     "whyOthersAreWrong": {
-      "C": "Duplicating the bucket in every region is operationally complex, expensive, and doesn't solve routing/latency by itself without a CDN or global routing layer.",
-      "A": "Amazon S3 automatically scales to support high request rates; there is no provisioned throughput setting for S3 buckets, and it does not eliminate geographic network latency.",
-      "D": "S3 Versioning protects objects against accidental overwrites and deletions by keeping multiple versions, but has no effect on network latency or download speed."
+      "A": "Amazon S3 scales throughput automatically; there is no 'provisioned throughput' setting to configure. Regardless, throughput at the origin does not solve latency caused by the speed of light over vast geographic distances.",
+      "C": "Replicating an S3 bucket to every AWS region is excessively complex to manage, insanely expensive for storage, and still doesn't provide the edge-level proximity of CloudFront's hundreds of PoPs.",
+      "D": "S3 Versioning protects against accidental overwrites and deletions. It does nothing to improve download latency or geographical performance."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon S3.",
-    "topic": "Amazon S3",
+    "learningObjective": "Deploy Amazon CloudFront to cache static media assets at the edge and drastically reduce global latency.",
+    "topic": "Amazon CloudFront",
     "tags": [
-      "S3",
+      "Networking",
       "CloudFront",
-      "Networking"
+      "Performance",
+      "S3"
     ]
   },
   {
     "id": "saa-899",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An application performs many repeated, identical read queries against an Amazon RDS MySQL database, causing high CPU utilization on the database instance. The data changes infrequently. What is the MOST effective way to improve performance and reduce database load?",
+    "question": "An application performs hundreds of repeated, identical read queries per second against an Amazon RDS for MySQL database to fetch product catalog data. This data changes very infrequently (once a week). The high read volume is causing sustained 95% CPU utilization on the database instance. What is the MOST cost-effective architectural change to dramatically improve performance and reduce the database load?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Vertically scale the RDS instance to the largest available size",
-      "B": "Introduce an Amazon ElastiCache (Redis or Memcached) caching layer in front of the database for frequently read, infrequently changed data",
-      "C": "Convert the database to Multi-AZ",
-      "D": "Add more read replicas and round-robin all read traffic to them"
+      "A": "Vertically scale the Amazon RDS instance to the absolute largest available instance size.",
+      "B": "Introduce an Amazon ElastiCache cluster in front of the database to cache the frequent queries.",
+      "C": "Convert the database to a Multi-AZ deployment to distribute the read traffic across instances.",
+      "D": "Add several Amazon RDS Read Replicas and round-robin all read traffic equally across them."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "A caching layer like ElastiCache is specifically designed to serve frequently accessed, slow-changing data from memory with sub-millisecond latency, dramatically cutting redundant database load for identical repeated queries-this directly targets the described access pattern. Vertical scaling increases cost and only delays hitting the ceiling again; it doesn't address the root inefficiency of repeated identical queries. Multi-AZ improves availability, not read performance (the standby isn't used for reads). Adding more read replicas helps distribute load but is more costly and higher-latency than an in-memory cache for data that rarely changes, and doesn't reduce the fundamentally redundant nature of the queries.",
+    "explanation": "B is correct because caching is the optimal architectural pattern for heavy, repetitive read workloads of infrequently changing data. By placing an Amazon ElastiCache (Redis or Memcached) cluster in front of the database, the application can serve these queries directly from memory in microseconds. This practically eliminates the read load on the RDS instance, solving the CPU bottleneck cost-effectively.",
     "whyOthersAreWrong": {
-      "A": "Vertically scaling compute or database instances does not resolve distributed latency bottlenecks and results in higher idle costs during off-peak periods.",
-      "C": "In standard Amazon RDS Multi-AZ deployments, the standby instance is purely for passive failover and cannot accept read queries or serve reporting traffic.",
-      "D": "Adding read replicas distributes database query load, but every identical query still executes against the database engine, incurring replica licensing and compute costs rather than serving cached results in microseconds."
+      "A": "Vertically scaling (buying a massive EC2 instance for the DB) is an expensive brute-force approach that will eventually hit a hard limit. It does not solve the underlying architectural inefficiency.",
+      "C": "A Multi-AZ deployment provides a synchronous standby instance strictly for high availability and disaster recovery. The standby instance cannot be used to serve read traffic.",
+      "D": "Read Replicas can scale read capacity, but for identical, repetitive queries of static data, an in-memory cache like ElastiCache is vastly more performant (microseconds vs milliseconds) and typically more cost-effective than running multiple database instances."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon RDS.",
-    "topic": "Amazon RDS",
+    "learningObjective": "Implement Amazon ElastiCache to offload repetitive read queries from relational databases and improve latency.",
+    "topic": "Amazon ElastiCache",
     "tags": [
-      "RDS",
-      "ElastiCache",
-      "High Availability",
-      "Cost Optimization",
-      "Networking"
+      "Databases",
+      "Caching",
+      "Performance",
+      "Architecture"
     ]
   },
   {

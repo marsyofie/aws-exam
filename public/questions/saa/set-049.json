@@ -91,29 +91,31 @@
   {
     "id": "saa-964",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A DynamoDB table experiences request throttling during flash sales, and analysis shows the throttling is concentrated on a small number of item keys that receive disproportionately high traffic (a 'hot partition'), even though overall provisioned throughput is well above average demand.",
+    "question": "An e-commerce company uses an Amazon DynamoDB table to track product inventory. During a flash sale, the table experiences severe `ProvisionedThroughputExceededException` errors. CloudWatch metrics show that the overall provisioned throughput for the table is barely utilized. Analysis reveals the throttling is concentrated on a small handful of item keys representing the 'daily deal' products, which receive disproportionately high traffic. What is the MOST effective architectural solution to resolve this 'hot partition' issue?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Enable DynamoDB Streams",
-      "B": "Switch the table to use a global secondary index only",
-      "C": "Redesign the partition key to have higher cardinality, for example by adding a random or calculated suffix to spread traffic across more partitions",
-      "D": "Simply increase the table's overall provisioned read/write capacity"
+      "A": "Enable DynamoDB Streams to asynchronously process the write requests for the flash sale products.",
+      "B": "Migrate the database entirely to use a global secondary index as the primary access pattern.",
+      "C": "Redesign the partition key to have higher cardinality, for example by adding a random suffix to spread traffic evenly.",
+      "D": "Simply increase the table's overall provisioned read and write capacity units to absorb the localized spike."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "A hot partition is a data-modeling problem: too many requests are landing on the same partition key, and DynamoDB divides provisioned throughput across partitions, so a hot key can be throttled even if the table's aggregate capacity is high. The fix is to increase partition key cardinality, for example via write-sharding (adding a random suffix to the key) so requests spread across more physical partitions. Raising overall table capacity increases cost without fixing the concentration problem, a GSI addresses different access patterns rather than partition heat, and Streams is a change-capture feature unrelated to throttling.",
+    "explanation": "C is correct because a 'hot partition' occurs when a poorly designed partition key (like a specific product ID) receives a massive, disproportionate amount of traffic, overwhelming the physical underlying storage partition. The standard architectural fix for DynamoDB is to redesign the partition key to ensure high cardinality and uniform data distribution, often by appending a random suffix or calculated hash to the key to distribute the hot items across multiple partitions.",
     "whyOthersAreWrong": {
-      "A": "DynamoDB Streams capture item modification events for asynchronous triggers, but do not alleviate hot partition read/write throttling.",
-      "B": "A GSI can redistribute access if its partition key is different, but switching to a GSI alone without changing key design or access patterns does not resolve hot partition limits on the underlying items.",
-      "D": "Increasing overall provisioned capacity increases total table throughput and cost, but capacity is divided evenly across physical partitions, so an individual hot partition will still throttle."
+      "A": "DynamoDB Streams capture item-level changes after they happen. They do not prevent the initial write request from being throttled at the partition level.",
+      "B": "A Global Secondary Index (GSI) also relies on partition keys. If the GSI uses the same low-cardinality key, the exact same hot partition throttling will occur on the index.",
+      "D": "Because the overall table throughput is barely utilized, increasing it further wastes money. A single partition has a hard limit (e.g., 3000 RCU / 1000 WCU). If the hot key exceeds this limit, adding capacity to the whole table will not stop the throttling."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
+    "learningObjective": "Resolve Amazon DynamoDB hot partition throttling by redesigning partition keys to ensure high cardinality and uniform traffic distribution.",
     "topic": "Amazon DynamoDB",
     "tags": [
+      "Databases",
       "DynamoDB",
-      "Cost Optimization"
+      "Performance",
+      "Architecture"
     ]
   },
   {
@@ -149,30 +151,31 @@
   {
     "id": "saa-966",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A frequently-read, relatively small DynamoDB dataset backs a latency-sensitive application that needs microsecond-level read response times, well below what DynamoDB's standard request latency provides.",
+    "question": "A real-time bidding platform uses a frequently-read, relatively small Amazon DynamoDB dataset to store active bid thresholds. The latency-sensitive application requires absolute microsecond-level read response times to remain competitive, which is well below the standard single-digit millisecond latency that DynamoDB natively provides. Which architectural component should be added to meet this strict microsecond latency requirement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Switch the table's billing mode to on-demand",
-      "B": "Increase the table's provisioned read capacity units",
-      "C": "Amazon DynamoDB Accelerator (DAX), an in-memory cache placed in front of the table",
-      "D": "Add a global secondary index"
+      "A": "Switch the DynamoDB table's billing mode from provisioned capacity to on-demand capacity mode.",
+      "B": "Massively increase the DynamoDB table's provisioned read capacity units to improve performance.",
+      "C": "Provision Amazon DynamoDB Accelerator (DAX) as an in-memory cache placed directly in front of the table.",
+      "D": "Add a global secondary index (GSI) to the table to optimize the read access patterns."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "DAX is an in-memory, write-through cache specifically for DynamoDB that can reduce response times for eventually-consistent reads from single-digit milliseconds down to microseconds, without any application-level caching logic beyond swapping the SDK client. Increasing RCUs improves throughput headroom, not per-request latency, changing billing mode affects cost/capacity management rather than raw latency, and adding a GSI supports different query patterns but doesn't fundamentally change per-request latency the way an in-memory cache does.",
+    "explanation": "C is correct because Amazon DynamoDB natively provides single-digit millisecond latency. To achieve microsecond-level latency, you must implement an in-memory cache. Amazon DynamoDB Accelerator (DAX) is a fully managed, highly available, in-memory cache explicitly built for DynamoDB that delivers up to a 10x performance improvement (from milliseconds to microseconds) for read-heavy workloads.",
     "whyOthersAreWrong": {
-      "A": "On-demand billing automatically manages read/write capacity units, but still operates within standard single-digit millisecond DynamoDB latency, failing the microsecond requirement.",
-      "B": "Increasing provisioned read capacity units increases table throughput capacity, but does not decrease request response times below standard millisecond latencies.",
-      "D": "Global secondary indexes provide alternative query access patterns, but their queries still incur single-digit millisecond latency rather than sub-millisecond/microsecond caching speeds."
+      "A": "Switching billing modes (from provisioned to on-demand) changes how you pay for the service; it does not change the physical underlying SSD hardware or improve latency from milliseconds to microseconds.",
+      "B": "Increasing provisioned RCUs prevents throttling, but it does not reduce the baseline network and disk latency of querying the underlying SSD storage.",
+      "D": "A Global Secondary Index (GSI) allows you to query the data using different keys. It still reads from SSD storage and will still return single-digit millisecond latency, not microsecond."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
+    "learningObjective": "Implement Amazon DynamoDB Accelerator (DAX) to achieve microsecond read latency for latency-sensitive DynamoDB applications.",
     "topic": "Amazon DynamoDB",
     "tags": [
+      "Databases",
       "DynamoDB",
-      "Cost Optimization",
-      "Networking"
+      "Caching",
+      "Performance"
     ]
   },
   {
@@ -208,28 +211,30 @@
   {
     "id": "saa-968",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A big-data workload performs large, sequential read/write operations against an EBS volume and needs consistent high throughput (hundreds of MB/s), but is not sensitive to random IOPS performance. Which EBS volume type is the most cost-effective fit?",
+    "question": "A data engineering team is deploying a massive big-data Hadoop workload on Amazon EC2. The workload performs large, sequential read and write operations against local block storage. The application requires consistent, high throughput (hundreds of MB/s) to process the massive files efficiently, but it is completely insensitive to random IOPS performance. Which Amazon EBS volume type is the MOST cost-effective fit for this specific workload profile?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "st1 (Throughput Optimized HDD)",
-      "B": "gp2 (General Purpose SSD)",
-      "C": "gp3 (General Purpose SSD)",
-      "D": "io2 (Provisioned IOPS SSD)"
+      "A": "Provision Throughput Optimized HDD (st1) volumes to provide the necessary sequential throughput at a low cost.",
+      "B": "Select General Purpose SSD (gp2) volumes to balance throughput and IOPS for the Hadoop cluster.",
+      "C": "Utilize General Purpose SSD (gp3) volumes configured with the absolute maximum baseline throughput.",
+      "D": "Deploy Provisioned IOPS SSD (io2) volumes to guarantee the high-performance throughput requirements."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "St1 volumes are HDD-backed and priced per GB for throughput-oriented, large sequential I/O workloads like big-data processing and log processing, making them the most cost-effective option when raw throughput (not random IOPS) is what matters. gp3, io2, and gp2 are all SSD-backed and priced for IOPS-sensitive, typically smaller, random I/O patterns (boot volumes, transactional databases); using SSD-backed storage for a purely throughput-oriented, sequential workload is unnecessarily expensive.",
+    "explanation": "A is correct because Throughput Optimized HDD (st1) volumes are backed by magnetic hard drives and are specifically engineered for large, sequential workloads (like Hadoop, Kafka, or log processing) that require high throughput rather than high IOPS. They provide this high throughput at a significantly lower cost per GB than any SSD-based volume.",
     "whyOthersAreWrong": {
-      "B": "gp2 is a general-purpose SSD volume that is more expensive per GB than st1 and scales throughput based on provisioned volume size, making it less cost-effective for large sequential streaming workloads.",
-      "C": "gp3 offers configurable baseline throughput on SSD media, but st1 (Throughput Optimized HDD) provides the lowest cost per GB-month for high-throughput, sequential big-data workloads.",
-      "D": "io2 Provisioned IOPS SSD is engineered for extreme random IOPS for mission-critical databases and is drastically more expensive than HDD volumes for sequential throughput workloads."
+      "B": "General Purpose SSDs (gp2) are designed to balance IOPS and throughput. Using them for a purely sequential throughput workload is less cost-effective than using HDDs.",
+      "C": "While gp3 volumes allow you to provision throughput independently of capacity, they are still SSDs. For massive, purely sequential big-data workloads that don't need SSD IOPS, st1 is much cheaper.",
+      "D": "Provisioned IOPS SSD (io2) volumes are the most expensive EBS option, designed specifically for extreme random IOPS workloads (like massive transactional databases). Using them for Hadoop is a massive waste of money."
     },
-    "learningObjective": "Select the most cost-effective architecture using AWS Architecture to satisfy workload requirements.",
-    "topic": "AWS Architecture",
+    "learningObjective": "Select Amazon EBS Throughput Optimized HDD (st1) volumes as the most cost-effective storage for large, sequential big-data workloads.",
+    "topic": "Amazon EBS",
     "tags": [
-      "High Availability",
+      "Storage",
+      "EBS",
+      "Big Data",
       "Cost Optimization"
     ]
   },
@@ -293,61 +298,61 @@
   {
     "id": "saa-971",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A gaming company runs real-time multiplayer traffic over UDP from players worldwide into backend servers behind a Network Load Balancer. The team wants to reduce latency by routing player traffic onto the AWS global network as close to the player as possible.",
+    "question": "A gaming company runs real-time multiplayer backend servers on Amazon EC2 instances behind a Network Load Balancer (NLB) in the `us-east-1` region. Players worldwide connect using the UDP protocol. The engineering team wants to significantly reduce network latency and packet loss by routing player traffic onto the highly reliable AWS global network backbone as close to the player's physical location as possible. Which AWS service is explicitly designed for this non-HTTP use case?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Global Accelerator",
-      "B": "Amazon CloudFront",
-      "C": "Amazon Route 53 latency-based routing alone",
-      "D": "AWS Direct Connect"
+      "A": "Implement AWS Global Accelerator to route the UDP traffic over the AWS global network.",
+      "B": "Deploy Amazon CloudFront to cache the UDP multiplayer game traffic at edge locations worldwide.",
+      "C": "Configure Amazon Route 53 latency-based routing to point directly to the Network Load Balancer.",
+      "D": "Provision AWS Direct Connect dedicated links to all major internet service providers globally."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Global Accelerator uses AWS's global Anycast network and edge locations to bring TCP and UDP traffic onto AWS's private backbone as close to the client as possible, which is well-suited to latency-sensitive, non-HTTP protocols like real-time UDP game traffic. CloudFront is an HTTP(S) content delivery network and doesn't support arbitrary UDP traffic in this way, Route 53 latency-based routing alone only affects DNS resolution and doesn't accelerate the actual data path, and Direct Connect is for dedicated connectivity from specific on-premises locations, not for improving performance for public internet players worldwide.",
+    "explanation": "A is correct because AWS Global Accelerator is designed to optimize network routing for non-HTTP protocols (like TCP and UDP) globally. It provides static anycast IP addresses that allow user traffic to enter the AWS backbone network at the nearest edge location, bypassing the congested public internet and significantly reducing latency and packet loss for applications like multiplayer games.",
     "whyOthersAreWrong": {
-      "B": "Amazon CloudFront supports HTTP/HTTPS and WebSocket protocols at Layer 7, but does not proxy or accelerate custom UDP network traffic.",
-      "C": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations.",
-      "D": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication."
+      "B": "Amazon CloudFront is a Content Delivery Network designed exclusively for HTTP/HTTPS web traffic and static assets. It cannot proxy or cache raw UDP game traffic.",
+      "C": "Route 53 latency routing simply returns the IP address of the NLB. The player's UDP traffic must still traverse the unreliable public internet all the way to `us-east-1`, resulting in higher packet loss.",
+      "D": "AWS Direct Connect provides dedicated, private network links between an enterprise data center and AWS. It is not a service used to route individual public internet gamers to AWS."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon Route 53.",
-    "topic": "Amazon Route 53",
+    "learningObjective": "Deploy AWS Global Accelerator to optimize global network routing and reduce latency for TCP/UDP workloads.",
+    "topic": "AWS Global Accelerator",
     "tags": [
-      "Route 53",
-      "CloudFront",
-      "Direct Connect",
-      "Networking"
+      "Networking",
+      "Global Accelerator",
+      "Performance",
+      "Architecture"
     ]
   },
   {
     "id": "saa-972",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A data warehouse workload needs to run complex analytical SQL queries across structured data at a petabyte scale, with massively parallel query execution across many nodes.",
+    "question": "A large retail corporation needs a data warehouse solution capable of running complex analytical SQL queries (OLAP) across petabytes of structured sales and inventory data. The workload requires massively parallel query execution across dozens of compute nodes to aggregate years of historical data within seconds for business intelligence dashboards. Which AWS database service is designed specifically for this scale and workload?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon ElastiCache for Redis",
-      "B": "Amazon DynamoDB",
-      "C": "Amazon RDS for PostgreSQL",
-      "D": "Amazon Redshift"
+      "A": "Provision an Amazon ElastiCache for Redis cluster to analyze the petabyte-scale data in-memory.",
+      "B": "Utilize an Amazon DynamoDB table configured with on-demand capacity for the massive analytical queries.",
+      "C": "Deploy an Amazon RDS for PostgreSQL instance using the largest available compute instance class.",
+      "D": "Launch an Amazon Redshift cluster to provide massively parallel processing for the petabyte-scale data warehouse."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Redshift is a columnar, massively parallel processing (MPP) data warehouse purpose-built for large-scale analytical (OLAP) SQL queries across very large datasets. RDS for PostgreSQL is a general-purpose relational (OLTP) database not designed for petabyte-scale MPP analytics, DynamoDB is a NoSQL key-value/document store without general SQL analytical query capability at that scale, and ElastiCache is an in-memory cache, not a data warehouse.",
+    "explanation": "D is correct because Amazon Redshift is AWS's fully managed, petabyte-scale data warehouse service. It uses columnar storage and Massively Parallel Processing (MPP) to distribute highly complex analytical (OLAP) SQL queries across multiple compute nodes, delivering rapid query performance for enormous datasets.",
     "whyOthersAreWrong": {
-      "A": "Introducing an in-memory caching cluster adds architectural complexity and ongoing cache invalidation overhead without solving persistent storage durability requirements.",
-      "B": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints.",
-      "C": "Amazon RDS for PostgreSQL is an OLTP relational database engine that does not support massively parallel processing (MPP) architecture across petabyte-scale data warehouse clusters."
+      "A": "Amazon ElastiCache is an in-memory datastore. It is prohibitively expensive and technically impractical to load petabytes of historical sales data entirely into RAM for analytical querying.",
+      "B": "Amazon DynamoDB is a NoSQL database optimized for high-throughput transactional (OLTP) key-value access. It is not designed to execute complex, multi-table analytical SQL queries.",
+      "C": "Amazon RDS is a relational database designed for transactional (OLTP) workloads. Even on the largest instance, a single instance cannot provide the massively parallel processing required to aggregate petabytes of data efficiently."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
-    "topic": "Amazon DynamoDB",
+    "learningObjective": "Select Amazon Redshift as the petabyte-scale, massively parallel data warehouse solution for complex analytical (OLAP) workloads.",
+    "topic": "Amazon Redshift",
     "tags": [
-      "DynamoDB",
-      "ElastiCache",
-      "RDS",
-      "High Availability"
+      "Databases",
+      "Analytics",
+      "Redshift",
+      "Data Warehouse"
     ]
   },
   {
@@ -386,29 +391,31 @@
   {
     "id": "saa-974",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A synchronous API backed by Lambda serves latency-sensitive requests at predictable peak times, but users report noticeably slower response times for the first request after a period of inactivity, due to cold starts.",
+    "question": "A company provides a synchronous, user-facing API backed by AWS Lambda. The API experiences highly predictable traffic spikes every morning at 9:00 AM. Users consistently report that the API response times are unacceptably slow for the very first few requests made right at 9:00 AM, but performance normalizes immediately afterward. Engineering identifies 'cold starts' as the root cause. Which configuration change is the MOST effective way to eliminate these cold starts?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Increase the function's timeout setting",
-      "B": "Switch the function's runtime to a compiled language only, with no other configuration change",
-      "C": "Configure Provisioned Concurrency for the function ahead of the predictable peak periods",
-      "D": "Reduce the function's memory allocation to start faster"
+      "A": "Significantly increase the Lambda function's timeout setting to allow the cold start to complete gracefully.",
+      "B": "Switch the Lambda function's runtime to a compiled language (like Go) with no other configuration changes.",
+      "C": "Configure Provisioned Concurrency for the Lambda function on a schedule right before the predictable peak periods.",
+      "D": "Drastically reduce the Lambda function's memory allocation so the underlying microVM boots up faster."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Provisioned Concurrency keeps a specified number of execution environments pre-initialized and ready to respond immediately, eliminating cold-start latency for that concurrency level; since the peak periods are predictable, it can be scheduled to ramp up ahead of time via Application Auto Scaling. Increasing the timeout only affects how long a request is allowed to run, not startup latency, changing the runtime language can help but is a much larger, more disruptive change than a configuration setting and doesn't fully eliminate cold starts, and reducing memory generally increases (not decreases) init and execution time since memory is tied to allocated CPU.",
+    "explanation": "C is correct because AWS Lambda Provisioned Concurrency keeps functions initialized and hyper-ready to respond in double-digit milliseconds. By scheduling Provisioned Concurrency to initialize the execution environments slightly before the predictable 9:00 AM spike, the application avoids the initialization latency (cold start) entirely when the massive wave of users hits.",
     "whyOthersAreWrong": {
-      "A": "Increasing the execution timeout allows the function to execute longer before terminating, but does nothing to pre-warm containers or eliminate cold-start latency.",
-      "B": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "D": "Reducing memory allocation reduces allocated CPU proportionately, which slows down runtime initialization and can exacerbate cold-start durations."
+      "A": "Increasing the timeout setting just allows the function to run longer without being killed. It does absolutely nothing to prevent the cold start latency that the users are experiencing.",
+      "B": "While compiled languages (like Go or Rust) generally have faster cold starts than interpreted languages (like Java), they still experience *some* cold start latency. Provisioned Concurrency eliminates it entirely.",
+      "D": "Reducing memory actually *decreases* the CPU power allocated to the Lambda function, which often makes the initialization phase (cold start) take even longer."
     },
-    "learningObjective": "Optimize workload throughput and latency using AWS Lambda.",
+    "learningObjective": "Eliminate AWS Lambda cold starts for latency-sensitive applications by configuring Provisioned Concurrency.",
     "topic": "AWS Lambda",
     "tags": [
+      "Compute",
+      "Serverless",
       "Lambda",
-      "Networking"
+      "Performance"
     ]
   },
   {
@@ -500,86 +507,90 @@
   {
     "id": "saa-978",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company has a steady-state, predictable production workload that will run 24/7 on a fixed EC2 instance family, size, and region for the next three years. They want the maximum possible discount versus On-Demand pricing and don't need flexibility to change instance family or region.",
+    "question": "A company is migrating a massive, steady-state production database to Amazon EC2. Capacity planning dictates that this exact database workload will run 24/7 without interruption on a fixed `r6g.4xlarge` instance within the `us-east-1` region for the next three years. The finance department demands the absolute maximum possible discount versus On-Demand pricing, and they have confirmed they do not need any flexibility to change the instance family or region in the future. Which EC2 purchasing option provides the deepest discount?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Standard Reserved Instances, 3-year term, All Upfront payment",
-      "B": "On-Demand Instances with no commitment",
-      "C": "Compute Savings Plans, 1-year term",
-      "D": "EC2 Spot Instances"
+      "A": "Purchase Standard Reserved Instances with a 3-year term and an All Upfront payment option.",
+      "B": "Provision On-Demand Instances to avoid long-term commitments and maintain maximum infrastructure flexibility.",
+      "C": "Purchase Compute Savings Plans with a 1-year term to balance cost savings with flexibility.",
+      "D": "Request EC2 Spot Instances to achieve the lowest possible hourly compute price without commitment."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "For a workload that is fixed in instance family, size, and region with a long, predictable horizon, a 3-year Standard Reserved Instance with All Upfront payment typically provides the deepest discount of any of these options, since Standard RIs trade away flexibility (family/size/region changes) for maximum discount. Compute Savings Plans offer more flexibility across instance family/region/OS but at a somewhat lower maximum discount, which isn't needed here. Spot is unsuitable for a workload that must run continuously and can't tolerate interruption, and On-Demand offers no discount at all.",
+    "explanation": "A is correct because for steady-state workloads where instance family, size, and region are completely fixed for a long period, Standard Reserved Instances (with a 3-year term and paid All Upfront) provide the absolute highest discount available (up to 72% off On-Demand). EC2 Instance Savings Plans offer the exact same discount but are also a valid answer if standard RIs are not listed.",
     "whyOthersAreWrong": {
-      "B": "On-Demand pricing offers maximum flexibility with zero commitment, but provides no discount compared to 3-year commitments for steady-state workloads.",
-      "C": "A 1-year Compute Savings Plan offers lower percentage discounts than a 3-year Standard Reserved Instance and does not achieve the maximum possible discount.",
-      "D": "Spot Instances offer steep discounts but can be reclaimed at any time with a 2-minute notice, making them inappropriate for guaranteed 24/7 steady-state production workloads."
+      "B": "On-Demand instances offer zero discount, making them the most expensive choice for an always-on, 3-year workload.",
+      "C": "Compute Savings Plans offer great flexibility (allowing you to change instance families), but they offer a slightly lower maximum discount compared to the inflexible Standard RIs or Instance Savings Plans.",
+      "D": "Spot Instances offer up to a 90% discount, but they can be terminated by AWS with a 2-minute warning. You cannot run a mission-critical, steady-state production database on interruptible capacity."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Maximize cost savings by purchasing 3-year, All Upfront Standard Reserved Instances for completely predictable, inflexible workloads.",
+    "topic": "Cost Optimization",
     "tags": [
+      "Compute",
       "EC2",
-      "Cost Optimization"
+      "Cost Optimization",
+      "Pricing"
     ]
   },
   {
     "id": "saa-979",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A batch image-rendering workload is fault-tolerant, can checkpoint and resume, and is flexible about exactly when it completes. The team wants the lowest possible EC2 compute cost.",
+    "question": "A media studio runs a nightly batch image-rendering workload on Amazon EC2. The custom rendering application is highly fault-tolerant; it regularly checkpoints its progress to Amazon S3 and can automatically resume rendering from the last checkpoint if an instance is terminated abruptly. Furthermore, the studio is flexible about exactly when the rendering job finishes before morning. The operations team wants to achieve the lowest possible EC2 compute cost for this workload. Which purchasing option is the best fit?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Standard Reserved Instances with a 3-year commitment",
-      "B": "Dedicated Hosts",
-      "C": "On-Demand Instances",
-      "D": "EC2 Spot Instances, with the application designed to handle interruption"
+      "A": "Purchase Standard Reserved Instances with a 3-year commitment to lower the overall hourly cost.",
+      "B": "Allocate Dedicated Hosts to ensure the rendering workload runs on physically isolated hardware.",
+      "C": "Provision On-Demand Instances to guarantee the rendering jobs finish predictably without interruption.",
+      "D": "Request EC2 Spot Instances since the application is explicitly designed to handle abrupt interruptions."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Spot Instances offer the deepest discounts (often up to 90% off On-Demand) in exchange for the possibility of interruption with a two-minute warning, which is an acceptable trade-off for a fault-tolerant, checkpoint-capable, time-flexible batch workload. Reserved Instances require a long commitment better suited to steady-state workloads, On-Demand carries no discount, and Dedicated Hosts are for licensing/compliance/isolation requirements and are one of the more expensive options, not a cost-optimization choice.",
+    "explanation": "D is correct because Amazon EC2 Spot Instances provide the absolute deepest discount (up to 90% off On-Demand). The only caveat is that AWS can reclaim the instance with a 2-minute warning. Because the rendering application is highly fault-tolerant, checkpoints its progress, and has a flexible completion time, it is the perfect use case for Spot Instances.",
     "whyOthersAreWrong": {
-      "A": "Standard Reserved Instances require a 3-year commitment and ongoing payments, which is unnecessary and far more costly than Spot Instances for interruptible, non-time-critical batch jobs.",
-      "B": "Dedicated Hosts are designed for regulatory compliance or server-bound software licenses and carry the highest compute costs.",
-      "C": "On-Demand Instances charge the standard full hourly rate with no commitment or excess-capacity discounts."
+      "A": "Reserved Instances require paying for capacity 24/7 (or committing to a continuous spend). For a batch workload that only runs nightly, paying for unused daytime capacity destroys the cost savings.",
+      "B": "Dedicated Hosts are used for specific licensing or regulatory compliance. They are exceptionally expensive and entirely unsuited for a cost-optimized, fault-tolerant batch job.",
+      "C": "On-Demand Instances provide no discount. Using them for a workload that can tolerate interruptions wastes money."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Leverage Amazon EC2 Spot Instances to achieve up to 90% cost savings for fault-tolerant, interruptible batch workloads.",
+    "topic": "Cost Optimization",
     "tags": [
-      "EC2",
+      "Compute",
+      "Spot Instances",
+      "Batch Processing",
       "Cost Optimization"
     ]
   },
   {
     "id": "saa-980",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company's compute needs are unpredictable over the next couple of years -- instance family, size, OS, and even region may change as the architecture evolves -- but they still want a meaningful discount over On-Demand pricing in exchange for a spend commitment.",
+    "question": "A rapidly growing startup wants to reduce its Amazon EC2 compute bill. Their compute needs are highly unpredictable over the next couple of years—the required instance families, instance sizes, operating systems, and even the AWS Regions may change drastically as their application architecture evolves. However, the startup's CFO is still willing to make a financial spend commitment to achieve a meaningful discount over On-Demand pricing. Which purchasing option provides the required flexibility?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "EC2 Instance Savings Plans, locked to a specific instance family and region",
-      "B": "Standard Reserved Instances, locked to a specific instance family and region",
-      "C": "Zonal Reserved Instances",
-      "D": "Compute Savings Plans, which apply the discount to usage regardless of instance family, size, OS, or region"
+      "A": "Purchase EC2 Instance Savings Plans, which are locked to a specific instance family and region.",
+      "B": "Purchase Standard Reserved Instances, which are locked to a specific instance family and region.",
+      "C": "Purchase Zonal Reserved Instances to guarantee capacity within a specific Availability Zone.",
+      "D": "Purchase Compute Savings Plans, which apply discounts automatically regardless of instance family, size, OS, or region."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Compute Savings Plans provide the most flexibility of any AWS discount mechanism -- the commitment is to a dollar-per-hour spend amount, and the discount automatically applies to usage across any instance family, size, OS, region, and even to Fargate and Lambda usage, making it the best fit when future compute needs are uncertain. Standard RIs and EC2 Instance Savings Plans both lock in specific instance family/region attributes, which conflicts with the stated need for flexibility, and Zonal RIs add an even narrower AZ-level commitment.",
+    "explanation": "D is correct because Compute Savings Plans provide the most flexibility. You commit to a specific hourly spend (e.g., $10/hour), and in exchange, you receive a discount (up to 66%) on your compute usage. Crucially, the discount automatically applies regardless of the instance family, size, operating system, tenancy, or even the AWS Region you use.",
     "whyOthersAreWrong": {
-      "A": "EC2 Instance Savings Plans require committing to a specific instance family within a specific region, preventing flexible transitions to other families or regions.",
-      "B": "Standard Reserved Instances are bound to a specific instance type and region, failing the requirement for architectural and regional flexibility.",
-      "C": "Zonal Reserved Instances provide capacity reservations in a specific Availability Zone and cannot be applied flexibly across different instance families, operating systems, or regions."
+      "A": "EC2 Instance Savings Plans offer a higher discount but are strictly locked to a specific instance family and AWS Region, failing the requirement for maximum flexibility.",
+      "B": "Standard Reserved Instances are extremely rigid. They lock you into a specific instance type, OS, and region, preventing architectural shifts.",
+      "C": "Zonal Reserved Instances provide a capacity reservation in a specific AZ but are completely inflexible regarding region or instance family changes."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Select Compute Savings Plans to achieve significant cost savings while maintaining maximum flexibility across regions and instance families.",
+    "topic": "Cost Optimization",
     "tags": [
+      "Compute",
       "EC2",
-      "Lambda",
-      "ECS",
+      "Savings Plans",
       "Cost Optimization"
     ]
   }

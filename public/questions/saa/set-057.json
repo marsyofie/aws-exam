@@ -88,32 +88,31 @@
   {
     "id": "saa-1124",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company is building a data lake on Amazon S3. Data arrives from multiple sources in different formats (CSV, JSON, Parquet). The data engineering team needs to catalog the data and make it queryable using standard SQL. Which combination of services should they use?",
+    "question": "A data engineering team is building a massive data lake on Amazon S3. Raw data arrives constantly from various external sources in vastly different formats, including CSV, JSON, and Apache Parquet. The team needs an automated way to discover the schema of this heterogeneous data, catalog it centrally, and immediately make it available for ad-hoc querying using standard SQL without provisioning database servers. Which combination of AWS services should they use?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Glue Data Catalog and Amazon Athena.",
-      "B": "Amazon EMR and Amazon Redshift.",
-      "C": "AWS Lake Formation and Amazon QuickSight.",
-      "D": "AWS Data Pipeline and Amazon RDS."
+      "A": "Utilize the AWS Glue Data Catalog to discover the schema and Amazon Athena to execute the SQL queries.",
+      "B": "Provision an Amazon EMR cluster to transform the data and load it into an Amazon Redshift data warehouse.",
+      "C": "Implement AWS Lake Formation to secure the data and Amazon QuickSight to visualize the raw CSV files.",
+      "D": "Use AWS Data Pipeline to move the raw S3 files directly into a highly provisioned Amazon RDS instance."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "AWS Glue Data Catalog serves as a centralized metadata repository that catalogs data from multiple sources and formats. Amazon Athena uses the Glue Data Catalog to run standard SQL queries directly on S3 data. This combination provides a serverless, cost-effective data lake solution.",
+    "explanation": "A is correct because AWS Glue features 'crawlers' that automatically scan data in Amazon S3, discover the schema, and store that metadata in the central AWS Glue Data Catalog. Once the data is cataloged, Amazon Athena (a fully serverless interactive query service) can use that catalog to instantly execute standard SQL queries directly against the raw S3 files without provisioning any database servers.",
     "whyOthersAreWrong": {
-      "B": "EMR and Redshift require cluster management and are more expensive for ad- hoc querying.",
-      "C": "Lake Formation helps with data lake setup and access control, but QuickSight is a BI tool, not a SQL query engine.",
-      "D": "AWS Data Pipeline is deprecated, and RDS is a transactional database, not suited for data lake analytics."
+      "B": "While EMR and Redshift are powerful, they require provisioning and managing massive compute clusters, violating the 'without provisioning database servers' requirement.",
+      "C": "Amazon QuickSight is a Business Intelligence (BI) tool for building dashboards; it relies on services like Athena to query raw S3 data and cannot execute SQL directly against raw CSVs on its own.",
+      "D": "AWS Data Pipeline is a legacy orchestration service. Moving petabytes of heterogeneous data into a relational database (RDS) is the opposite of a data lake architecture and requires massive server provisioning."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Glue.",
+    "learningObjective": "Combine AWS Glue Data Catalog (for schema discovery) and Amazon Athena (for serverless SQL querying) to build a serverless data lake architecture on Amazon S3.",
     "topic": "AWS Glue",
     "tags": [
+      "Analytics",
+      "Data Lake",
       "Glue",
-      "S3",
-      "RDS",
-      "Lambda",
-      "Cost Optimization"
+      "Athena"
     ]
   },
   {
@@ -178,29 +177,31 @@
   {
     "id": "saa-1127",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company uses AWS Lambda to process messages from Amazon SQS. Each message takes approximately 5 minutes to process. The company notices that some messages are being retried multiple times even when processing is still in progress. What should the solutions architect do to resolve this?",
+    "question": "A company uses AWS Lambda to asynchronously process a backlog of video files, triggered by messages from an Amazon SQS standard queue. Each video file takes approximately 5 minutes to process. The engineering team notices a critical issue: individual video files are being processed multiple times concurrently by different Lambda function invocations. What is the MOST likely cause of this duplicate processing, and how should it be resolved?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Increase the visibility timeout of the SQS queue to be greater than the Lambda function timeout.",
-      "B": "Increase the Lambda function memory allocation.",
-      "C": "Enable SQS dead-letter queue.",
-      "D": "Decrease the batch size of the Lambda event source mapping."
+      "A": "The queue's visibility timeout is shorter than the Lambda execution time; increase the visibility timeout.",
+      "B": "The Lambda function lacks sufficient memory; increase the memory allocation to speed up processing.",
+      "C": "The SQS standard queue occasionally delivers duplicates; replace it entirely with a FIFO queue.",
+      "D": "The Lambda event source mapping batch size is too large; significantly decrease the batch size."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "The visibility timeout should be set to a value greater than the Lambda function timeout. If the Lambda function takes 5 minutes (300 seconds) to process a message, the visibility timeout should be at least 300 seconds plus a buffer. If it's too short, SQS makes the message visible again while Lambda is still processing.",
+    "explanation": "A is correct because the Amazon SQS visibility timeout determines how long a message is hidden from other consumers after it has been picked up. If the visibility timeout (e.g., 30 seconds) is shorter than the time it takes Lambda to process the video (5 minutes), the message becomes visible to other Lambda instances *before* the first one finishes and deletes it, resulting in concurrent duplicate processing. The fix is to increase the visibility timeout to exceed the maximum Lambda execution time.",
     "whyOthersAreWrong": {
-      "B": "Increasing memory may speed up processing but doesn't address the root cause.",
-      "C": "A DLQ handles messages that fail after max receive count, but the issue is premature retries.",
-      "D": "Decreasing batch size doesn't address the visibility timeout issue."
+      "B": "Increasing memory might speed up the function slightly, but if the visibility timeout is fundamentally too short, duplicate processing will still occur.",
+      "C": "While standard queues provide at-least-once delivery, the specific symptom described (processing the same message multiple times *concurrently*) is the classic hallmark of a visibility timeout misconfiguration, not the rare network duplication typical of standard queues.",
+      "D": "Decreasing the batch size reduces the number of messages a single Lambda invocation receives; it does not solve the issue of other invocations picking up the same message because the visibility timeout expired."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Configure the Amazon SQS visibility timeout to be greater than the consumer processing time to prevent concurrent duplicate message processing.",
+    "topic": "Amazon SQS",
     "tags": [
+      "Integration",
+      "SQS",
       "Lambda",
-      "SQS"
+      "Troubleshooting"
     ]
   },
   {
@@ -264,64 +265,63 @@
   {
     "id": "saa-1130",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company is designing a new application that requires a NoSQL database with single-digit millisecond latency at any scale. The data model is flexible and schema-less. The database must be globally distributed with low-latency reads. Which AWS service is the BEST choice?",
+    "question": "A startup is designing a mobile application that requires a globally distributed database. The application demands single-digit millisecond latency for reads and writes at any scale to support real-time user interactions. Furthermore, the development team explicitly requires a schema-less NoSQL data model because the user profile structure will evolve constantly. Which AWS database service is the BEST architectural choice for these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon RDS with Multi-AZ and Read Replicas",
-      "B": "Amazon DynamoDB with global tables",
-      "C": "Amazon Aurora Global Database",
-      "D": "Amazon ElastiCache for Redis"
+      "A": "Deploy a globally distributed Amazon RDS for PostgreSQL database using cross-region read replicas.",
+      "B": "Provision an Amazon DynamoDB table and enable the Global Tables feature for multi-region replication.",
+      "C": "Utilize an Amazon Aurora Global Database to achieve low-latency replication across AWS Regions.",
+      "D": "Launch an Amazon ElastiCache for Redis cluster spanning multiple geographic continents."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon DynamoDB with global tables provides a fully managed, schema-less NoSQL database with single-digit millisecond latency at any scale. Global tables enable multi- Region, multi-active replication for globally distributed, low-latency reads.",
+    "explanation": "B is correct because Amazon DynamoDB is AWS's flagship schema-less NoSQL database, uniquely designed to provide consistent single-digit millisecond latency at virtually any scale. The 'Global Tables' feature extends this by providing a fully managed, active-active, multi-region database that automatically replicates data across AWS Regions, perfectly satisfying all the prompt's requirements.",
     "whyOthersAreWrong": {
-      "A": "Amazon RDS is a relational database, not NoSQL.",
-      "C": "Aurora Global Database is a relational database, not NoSQL.",
-      "D": "ElastiCache is an in-memory cache, not a primary durable database."
+      "A": "Amazon RDS for PostgreSQL is a relational database with a rigid schema, directly contradicting the requirement for a 'schema-less NoSQL data model'.",
+      "C": "Amazon Aurora Global Database is also a relational database requiring a strict schema. Furthermore, it is an active-passive architecture (one primary writer region), which does not provide low-latency writes globally.",
+      "D": "Amazon ElastiCache is an in-memory datastore, not a durable database. Furthermore, a single Redis cluster cannot natively span multiple geographic continents."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
+    "learningObjective": "Select Amazon DynamoDB Global Tables for applications requiring a globally distributed, schema-less NoSQL database with single-digit millisecond latency.",
     "topic": "Amazon DynamoDB",
     "tags": [
+      "Databases",
       "DynamoDB",
-      "RDS",
-      "Aurora",
-      "ElastiCache",
-      "High Availability"
+      "Global Architecture",
+      "NoSQL"
     ]
   },
   {
     "id": "saa-1131",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company is using Amazon ECS with EC2 launch type. The company needs to ensure that containers are placed on instances that have sufficient memory and CPU. They also want to spread tasks across Availability Zones for high availability. Which two strategies should the solutions architect configure? (Choose TWO)",
+    "question": "A company deploys microservices using Amazon ECS with the EC2 launch type. The cluster contains a fleet of heterogeneous EC2 instances with varying amounts of CPU and memory. The operations team has two strict placement requirements: First, containers must be packed tightly onto instances based on available memory to minimize wasted resources. Second, to guarantee high availability, identical tasks belonging to the same service must be spread evenly across all available Availability Zones. Which TWO ECS task placement strategies must the solutions architect configure to satisfy these requirements? (Choose TWO.)",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
-      "A": "Bin packing strategy for CPU",
-      "B": "Spread strategy based on Availability Zone",
-      "C": "Random placement strategy",
-      "D": "Spread strategy based on host (instance ID)",
-      "E": "Bin packing strategy for memory only"
+      "A": "Implement a bin packing task placement strategy specifically targeting the CPU metric.",
+      "B": "Implement a spread task placement strategy configured to evaluate the Availability Zone attribute.",
+      "C": "Utilize the default random placement strategy to naturally distribute the workload across the cluster.",
+      "D": "Implement a spread task placement strategy configured to evaluate the specific EC2 instance ID.",
+      "E": "Implement a bin packing task placement strategy specifically targeting the memory metric."
     },
     "correctAnswers": [
       "B",
-      "D"
+      "E"
     ],
-    "explanation": "The spread strategy based on Availability Zone ensures tasks are distributed across multiple AZs for high availability. The spread strategy based on instance ID/host ensures tasks are distributed across different instances within an AZ, preventing all tasks from landing on the same instance. A and E are incorrect: Bin packing places tasks on the fewest number of instances to maximize utilization, which is good for cost optimization but doesn't ensure high availability through spreading.",
+    "explanation": "B and E are correct. Amazon ECS task placement strategies can be chained together. To minimize wasted resources by packing containers tightly based on RAM, you must use the 'binpack' strategy targeting the 'memory' metric (E). To ensure high availability across data centers, you must chain this with a 'spread' strategy targeting the 'attribute:ecs.availability-zone' attribute (B). This combination ensures tasks are distributed evenly across AZs, but within each AZ, they are packed tightly onto instances based on memory.",
     "whyOthersAreWrong": {
-      "C": "Random placement doesn't guarantee even distribution.",
-      "A": "Bin packing strategy for CPU consolidates tasks onto the fewest container instances to maximize compute utilization, rather than distributing tasks across AZs for high availability.",
-      "E": "Bin packing strategy for memory concentrates tasks onto minimal instances based on memory requirements, which conflicts with spreading tasks across Availability Zones."
+      "A": "The prompt explicitly states the requirement is to pack based on 'available memory', not CPU.",
+      "C": "A random placement strategy simply places tasks anywhere. It does not guarantee high availability across AZs, nor does it attempt to optimize resource utilization.",
+      "D": "Spreading by instance ID ensures tasks land on different individual EC2 instances, but those instances might all reside in the exact same Availability Zone, violating the high availability requirement."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Chain Amazon ECS task placement strategies (spread by AZ, binpack by memory) to achieve both high availability and optimal resource utilization.",
+    "topic": "Amazon ECS",
     "tags": [
-      "EC2",
+      "Containers",
       "ECS",
-      "High Availability",
-      "Cost Optimization"
+      "Architecture",
+      "Optimization"
     ]
   },
   {
@@ -355,31 +355,31 @@
   {
     "id": "saa-1133",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company needs to build a data pipeline that ingests streaming data, transforms it in real-time using Apache Flink, and delivers the results to an S3 data lake. Which AWS service should they use to run the Apache Flink application?",
+    "question": "A retail company needs to build a real-time data pipeline to detect fraudulent transactions as they happen. The pipeline must ingest a massive stream of transaction events, execute complex real-time transformations and stateful aggregations using Apache Flink, and finally deliver the processed results to an Amazon S3 data lake. Which fully managed AWS service should the company use to run the Apache Flink application without managing underlying clusters?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon EMR Serverless",
-      "B": "Amazon Kinesis Data Firehose",
-      "C": "Amazon Kinesis Data Analytics (Managed Apache Flink)",
-      "D": "AWS Glue streaming jobs"
+      "A": "Provision an Amazon EMR Serverless application to execute the Apache Flink processing jobs.",
+      "B": "Utilize Amazon Kinesis Data Firehose to natively execute the complex stateful Flink aggregations.",
+      "C": "Deploy the application using Amazon Kinesis Data Analytics (Managed Service for Apache Flink).",
+      "D": "Configure AWS Glue streaming jobs to automatically process the real-time Apache Flink workloads."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Amazon Kinesis Data Analytics (now called Amazon Managed Service for Apache Flink) is a fully managed service that runs Apache Flink applications. It handles provisioning, scaling, and management of the Flink infrastructure.",
+    "explanation": "C is correct because Amazon Kinesis Data Analytics (now formally known as Amazon Managed Service for Apache Flink) is a fully managed service explicitly designed to run Apache Flink applications continuously. It handles all the underlying infrastructure, allowing developers to focus solely on writing the complex stateful aggregations and transformations required for real-time fraud detection without managing any compute clusters.",
     "whyOthersAreWrong": {
-      "A": "EMR Serverless runs Apache Spark and Hive, not Apache Flink natively.",
-      "B": "Kinesis Data Firehose is for data delivery, not stream processing with Apache Flink.",
-      "D": "AWS Glue streaming jobs use Spark Structured Streaming, not Apache Flink."
+      "A": "While Amazon EMR Serverless does support Apache Flink, Kinesis Data Analytics (Managed Flink) is the primary, purpose-built AWS service specifically optimized for continuously running streaming Flink applications.",
+      "B": "Amazon Kinesis Data Firehose is a data delivery service. While it can perform lightweight data transformation (via AWS Lambda), it cannot natively run complex, stateful Apache Flink applications.",
+      "D": "AWS Glue streaming jobs utilize Apache Spark Structured Streaming, not Apache Flink, to process real-time data streams."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
+    "learningObjective": "Identify Amazon Kinesis Data Analytics (Managed Service for Apache Flink) as the fully managed service for executing real-time, stateful streaming applications.",
     "topic": "Amazon Kinesis",
     "tags": [
-      "Kinesis",
-      "S3",
-      "Lambda",
-      "Glue"
+      "Analytics",
+      "Streaming",
+      "Apache Flink",
+      "Kinesis"
     ]
   },
   {
@@ -416,31 +416,31 @@
   {
     "id": "saa-1135",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company needs to design a highly available architecture for their application. The application tier uses an Auto Scaling group spanning 3 Availability Zones. The database tier uses Amazon RDS Multi-AZ. The company needs to ensure that if one AZ fails, the application continues to function. How many AZs should the Auto Scaling group be configured to use, and what is the minimum number of instances needed?",
+    "question": "A company is designing a highly available, fault-tolerant web application. The application tier utilizes an Auto Scaling group distributed evenly across 3 distinct Availability Zones. The backend database tier uses an Amazon RDS Multi-AZ deployment. The business requirement dictates that the application must comfortably survive the complete failure of an entire Availability Zone without experiencing any degradation in performance or capacity. If the application requires a baseline minimum of 6 instances to handle normal traffic, how should the Auto Scaling group capacity be configured?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "2 AZs, 2 instances minimum",
-      "B": "3 AZs, 3 instances minimum",
-      "C": "3 AZs, 2 instances minimum",
-      "D": "2 AZs, 6 instances minimum"
+      "A": "Configure the Auto Scaling group with a minimum capacity of 6 instances spread across the 3 Availability Zones.",
+      "B": "Configure the Auto Scaling group with a minimum capacity of 9 instances spread across the 3 Availability Zones.",
+      "C": "Configure the Auto Scaling group with a minimum capacity of 12 instances spread across the 3 Availability Zones.",
+      "D": "Configure the Auto Scaling group with a minimum capacity of 3 instances spread across the 3 Availability Zones."
     },
     "correctAnswers": [
-      "C"
+      "B"
     ],
-    "explanation": "To survive an AZ failure while maintaining availability, the Auto Scaling group should span 3 AZs. With a minimum of 2 instances, if one AZ fails, at least one instance remains in another AZ. The ASG will re-launch a replacement in a healthy AZ.",
+    "explanation": "B is correct because the requirement states the application must survive an AZ failure *without any degradation in capacity*. The baseline requirement is 6 instances. If you deploy 9 instances across 3 AZs (3 instances per AZ), and one AZ fails, you lose 3 instances. The 2 surviving AZs still possess a combined total of 6 instances (3 + 3), perfectly maintaining the required baseline capacity without waiting for new instances to launch.",
     "whyOthersAreWrong": {
-      "A": "2 AZs do not provide enough resilience if the application must span 3 AZs.",
-      "B": "3 instances minimum is not strictly necessary to survive a single AZ failure; 2 is the minimum required to keep the app running if one AZ goes down.",
-      "D": "Limiting the configuration to 2 AZs fails to leverage the 3 AZs available in the region, and requiring 6 minimum instances causes unnecessary overprovisioning and cost."
+      "A": "If you deploy 6 instances across 3 AZs (2 per AZ), and one AZ fails, you are left with only 4 instances. This drops below the baseline of 6, resulting in degraded performance while Auto Scaling attempts to launch replacements.",
+      "C": "Deploying 12 instances across 3 AZs (4 per AZ) means you would survive an AZ failure with 8 instances remaining. This exceeds the baseline requirement and results in unnecessary compute costs.",
+      "D": "Deploying 3 instances (1 per AZ) falls fundamentally short of the required baseline capacity of 6 instances, even during normal operation."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
-    "topic": "Amazon RDS",
+    "learningObjective": "Calculate the correct minimum Auto Scaling group capacity required to survive an Availability Zone failure without capacity degradation.",
+    "topic": "Auto Scaling",
     "tags": [
-      "RDS",
-      "EC2",
-      "Lambda",
-      "High Availability"
+      "Compute",
+      "High Availability",
+      "Auto Scaling",
+      "Architecture"
     ]
   },
   {
@@ -476,55 +476,60 @@
   {
     "id": "saa-1137",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company has an application that processes financial transactions. The application must ensure that duplicate transactions are not processed. The application uses Amazon SQS for message queuing. Which feature of SQS helps detect duplicate messages?",
-    "answerType": "multiple",
-    "answerInstruction": "Choose TWO answers.",
+    "question": "A financial institution is building an application to process monetary transactions. It is absolutely critical that duplicate transactions are never processed, even if the upstream application accidentally sends the exact same transaction request twice. The architecture utilizes an Amazon SQS message queue to decouple the systems. Which specific SQS configuration natively prevents the queue from accepting duplicate messages?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Visibility timeout",
-      "B": "Dead-letter queue",
-      "C": "Message deduplication ID (for FIFO queues)",
-      "D": "Content-based deduplication (for FIFO queues)"
+      "A": "Increase the visibility timeout of a standard queue to hide the duplicate messages from consumers.",
+      "B": "Configure a dead-letter queue (DLQ) to automatically isolate and quarantine the duplicate transactions.",
+      "C": "Implement an SQS FIFO queue and utilize the native message deduplication ID feature.",
+      "D": "Utilize a standard queue and rely on the consumers to manually perform database deduplication."
     },
     "correctAnswers": [
-      "C",
-      "D"
+      "C"
     ],
-    "explanation": "For SQS FIFO queues, you can use a Message Deduplication ID to explicitly identify duplicate messages, or enable Content-Based Deduplication , which automatically generates a deduplication ID based on the message body using a SHA-256 hash. Both ensure exactly-once processing within the 5-minute deduplication interval.",
+    "explanation": "C is correct because Amazon SQS FIFO (First-In-First-Out) queues support exactly-once processing. They include a native deduplication feature. If you send multiple messages with the exact same 'Message Deduplication ID' within a 5-minute interval, the FIFO queue recognizes the duplicate and simply discards it, ensuring the consumer only ever receives the message once.",
     "whyOthersAreWrong": {
-      "A": "Visibility timeout prevents other consumers from processing the same message while it's being processed, but it doesn't detect duplicates.",
-      "B": "A dead-letter queue stores messages that couldn't be processed after maximum retries."
+      "A": "The visibility timeout prevents *concurrent* processing of the same message by multiple consumers. It does not prevent the upstream system from injecting two distinct, duplicate messages into the queue.",
+      "B": "A dead-letter queue isolates messages that repeatedly fail to process (e.g., due to a code error). It has no ability to identify or quarantine duplicate messages.",
+      "D": "While manual consumer-side database deduplication is a valid architectural pattern for standard queues, the prompt specifically asks which *SQS configuration* natively prevents the queue from accepting duplicates."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon SQS.",
+    "learningObjective": "Utilize Amazon SQS FIFO queues and the message deduplication ID feature to guarantee exactly-once processing.",
     "topic": "Amazon SQS",
     "tags": [
-      "SQS"
+      "Integration",
+      "Messaging",
+      "SQS",
+      "Architecture"
     ]
   },
   {
     "id": "saa-1138",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company is designing a solution to process large-scale data transformations. The workload runs once a month and takes approximately 8 hours to complete. The company wants to minimize cost. Which EC2 purchasing option is MOST cost-effective?",
+    "question": "A data science team has designed a massive data transformation workload. This specific workload is scheduled to run exactly once a month, taking approximately 8 hours to complete. The workload is completely fault-tolerant; if the underlying compute nodes are terminated abruptly, the framework simply resumes processing from the last checkpoint on a new node. The finance department wants to minimize the compute costs to the absolute lowest possible level. Which Amazon EC2 purchasing option is MOST cost-effective?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Reserved Instances",
-      "B": "On-Demand Instances",
-      "C": "Spot Instances",
-      "D": "Savings Plans"
+      "A": "Purchase Standard Reserved Instances with a 1-year commitment to secure a lower hourly rate.",
+      "B": "Provision On-Demand Instances because the workload takes 8 hours and requires predictable completion.",
+      "C": "Request Amazon EC2 Spot Instances to process the fault-tolerant workload at up to a 90% discount.",
+      "D": "Purchase Compute Savings Plans to achieve a discount without being locked into a specific instance type."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Spot Instances offer the largest discount (up to 90% off On-Demand) and are ideal for workloads that are flexible, interruptible, or run on a schedule. A monthly batch job that takes 8 hours is perfect for Spot Instances, as the job can be rescheduled or retried if interrupted.",
+    "explanation": "C is correct because Amazon EC2 Spot Instances provide the absolute deepest discount available (up to 90% off On-Demand pricing). The primary tradeoff is that AWS can reclaim the capacity with a 2-minute warning. Because the prompt explicitly states the data transformation workload is 'completely fault-tolerant' and simply resumes from checkpoints, it is the perfect architectural fit for Spot Instances.",
     "whyOthersAreWrong": {
-      "A": "Reserved Instances require a 1- or 3-year commitment, which is wasteful for a job that runs once a month.",
-      "B": "On-Demand is the most expensive option and unnecessary for a flexible batch workload.",
-      "D": "Savings Plans also require a commitment, making them unsuitable for infrequent workloads."
+      "A": "Reserved Instances require you to pay for capacity 24/7 for a full year. Paying continuous hourly rates for a workload that only runs 8 hours a month is an incredible waste of money.",
+      "B": "On-Demand Instances provide zero discount. Because the workload is completely fault-tolerant, using expensive On-Demand capacity is inefficient.",
+      "D": "Compute Savings Plans, similar to Reserved Instances, require a commitment to a continuous hourly spend. They are mathematically terrible for workloads that only run a few hours a month."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon EC2 to satisfy workload requirements.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Leverage Amazon EC2 Spot Instances to achieve maximum cost savings for fault-tolerant, interruptible workloads.",
+    "topic": "Cost Optimization",
     "tags": [
+      "Compute",
       "EC2",
+      "Spot Instances",
       "Cost Optimization"
     ]
   },

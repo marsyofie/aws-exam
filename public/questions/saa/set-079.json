@@ -2,60 +2,59 @@
   {
     "id": "saa-1561",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A high-traffic financial portal runs on an Amazon Aurora PostgreSQL cluster. During monthly market announcements, read query traffic spikes by 500% within minutes. The read workload is served by Aurora Replicas. The database administrator wants the cluster to automatically add up to 10 additional Aurora Replicas when the average CPU utilization across existing replicas exceeds 75%, and automatically scale them back in when traffic normalizes. Which service feature should be configured?",
+    "question": "A high-traffic financial portal runs on an Amazon Aurora PostgreSQL cluster. During monthly market announcements, read query traffic spikes by 500% within minutes. The read workload is served entirely by Aurora Replicas. The database administrator wants the cluster to automatically add up to 10 additional Aurora Replicas when the average CPU utilization across the existing replicas exceeds 75%, and automatically scale them back in when traffic normalizes. Which service feature should be configured?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Aurora Auto Scaling with a Target Tracking scaling policy based on the `RDSReaderAverageCPUUtilization` metric.",
-      "B": "Amazon EC2 Auto Scaling group managing database instance profiles.",
-      "C": "AWS Step Functions state machine checking CloudWatch metrics every 60 seconds.",
-      "D": "Amazon RDS Multi-AZ standby scaling."
+      "A": "Configure Aurora Auto Scaling with a Target Tracking scaling policy based on the `RDSReaderAverageCPUUtilization` CloudWatch metric.",
+      "B": "Deploy an Amazon EC2 Auto Scaling group and configure it to manage the database instance profiles based on CPU utilization.",
+      "C": "Create an AWS Step Functions state machine that checks CloudWatch metrics every 60 seconds and triggers Lambda to add replicas.",
+      "D": "Enable Amazon RDS Multi-AZ standby scaling to automatically provision additional standby instances during periods of high read traffic."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon Aurora supports Aurora Auto Scaling, which dynamically adjusts the number of Aurora Replicas provisioned for an Aurora DB cluster using Application Auto Scaling. You define a target tracking scaling policy using predefined metrics such as `RDSReaderAverageCPUUtilization` (e.g. target 75%) or `RDSReaderAverageDatabaseConnections`. When query volume causes CPU to breach the target, Aurora Auto Scaling automatically provisions new Aurora Replicas (up to a defined maximum of 15) and registers them with the cluster reader endpoint. When load subsides, replicas are removed gracefully. EC2 Auto Scaling cannot manage Aurora database instances.",
+    "explanation": "A is correct because Amazon Aurora natively supports Aurora Auto Scaling for read replicas. By configuring a Target Tracking scaling policy based on predefined metrics like `RDSReaderAverageCPUUtilization`, Aurora Auto Scaling automatically adds new Aurora Replicas (up to the maximum you define, such as 10) when CPU load exceeds the target (75%). It also safely removes them when the traffic drops, providing fully managed, dynamic read capacity scaling.",
     "whyOthersAreWrong": {
-      "B": "EC2 Auto Scaling manages EC2 compute instances, not managed Amazon Aurora database cluster nodes and endpoints.",
-      "C": "Building custom Step Functions polling loops adds unnecessary operational complexity, state transition costs, and maintenance overhead.",
-      "D": "RDS Multi-AZ maintains a single passive standby instance for failover; it does not horizontally auto-scale read replicas based on CPU demand."
+      "B": "Amazon EC2 Auto Scaling groups are used to scale EC2 compute instances. They cannot be used to manage or scale managed database instances like Amazon Aurora replicas.",
+      "C": "While you *could* build a massive custom state machine with Step Functions and Lambda to monitor metrics and manipulate the RDS API, it is unnecessary and fragile compared to utilizing the native, fully managed Aurora Auto Scaling feature.",
+      "D": "Amazon RDS Multi-AZ creates passive standby instances for high availability. Standby instances cannot serve read traffic, and there is no such feature as 'standby scaling'."
     },
-    "learningObjective": "Implement automated read replica scaling using Aurora Auto Scaling.",
+    "learningObjective": "Implement Aurora Auto Scaling with Target Tracking policies to dynamically scale read capacity (Aurora Replicas) based on demand.",
     "topic": "Amazon Aurora",
     "tags": [
+      "Databases",
       "Aurora",
       "Auto Scaling",
-      "Databases",
-      "Performance",
-      "High Availability"
+      "Performance"
     ]
   },
   {
     "id": "saa-1562",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A distributed big data cluster of 400 Amazon EC2 instances accesses a shared Amazon Elastic File System (Amazon EFS) file system concurrently. The application performs massive parallel file directory operations (such as `ls`, `stat`, and `open`). Monitoring indicates that file metadata operations are experiencing high latency and throttling under peak concurrency. Which Amazon EFS performance mode should the Solutions Architect select to optimize for high concurrency across hundreds of instances?",
+    "question": "A distributed big data cluster consisting of 400 Amazon EC2 instances accesses a shared Amazon Elastic File System (Amazon EFS) file system concurrently. The application performs massive parallel file directory operations (such as continuously running `ls`, `stat`, and `open` commands across millions of files). Monitoring indicates that these file metadata operations are experiencing extremely high latency and severe throttling under peak concurrency. Which Amazon EFS performance mode should the Solutions Architect select to optimize specifically for this high concurrency across hundreds of instances?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "General Purpose performance mode",
-      "B": "Max I/O performance mode",
-      "C": "Provisioned Throughput mode",
-      "D": "Elastic Throughput mode"
+      "A": "Select the General Purpose performance mode, which is optimized for standard web serving environments.",
+      "B": "Select the Max I/O performance mode, which is specifically optimized to scale out to virtually unlimited concurrent operations.",
+      "C": "Select the Provisioned Throughput mode to guarantee a fixed amount of megabytes per second.",
+      "D": "Select the Elastic Throughput mode to automatically scale the data transfer rate up and down."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon EFS offers two performance modes: General Purpose and Max I/O. General Purpose is ideal for web serving and enterprise applications requiring the lowest per-operation metadata latency. However, for large-scale, highly parallel applications (such as big data analysis, media processing, or genomics clusters) with hundreds or thousands of instances accessing the file system concurrently, 'Max I/O' mode scales to higher levels of aggregate throughput and operations per second, with a minor tradeoff of slightly higher per-operation latency for individual operations. Provisioned and Elastic modes govern throughput (MB/s), not IOPS performance modes.",
+    "explanation": "B is correct because Amazon EFS 'Max I/O' performance mode is explicitly designed to scale to higher levels of aggregate throughput and operations per second. It sacrifices slightly higher per-operation latency to achieve virtually unlimited concurrent operations from hundreds or thousands of EC2 instances. It is the recommended performance mode for massive scale-out, big data, and highly parallelized analytical workloads that saturate the metadata limits of General Purpose mode.",
     "whyOthersAreWrong": {
-      "A": "General Purpose mode enforces stricter operations-per-second limits and throttles when hundreds of instances issue parallel metadata operations.",
-      "C": "Provisioned Throughput controls data transfer bandwidth (MB/s), but does not alter the underlying metadata operations-per-second performance mode.",
-      "D": "Elastic Throughput automatically scales data throughput based on workload activity, but does not switch the file system architecture to Max I/O."
+      "A": "General Purpose mode is the default and provides the lowest latency for file operations. However, it has a hard limit on operations per second (IOPS). The prompt explicitly states the cluster is throttling, meaning it has exceeded the General Purpose IOPS limits.",
+      "C": "Provisioned Throughput mode controls the data transfer rate (MB/s), not the concurrent metadata operations per second (IOPS).",
+      "D": "Elastic Throughput mode automatically scales the data transfer rate (MB/s) based on read/write activity. It does not change the underlying performance architecture for metadata operations (IOPS) like changing from General Purpose to Max I/O does."
     },
-    "learningObjective": "Select appropriate Amazon EFS performance modes for massive parallel computing clusters.",
+    "learningObjective": "Select Amazon EFS Max I/O performance mode for massively parallel scale-out workloads requiring virtually unlimited concurrent file operations.",
     "topic": "Amazon EFS",
     "tags": [
-      "EFS",
       "Storage",
+      "EFS",
       "Performance",
       "Big Data"
     ]
@@ -93,63 +92,61 @@
   {
     "id": "saa-1564",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An enterprise maintains a central corporate data lake in an Amazon S3 bucket that is accessed by dozens of distinct applications and business units. Managing permissions has become unmanageable because the centralized S3 bucket policy is approaching the maximum size limit of 20 KB. Each business unit needs independent access control, unique prefix restrictions, and network isolation (restricting specific applications to their own VPCs). Which Amazon S3 feature simplifies access management without bucket policy size limits?",
+    "question": "An enterprise maintains a central corporate data lake in a single Amazon S3 bucket that is accessed by dozens of distinct applications and business units. Managing permissions has become impossible because the centralized S3 bucket policy is rapidly approaching the maximum size limit of 20 KB. Each business unit needs independent access control policies, unique prefix restrictions, and network isolation (restricting specific applications to their own Amazon VPCs). Which Amazon S3 feature dramatically simplifies this access management without hitting bucket policy size limits?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon S3 Access Points",
-      "B": "Amazon S3 Object Lambda",
-      "C": "Amazon S3 Multi-Region Access Points",
-      "D": "IAM Permission Boundaries"
+      "A": "Provision Amazon S3 Access Points to create unique hostnames and dedicated access policies for each application.",
+      "B": "Configure Amazon S3 Object Lambda to dynamically modify the data as it is being retrieved by the users.",
+      "C": "Deploy Amazon S3 Multi-Region Access Points to route the requests to the geographically closest bucket.",
+      "D": "Implement IAM Permission Boundaries on every user to strictly limit what the bucket policy can grant them."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon S3 Access Points are named network endpoints that are attached to buckets that you can use to perform S3 object operations. Each access point has its own distinct access point policy, which allows administrators to tailor permissions and network controls (such as restricting an access point exclusively to requests from a specific VPC) for specific applications or business units. This completely decentralizes permission management and solves the 20 KB bucket policy size limit, as each access point maintains its own independent policy document. Object Lambda transforms data on retrieval. Multi-Region Access Points provide cross-region routing.",
+    "explanation": "A is correct because Amazon S3 Access Points simplify data access for shared datasets in Amazon S3. Instead of managing a single, massive, complex bucket policy that hits the 20 KB limit, you create hundreds of unique Access Points for the single bucket. Each Access Point has its own unique hostname and its own dedicated access policy (up to 20 KB) that can be tailored precisely to a specific application or business unit, completely decentralizing the access management.",
     "whyOthersAreWrong": {
-      "B": "Amazon S3 Object Lambda is designed to transform or mask data dynamically during GET requests; it does not manage cross-team access policy segmentation.",
-      "C": "S3 Multi-Region Access Points provide global Anycast routing across multiple S3 buckets in different Regions, not decentralized per-team access policies.",
-      "D": "IAM Permission Boundaries limit the maximum permissions an IAM principal can have, but do not solve S3 bucket policy size limits or VPC network endpoint restrictions."
+      "B": "Amazon S3 Object Lambda allows you to add custom code to process data retrieved from S3 (e.g., masking PII). It does not solve the problem of managing access control policies or hitting the 20 KB bucket policy limit.",
+      "C": "Multi-Region Access Points provide a single global endpoint to route traffic to the closest bucket in a replicated, multi-region architecture. They do not simplify granular IAM access policies for a single bucket.",
+      "D": "IAM Permission Boundaries limit the maximum permissions an IAM entity can have. They do not increase the S3 bucket policy size limit or help segment access logic for a shared data lake."
     },
-    "learningObjective": "Scale shared S3 bucket access control using Amazon S3 Access Points.",
+    "learningObjective": "Utilize Amazon S3 Access Points to decentralize access management and overcome bucket policy size limits for shared datasets.",
     "topic": "Amazon S3 Access Points",
     "tags": [
-      "S3",
-      "Access Points",
+      "Storage",
       "Security",
-      "Governance",
-      "Architecture"
+      "S3",
+      "Data Lake"
     ]
   },
   {
     "id": "saa-1565",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A manufacturing company wants to establish an automated disaster recovery solution for 120 on-premises physical servers and VMware virtual machines to AWS. The company requires a Recovery Point Objective (RPO) of seconds and a Recovery Time Objective (RTO) of minutes. During normal business operations, the company does NOT want to pay for 120 running Amazon EC2 compute instances in AWS. In the event of an on-premises disaster, the servers must be automatically converted and booted as EC2 instances in minutes. Which service should be used?",
+    "question": "A manufacturing company wants to establish an automated disaster recovery solution for 120 on-premises physical servers and VMware virtual machines to AWS. The company requires a Recovery Point Objective (RPO) of seconds and a Recovery Time Objective (RTO) of minutes. Crucially, during normal business operations, the company does NOT want to pay for 120 running Amazon EC2 compute instances in AWS. In the event of an on-premises disaster, the servers must be automatically converted and booted as EC2 instances in minutes. Which service should be used?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Elastic Disaster Recovery (AWS DRS)",
-      "B": "AWS Backup",
-      "C": "AWS Snowball Edge",
-      "D": "Amazon CloudWatch Synthetics"
+      "A": "Deploy AWS Elastic Disaster Recovery (AWS DRS) to continuously replicate block storage to a low-cost staging area without running compute instances.",
+      "B": "Utilize AWS Backup to create automated daily snapshots of the on-premises servers and store them in Amazon S3.",
+      "C": "Order an AWS Snowball Edge device to physically transport the VMware disk images to the AWS region for storage.",
+      "D": "Configure Amazon CloudWatch Synthetics to monitor the on-premises servers and automatically trigger an AWS CloudFormation template upon failure."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "AWS Elastic Disaster Recovery (AWS DRS) is the recommended service for disaster recovery to AWS. It continuously replicates on-premises block-level storage into a low-cost staging area in your AWS account (using low-cost EBS storage and minimal staging instances), achieving sub-minute RPOs. Full-capacity target EC2 instances are only launched when a drill is executed or during an actual disaster failover, bringing applications online in minutes (meeting strict RTOs) while minimizing non-disaster compute costs. AWS Backup is an archival backup tool, not a continuous low-RPO/RTO live replication engine.",
+    "explanation": "A is correct because AWS Elastic Disaster Recovery (AWS DRS) provides fast, reliable recovery of physical, virtual, and cloud-based servers into AWS. It uses an agent to continuously replicate block storage to a low-cost staging area in your AWS account. Crucially, during normal operations, you do not pay for fully provisioned EC2 instances. In a disaster, AWS DRS automatically launches the fully provisioned EC2 instances from the replicated disks, achieving an RPO of seconds and an RTO of minutes.",
     "whyOthersAreWrong": {
-      "B": "AWS Backup takes periodic snapshots, resulting in hours of potential data loss (high RPO) and long restore times (high RTO) for 120 servers.",
-      "C": "AWS Snowball Edge is an offline physical device used for one-time data transfers; it cannot provide continuous real-time replication or automated DR failover.",
-      "D": "Amazon CloudWatch Synthetics creates canaries to monitor web endpoints; it has no server replication or disaster recovery capabilities."
+      "B": "AWS Backup can take snapshots, but doing so daily provides an RPO of 24 hours, heavily violating the strict requirement for an RPO of seconds. Furthermore, it does not automatically orchestrate the conversion and booting of physical servers into EC2 instances.",
+      "C": "AWS Snowball Edge is a physical data transport device. Shipping it back and forth takes days, completely violating both the RPO (seconds) and RTO (minutes) requirements.",
+      "D": "CloudWatch Synthetics creates canaries to monitor application endpoints. It cannot natively replicate block storage from on-premises servers or magically convert VMware disks into bootable EC2 AMIs."
     },
-    "learningObjective": "Implement cost-effective low-RPO and low-RTO disaster recovery using AWS Elastic Disaster Recovery (AWS DRS).",
-    "topic": "AWS Elastic Disaster Recovery",
+    "learningObjective": "Implement AWS Elastic Disaster Recovery (AWS DRS) for continuous block-level replication achieving near-zero RPO and RTO without provisioning idle compute.",
+    "topic": "Disaster Recovery",
     "tags": [
-      "DRS",
       "Disaster Recovery",
-      "EC2",
-      "Resilience",
-      "Migration"
+      "Migration",
+      "AWS DRS",
+      "Architecture"
     ]
   },
   {
@@ -525,31 +522,30 @@
   {
     "id": "saa-1578",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A healthcare provider is deploying a multi-Region active-active application that reads and writes medical records with single-digit millisecond latency across two AWS Regions. Changes made in one Region must automatically replicate to the other Region with conflict resolution based on timestamp. Which storage service BEST meets these requirements?",
+    "question": "A healthcare provider is deploying a multi-Region active-active application that reads and writes critical medical records. The application demands single-digit millisecond latency for reads and writes across two widely separated AWS Regions. Changes made in one Region must automatically and continuously replicate to the other Region. Furthermore, the database must natively provide conflict resolution based on timestamp to handle scenarios where the same medical record is updated concurrently in both regions. Which storage service BEST meets these stringent requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon RDS for PostgreSQL with cross-Region read replicas.",
-      "B": "Amazon DynamoDB Global Tables with multi-Region replication.",
-      "C": "Amazon S3 Standard with Cross-Region Replication (CRR).",
-      "D": "Amazon DocumentDB with secondary clusters."
+      "A": "Provision an Amazon RDS for PostgreSQL database with cross-Region read replicas configured for active-active workloads.",
+      "B": "Deploy Amazon DynamoDB and enable Global Tables for fully managed multi-Region replication with built-in conflict resolution.",
+      "C": "Utilize Amazon S3 Standard with Cross-Region Replication (CRR) to store the medical records as JSON objects.",
+      "D": "Launch an Amazon DocumentDB cluster and configure secondary clusters in the alternate geographic region."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon DynamoDB Global Tables provides fully managed, multi-Region, active-active replication with single-digit millisecond performance. It automatically synchronizes data changes across chosen AWS Regions and uses last-writer-wins reconciliation for concurrent updates.",
+    "explanation": "B is correct because Amazon DynamoDB Global Tables is a fully managed, multi-region, active-active database. It provides consistent, single-digit millisecond latency for reads and writes. Because it is active-active, applications in both regions can write locally and the database automatically replicates the changes globally. Crucially, it includes native, built-in conflict resolution (using a 'last writer wins' methodology based on timestamps) to seamlessly handle concurrent updates to the same item.",
     "whyOthersAreWrong": {
-      "A": "RDS cross-Region read replicas are read-only; writes cannot be accepted directly in the secondary Region without manual failover and promotion.",
-      "C": "Amazon S3 is an object storage service, not a low-latency database for transactional record reads and writes.",
-      "D": "Amazon DocumentDB global clusters support read-only secondary clusters, not active-active write clusters across Regions."
+      "A": "Amazon RDS cross-Region read replicas are strictly active-passive. You cannot configure them for active-active writes. All writes must go to the single primary region, introducing high latency for the secondary region.",
+      "C": "Amazon S3 is an object store, not a low-latency database. While it supports replication, it is not designed to provide consistent single-digit millisecond latency for highly transactional database updates.",
+      "D": "Amazon DocumentDB global clusters are an active-passive architecture. They support fast local reads globally, but all writes must still be routed back to the single primary cluster instance."
     },
-    "learningObjective": "Select Amazon DynamoDB Global Tables for multi-Region active-active low latency data access.",
-    "topic": "Amazon DynamoDB",
+    "learningObjective": "Deploy Amazon DynamoDB Global Tables to achieve a fully managed, multi-region, active-active database architecture with built-in conflict resolution.",
+    "topic": "Amazon DynamoDB Global Tables",
     "tags": [
+      "Databases",
       "DynamoDB",
-      "Global Tables",
-      "Database",
-      "Multi-Region",
+      "Global Architecture",
       "High Availability"
     ]
   },
@@ -587,32 +583,31 @@
   {
     "id": "saa-1580",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A financial platform must configure automated traffic shifting during an Availability Zone impairment to protect mission-critical workloads. The company needs a managed capability to redirect incoming traffic away from an unhealthy AZ with zero downtime. Which Route 53 feature should the Solutions Architect implement?",
+    "question": "A financial platform must configure automated traffic shifting during an Availability Zone impairment to protect its mission-critical workloads. The architecture consists of an Application Load Balancer routing traffic to EC2 instances across 3 AZs. The company needs a fully managed capability to instantly redirect incoming traffic away from an unhealthy AZ with zero downtime and without modifying DNS records or relying on DNS TTL expiration on client devices. Which Route 53 feature should the Solutions Architect implement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon Route 53 Geolocation routing policy.",
-      "B": "Amazon Route 53 Application Recovery Controller (ARC) zonal shift.",
-      "C": "Amazon Route 53 Multi-Value Answer routing.",
-      "D": "AWS Global Accelerator client affinity."
+      "A": "Configure an Amazon Route 53 Geolocation routing policy to route users based on their physical location.",
+      "B": "Utilize the Amazon Route 53 Application Recovery Controller (ARC) zonal shift feature to instantly shift traffic away from the impaired AZ.",
+      "C": "Implement an Amazon Route 53 Multi-Value Answer routing policy to return up to eight healthy IP addresses to the client.",
+      "D": "Deploy AWS Global Accelerator and configure client affinity to bind users to specific healthy Availability Zones."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon Route 53 Application Recovery Controller (ARC) zonal shift allows you to quickly shift application traffic away from an impaired Availability Zone for supported resources (such as ALBs and NLBs), preventing requests from reaching instances in that zone until the degradation resolves.",
+    "explanation": "B is correct because Amazon Route 53 Application Recovery Controller (ARC) zonal shift helps you quickly recover an application from an issue in a single Availability Zone. By triggering a zonal shift, you instruct the AWS load balancer (ALB/NLB) to instantly stop sending traffic to the impaired AZ. Because this happens at the load balancer routing layer within AWS, it bypasses DNS entirely, meaning it is immune to client-side DNS caching and TTL expiration issues, ensuring zero-downtime recovery.",
     "whyOthersAreWrong": {
-      "A": "Geolocation routing directs traffic based on the geographic origin of the user's DNS query, not the operational health of internal Availability Zones.",
-      "C": "Multi-Value Answer routing distributes traffic across multiple IP addresses randomly and does not provide fast zonal eviction capabilities.",
-      "D": "Global Accelerator client affinity ensures requests from a specific client IP are directed to the same endpoint; it does not shift traffic away from an impaired AZ."
+      "A": "Geolocation routing directs users based on physical location (e.g., routing European users to a European region). It does not detect or shift traffic away from impaired Availability Zones within a region.",
+      "C": "Multi-Value Answer routing returns multiple IP addresses, but it relies on DNS. Shifting traffic away using DNS requires waiting for client-side DNS caches to expire, which takes time and causes downtime.",
+      "D": "AWS Global Accelerator client affinity binds a user to a specific backend endpoint based on their IP address. It does not provide an automated mechanism to instantly shift traffic away from a failing AZ."
     },
-    "learningObjective": "Implement automated zonal evacuation using Route 53 Application Recovery Controller (ARC) zonal shift.",
-    "topic": "Amazon Route 53",
+    "learningObjective": "Use Amazon Route 53 ARC zonal shift to instantly redirect traffic away from an impaired Availability Zone without relying on DNS TTLs.",
+    "topic": "Amazon Route 53 ARC",
     "tags": [
-      "Route 53",
-      "Resilience",
+      "Networking",
       "High Availability",
       "Disaster Recovery",
-      "Networking"
+      "Load Balancing"
     ]
   }
 ]

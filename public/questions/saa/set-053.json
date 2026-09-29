@@ -177,30 +177,31 @@
   {
     "id": "saa-1047",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company needs to distribute incoming TCP traffic across multiple targets in a VPC. The traffic must preserve the original source IP address visible to the targets. Which load balancer type should the Solutions Architect use?",
+    "question": "A company needs to distribute incoming, high-throughput TCP traffic across multiple backend Amazon EC2 instances located in a private subnet. A strict security requirement dictates that the backend EC2 instances must be able to see the original, true source IP address of the client in the TCP packet header for audit logging purposes. Which load balancer type natively supports this requirement without modifying application code?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Application Load Balancer",
-      "B": "Network Load Balancer",
-      "C": "Classic Load Balancer",
-      "D": "Application Load Balancer with X-Forwarded-For header"
+      "A": "Deploy an Application Load Balancer to distribute the traffic and log the source IP addresses.",
+      "B": "Provision a Network Load Balancer (NLB) to distribute the TCP traffic while preserving source IP addresses.",
+      "C": "Utilize a Classic Load Balancer to securely proxy the TCP connections to the backend instances.",
+      "D": "Configure an Application Load Balancer and modify the application to parse the X-Forwarded-For HTTP header."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Network Load Balancer (NLB) operates at Layer 4 (transport layer) and passes raw TCP/UDP packets through to backend targets while natively preserving the client source IP address in the packet header (when targeting instance IDs).",
+    "explanation": "B is correct because a Network Load Balancer (NLB) operates at Layer 4 (connection level) and natively preserves the client's original source IP address when routing traffic to backend targets (when targets are registered by Instance ID). The backend EC2 instance sees the client's actual IP address directly in the TCP packet header.",
     "whyOthersAreWrong": {
-      "A": "Application Load Balancers operate at Layer 7 and terminate client TCP connections, replacing the client IP address with the ALB's private IP in the IP packet.",
-      "C": "Classic Load Balancer is a legacy generation load balancer that does not provide modern Layer 4 high-throughput source IP preservation.",
-      "D": "The X-Forwarded-For header is an application-layer HTTP header and does not exist in raw, non-HTTP TCP traffic streams."
+      "A": "An Application Load Balancer (ALB) operates at Layer 7 and terminates the connection. The backend instance sees the ALB's private IP address in the TCP header, not the client's IP.",
+      "C": "A Classic Load Balancer operating at Layer 4 also terminates the connection and masks the client's original IP address with its own IP address.",
+      "D": "While an ALB does append the client IP to the `X-Forwarded-For` HTTP header, the prompt explicitly specifies routing raw TCP traffic (Layer 4) and demands a solution without modifying application code to parse HTTP headers."
     },
-    "learningObjective": "Select appropriate load balancer types based on protocol and source IP preservation requirements.",
+    "learningObjective": "Deploy a Network Load Balancer (NLB) to distribute high-throughput TCP traffic while natively preserving the client source IP address.",
     "topic": "Elastic Load Balancing",
     "tags": [
+      "Networking",
+      "Load Balancing",
       "NLB",
-      "ALB",
-      "Networking"
+      "Security"
     ]
   },
   {
@@ -272,7 +273,7 @@
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "SQS with multiple queues \u2014 one per service \u2014 and a message router.",
+      "A": "SQS with multiple queues — one per service — and a message router.",
       "B": "SNS topic with SQS queues subscribed to it (fanout pattern).",
       "C": "EventBridge with a single rule targeting a Lambda function that routes messages.",
       "D": "Kinesis Data Streams with multiple consumers."
@@ -358,30 +359,31 @@
   {
     "id": "saa-1053",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company requires an enterprise relational database that provides fault tolerance against Availability Zone failure with zero data loss, without requiring complex application-level failover logic. Which Amazon Aurora feature satisfies this requirement?",
+    "question": "A large enterprise requires a highly resilient relational database for its mission-critical ERP system. The business requires the database architecture to provide fault tolerance against an entire Availability Zone failure with absolutely zero data loss. Furthermore, this resilience must be achieved natively at the storage layer without requiring complex application-level failover logic or manual replication setup. Which Amazon Aurora feature intrinsically satisfies this requirement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Aurora Replicas in multiple AZs",
-      "B": "Aurora's automatic storage replication across 3 AZs with continuous backup",
-      "C": "Aurora Serverless auto-scaling",
-      "D": "Aurora Global Database"
+      "A": "Provisioning multiple Aurora Read Replicas across different Availability Zones for high availability.",
+      "B": "Aurora's purpose-built storage engine automatically replicating data six ways across three Availability Zones.",
+      "C": "Utilizing Aurora Serverless to automatically scale compute capacity away from failing Availability Zones.",
+      "D": "Deploying an Aurora Global Database to synchronously replicate the storage volume across AWS Regions."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon Aurora's distributed storage system automatically replicates six copies of database data across three Availability Zones (two copies per AZ) and continuously streams redo logs to storage. This multi-AZ storage architecture provides automatic fault tolerance against AZ loss with zero data loss (RPO = 0).",
+    "explanation": "B is correct because the Amazon Aurora storage engine is purpose-built for the cloud. Regardless of how many compute instances you provision, the underlying Aurora storage volume automatically divides data into 10GB chunks and synchronously replicates each chunk six ways across three separate Availability Zones. This provides unparalleled fault tolerance (withstanding the loss of an entire AZ plus one additional storage node) with zero data loss natively at the storage layer.",
     "whyOthersAreWrong": {
-      "A": "Aurora Replicas provide read scaling and compute failover targets, but the underlying multi-AZ storage durability is provided automatically by the Aurora storage volume.",
-      "C": "Aurora Serverless automatically adjusts compute capacity (ACUs) based on workload demand, which does not define storage durability across AZs.",
-      "D": "Aurora Global Database provides cross-region replication for disaster recovery, which exceeds the requirement for single-region multi-AZ fault tolerance."
+      "A": "Aurora Read Replicas provide compute redundancy and fast failover, but the *storage resilience* described in the prompt is provided by Aurora's underlying storage architecture, not by adding compute replicas.",
+      "C": "Aurora Serverless scales compute capacity based on load; it does not dictate how data is replicated or stored for fault tolerance.",
+      "D": "Aurora Global Database asynchronously replicates data across AWS Regions for disaster recovery, not synchronously across Availability Zones for local high availability."
     },
-    "learningObjective": "Understand Amazon Aurora distributed storage architecture and multi-AZ durability.",
+    "learningObjective": "Understand that Amazon Aurora's distributed storage architecture automatically replicates data six ways across three Availability Zones for maximum resilience.",
     "topic": "Amazon Aurora",
     "tags": [
+      "Databases",
       "Aurora",
-      "Storage",
-      "High Availability"
+      "High Availability",
+      "Storage"
     ]
   },
   {
@@ -522,7 +524,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon DynamoDB Accelerator (DAX) is a fully managed, highly available in-memory cache purpose-built for DynamoDB that delivers up to a 10x performance improvement\u2014reducing latency from single-digit milliseconds to microseconds\u2014with seamless API-compatible integration and no custom cache management code.",
+    "explanation": "Amazon DynamoDB Accelerator (DAX) is a fully managed, highly available in-memory cache purpose-built for DynamoDB that delivers up to a 10x performance improvement—reducing latency from single-digit milliseconds to microseconds—with seamless API-compatible integration and no custom cache management code.",
     "whyOthersAreWrong": {
       "A": "Increasing provisioned RCUs scales read throughput, but standard DynamoDB read latency remains in single-digit milliseconds rather than sub-millisecond.",
       "C": "ElastiCache Redis requires developing and managing custom cache logic and cache invalidation protocols, introducing development overhead compared to DAX.",
@@ -570,30 +572,30 @@
   {
     "id": "saa-1060",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An application performs high-volume, low-latency reads and writes on a relational database. The database must scale reads horizontally without replication lag. Which database engine is BEST suited for this use case?",
+    "question": "An application performs extremely high-volume, low-latency reads and writes on a relational database. The database is reaching its read capacity limits. The architect must scale read capacity horizontally. Crucially, the business logic is highly sensitive to stale data, meaning the chosen solution must provide read scaling with the absolute minimum possible replication lag (typically single-digit milliseconds). Which database engine and configuration is BEST suited for this specific use case?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon RDS MySQL with Multi-AZ",
-      "B": "Amazon Aurora with Aurora Replicas",
-      "C": "Amazon Redshift with concurrency scaling",
-      "D": "Amazon RDS PostgreSQL with read replicas"
+      "A": "Deploy an Amazon RDS for MySQL database configured with a synchronous Multi-AZ standby instance.",
+      "B": "Migrate to Amazon Aurora and deploy multiple Aurora Replicas sharing the same underlying storage volume.",
+      "C": "Provision an Amazon Redshift cluster and enable the concurrency scaling feature to handle read spikes.",
+      "D": "Utilize Amazon RDS for PostgreSQL and deploy multiple standard asynchronous read replicas across the region."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon Aurora with Aurora Replicas scales reads horizontally by supporting up to 15 replicas that share the same underlying distributed cluster storage volume. Because all replicas read directly from the shared storage system without binlog replication, replication lag is virtually zero (typically single-digit milliseconds).",
+    "explanation": "B is correct because Amazon Aurora's architecture decouples compute from storage. Aurora Replicas share the exact same underlying distributed storage volume as the primary writer instance. Because data is not physically copied over the network to the replica's local disk, Aurora Replicas typically experience a minuscule replication lag of well under 10 milliseconds, making it ideal for read-heavy applications sensitive to stale data.",
     "whyOthersAreWrong": {
-      "A": "Standard Amazon RDS Multi-AZ deployments use a passive synchronous standby for failover that cannot accept read queries.",
-      "C": "Amazon Redshift is an analytical data warehouse (OLAP) optimized for complex aggregation queries, not a low-latency transactional OLTP database.",
-      "D": "Standard Amazon RDS PostgreSQL read replicas use asynchronous replication where data must be replayed on replica storage, resulting in measurable replication lag."
+      "A": "An Amazon RDS Multi-AZ standby instance is strictly used for high availability and failover. It cannot be used to serve read traffic, so it provides zero read scaling.",
+      "C": "Amazon Redshift is an OLAP data warehouse used for complex analytics, not for high-volume, low-latency transactional (OLTP) reads and writes.",
+      "D": "Standard Amazon RDS Read Replicas use native, asynchronous database engine replication. Because they maintain their own physical storage volume, they typically experience significantly higher replication lag (seconds to minutes) compared to Aurora's shared storage architecture."
     },
-    "learningObjective": "Scale relational database read throughput with minimal replication lag using Amazon Aurora.",
+    "learningObjective": "Deploy Amazon Aurora Replicas to horizontally scale read capacity with ultra-low, single-digit millisecond replication lag.",
     "topic": "Amazon Aurora",
     "tags": [
+      "Databases",
       "Aurora",
-      "RDS",
-      "Read Replica",
+      "Scalability",
       "Performance"
     ]
   }

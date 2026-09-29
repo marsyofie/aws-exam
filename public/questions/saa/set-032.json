@@ -208,32 +208,31 @@
   {
     "id": "saa-628",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An application uses DynamoDB as its primary data store. The company needs point-in-time recovery to any second within the last 35 days in case of accidental writes or deletes, in addition to on-demand backups for long-term retention. What should be enabled?",
+    "question": "A healthcare application uses Amazon DynamoDB as its primary data store for patient records. The compliance team requires a robust disaster recovery plan. Specifically, the team needs the ability to recover the database to any exact second within the last 30 days in the event of accidental data corruption or deletion. They also require on-demand, full database backups to be retained for 7 years for long-term archiving. Which combination of DynamoDB features and AWS services should be implemented to meet these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "DynamoDB Streams only",
-      "B": "DynamoDB Point-in-Time Recovery (PITR), plus scheduled on-demand backups via AWS Backup for long-term retention",
-      "C": "Amazon S3 Cross-Region Replication of the DynamoDB table",
-      "D": "DynamoDB Global Tables"
+      "A": "Enable DynamoDB Streams to capture all modifications and write them to an Amazon S3 bucket for 7-year retention.",
+      "B": "Activate DynamoDB Point-in-Time Recovery (PITR) for continuous backups, and use AWS Backup to schedule on-demand backups for long-term retention.",
+      "C": "Configure Amazon S3 Cross-Region Replication to mirror the DynamoDB table data to a secondary region for compliance.",
+      "D": "Deploy DynamoDB Global Tables to provide multi-region active-active replication and protect against accidental deletions."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "DynamoDB PITR provides continuous backups enabling restore to any point within the last 35 days (configurable), directly meeting the recovery requirement, and on-demand/scheduled backups via AWS Backup address long-term retention beyond that window. DynamoDB Streams captures a change log for integration purposes (e.g., triggering Lambda) but is not a backup/recovery mechanism by itself. S3 Cross-Region Replication doesn't apply to DynamoDB tables. Global Tables provide multi-region active-active replication for availability/latency, not point-in-time recovery from accidental writes -- a bad write would replicate to all regions.",
+    "explanation": "B is correct because DynamoDB Point-in-Time Recovery (PITR) provides continuous backups and allows you to restore to any second in the preceding 35 days, protecting against accidental writes/deletes. For the 7-year long-term retention requirement, AWS Backup integrates natively with DynamoDB to manage and retain on-demand backups.",
     "whyOthersAreWrong": {
-      "A": "DynamoDB Streams captures item-level changes for 24 hours for event-driven integration, but cannot restore tables to previous points in time.",
-      "C": "S3 Cross-Region Replication operates on S3 storage objects and cannot directly replicate or restore a live DynamoDB table.",
-      "D": "Global Tables replicate live mutations across regions for high availability; an accidental write or delete immediately replicates to all regions, worsening data corruption."
+      "A": "While DynamoDB Streams can be used to manually build a custom backup solution, it introduces massive operational overhead and complexity compared to the native, fully managed PITR feature.",
+      "C": "S3 Cross-Region Replication is an S3 feature, not a DynamoDB feature. You cannot apply it directly to a DynamoDB table.",
+      "D": "DynamoDB Global Tables replicates data across regions for high availability, but it replicates accidental deletions instantly. It does not provide point-in-time recovery to undo mistakes."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon DynamoDB.",
+    "learningObjective": "Combine DynamoDB Point-in-Time Recovery (PITR) for short-term continuous backups with AWS Backup for long-term retention.",
     "topic": "Amazon DynamoDB",
     "tags": [
       "DynamoDB",
-      "S3",
-      "Lambda",
       "Backup",
-      "High Availability"
+      "Disaster Recovery",
+      "Compliance"
     ]
   },
   {
@@ -298,28 +297,31 @@
   {
     "id": "saa-631",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company's application on EC2 depends on a third-party API that occasionally experiences brief outages. The current implementation retries failed requests immediately and in a tight loop, which has occasionally amplified an outage into a self-inflicted denial-of-service situation against the company's own systems. What should be implemented?",
+    "question": "A company's application runs on a fleet of Amazon EC2 instances and frequently queries a third-party payment API. Occasionally, the payment API experiences brief outages. The current application logic immediately retries failed requests in a tight loop. During a recent API outage, these rapid, synchronous retries consumed all available network bandwidth and CPU resources on the EC2 instances, causing the company's entire application to crash. What is the BEST architectural pattern to implement to prevent this self-inflicted denial-of-service?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Remove all retry logic entirely",
-      "B": "Implement exponential backoff with jitter for retries, and cap the maximum number of retry attempts",
-      "C": "Increase the number of EC2 instances to handle more concurrent retries",
-      "D": "Switch the third-party API calls to use UDP instead of TCP for faster retries"
+      "A": "Remove all retry logic from the application entirely to ensure the EC2 instances never consume excess resources during an outage.",
+      "B": "Implement exponential backoff with jitter for the API retries, and cap the maximum number of retry attempts.",
+      "C": "Increase the Auto Scaling group's maximum instance count to ensure there is enough compute capacity to handle the tight retry loops.",
+      "D": "Switch the third-party API communication protocol from TCP to UDP to allow the retries to fail faster without connection overhead."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Exponential backoff with jitter and a retry cap is the standard resilience pattern to avoid a 'retry storm' that amplifies an outage, spacing out retry attempts and randomizing them to prevent synchronized thundering-herd behavior. Removing retries entirely sacrifices legitimate transient-failure recovery. Adding more EC2 instances increases the volume of the tight retry loop, making the self-inflicted DoS worse. Switching protocols doesn't address the underlying retry storm behavior and most HTTP-based APIs use TCP regardless.",
+    "explanation": "B is correct because exponential backoff progressively increases the wait time between retries, giving the downstream API time to recover. Adding 'jitter' (randomness) ensures that all EC2 instances don't retry at the exact same millisecond, smoothing out the traffic spikes and preventing self-inflicted DDoS conditions.",
     "whyOthersAreWrong": {
-      "A": "Removing retry logic causes any transient network blip or temporary rate limiting to immediately surface as hard application errors.",
-      "C": "Increasing EC2 instances multiplies the volume of tight retry loops, worsening the self-inflicted denial-of-service attack.",
-      "D": "Switching to UDP is unsupported by standard HTTPS APIs and does not mitigate retry storming or provide connection reliability."
+      "A": "Removing retry logic entirely makes the application brittle; transient network blips will cause immediate failures for end users.",
+      "C": "Adding more EC2 instances just scales up the DDoS attack against the third-party API and wastes money, rather than fixing the fundamental flaw in the retry logic.",
+      "D": "You cannot unilaterally change a third-party payment API's protocol to UDP. Even if you could, UDP does not solve the fundamental issue of tight-loop retries consuming CPU."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Apply exponential backoff and jitter to API retry logic to prevent retry storms and self-inflicted denial-of-service.",
+    "topic": "Resilient Architectures",
     "tags": [
-      "EC2"
+      "Architecture",
+      "Resilience",
+      "API",
+      "Best Practices"
     ]
   },
   {
@@ -414,32 +416,31 @@
   {
     "id": "saa-635",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company runs a globally distributed application and wants to route users to the closest healthy regional endpoint, automatically failing traffic away from a region during an outage, with fast failover at the network layer (not just DNS TTL-based failover). What should be used?",
+    "question": "A gaming company runs a globally distributed multiplayer backend across three AWS Regions. The company wants to route players to the closest healthy regional endpoint to minimize latency. However, in the event of a regional outage, traffic must be redirected to the next closest region almost instantly. The company previously used DNS-based failover but found that client-side DNS caching caused unacceptable delays (often minutes) before players were successfully rerouted. Which AWS service provides fast, network-layer failover that bypasses client-side DNS caching?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Route 53 latency-based routing with health checks only",
-      "B": "AWS Global Accelerator, which uses static Anycast IPs and continuously monitors endpoint health to redirect traffic within seconds at the network layer, bypassing client-side DNS caching delays",
-      "C": "A single CloudFront distribution with one origin",
-      "D": "Route 53 simple routing policy"
+      "A": "Configure Amazon Route 53 latency-based routing with aggressive health checks to force faster DNS updates.",
+      "B": "Implement AWS Global Accelerator to route traffic over the AWS backbone using static Anycast IPs for instant network-layer failover.",
+      "C": "Deploy a single Amazon CloudFront distribution and configure the three regions as custom origins with failover routing.",
+      "D": "Set up a Route 53 simple routing policy and use AWS Lambda to manually update the DNS records during an outage."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Global Accelerator uses Anycast IPs and the AWS global network to route users to the nearest healthy endpoint and can fail over within seconds at the network layer because it doesn't rely on DNS propagation/TTL expiry on the client side, which is a key advantage over DNS-based failover for latency-sensitive failover scenarios. Route 53 latency-based routing with health checks is a valid pattern but failover speed is bounded by DNS TTL and client/resolver caching behavior, which can be slower and less predictable. A single CloudFront distribution with one origin provides no multi-region failover at all. Route 53 simple routing doesn't support health-check-based failover or latency optimization.",
+    "explanation": "B is correct because AWS Global Accelerator provides static Anycast IP addresses that do not rely on DNS resolution after the initial lookup. It monitors endpoint health and reroutes traffic at the network layer within seconds, completely bypassing client-side DNS caching issues.",
     "whyOthersAreWrong": {
-      "A": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations.",
-      "C": "A single CloudFront distribution with one origin provides edge caching but cannot route traffic to multiple regional backends or perform regional failover.",
-      "D": "Route 53 simple routing policy cannot perform health checks or automated regional failover."
+      "A": "Even with aggressive health checks, Route 53 relies on the client's ISP or device honoring the DNS TTL. Many devices cache DNS records longer than the TTL, causing unavoidable delays.",
+      "C": "Amazon CloudFront is a Content Delivery Network optimized for caching HTTP/HTTPS requests. Multiplayer gaming backends usually require raw TCP/UDP connections, which CloudFront does not support.",
+      "D": "Manually updating Route 53 via Lambda still relies on DNS propagation and client-side cache expiration, failing to solve the root problem of DNS caching delays."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
-    "topic": "AWS CloudFront",
+    "learningObjective": "Select AWS Global Accelerator for multi-region routing and instantaneous network-layer failover that bypasses DNS caching.",
+    "topic": "AWS Global Accelerator",
     "tags": [
-      "CloudFront",
-      "Route 53",
-      "IAM",
-      "High Availability",
-      "Networking"
+      "Global Accelerator",
+      "Networking",
+      "Failover",
+      "High Availability"
     ]
   },
   {
@@ -504,32 +505,31 @@
   {
     "id": "saa-638",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global news website serves static images and videos to users worldwide. Origin latency is high for users far from the origin S3 bucket's region, and origin request load is high during traffic spikes. What should be implemented to improve performance and reduce origin load?",
+    "question": "A global news website serves thousands of high-resolution images and videos stored in an Amazon S3 bucket located in the `us-east-1` Region. Users in Asia and Europe are complaining about extremely slow load times. Additionally, during breaking news events, the massive spike in global traffic causes the S3 bucket to experience high `503 Slow Down` error rates due to request throttling. Which AWS service should be implemented to dramatically improve global load times and eliminate the S3 throttling issues?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Increase the EC2 instance size hosting the origin",
-      "B": "Deploy Amazon CloudFront in front of the S3 origin, caching content at edge locations close to users",
-      "C": "Enable S3 Transfer Acceleration only",
-      "D": "Move the S3 bucket to every AWS region"
+      "A": "Upgrade the underlying Amazon EC2 instance types hosting the S3 bucket to provide higher network throughput.",
+      "B": "Deploy Amazon CloudFront in front of the S3 bucket to cache the media files at global edge locations close to the users.",
+      "C": "Enable Amazon S3 Transfer Acceleration on the bucket to speed up the delivery of the media files to global users.",
+      "D": "Replicate the Amazon S3 bucket to every AWS Region globally using S3 Cross-Region Replication (CRR)."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "CloudFront caches content at edge locations globally, dramatically reducing latency for distant users and offloading repeat requests from the origin, directly solving both stated problems. There's no EC2 instance in this scenario since the origin is S3. Transfer Acceleration speeds up uploads to S3 using edge locations, but doesn't cache/serve content to end users for downloads the way CloudFront does. Replicating the bucket to every region is operationally complex, costly, and doesn't provide edge caching or reduce latency as effectively as a CDN.",
+    "explanation": "B is correct because Amazon CloudFront is a global Content Delivery Network (CDN) that caches static assets at edge locations worldwide. This drastically reduces latency for international users and absorbs the massive traffic spikes, preventing the origin S3 bucket from being overwhelmed or throttled.",
     "whyOthersAreWrong": {
-      "A": "The media files are hosted directly in Amazon S3, so increasing EC2 instance sizes is irrelevant to the architecture.",
-      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits.",
-      "D": "Replicating the S3 bucket to every AWS region introduces immense storage costs and operational complexity without providing edge caching near end users."
+      "A": "Amazon S3 is a fully managed service; there are no underlying EC2 instances that a customer can upgrade or manage.",
+      "C": "Amazon S3 Transfer Acceleration is designed to speed up uploads to an S3 bucket over long distances using the AWS edge network. It is not a CDN designed to cache and serve content to millions of users.",
+      "D": "Using S3 CRR to replicate data to every region is incredibly expensive and operationally complex. CloudFront achieves global caching automatically and far more cost-effectively."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon S3.",
-    "topic": "Amazon S3",
+    "learningObjective": "Use Amazon CloudFront in front of Amazon S3 to reduce global latency and protect the origin from traffic spikes.",
+    "topic": "AWS CloudFront",
     "tags": [
-      "S3",
       "CloudFront",
-      "EC2",
-      "Cost Optimization",
-      "Networking"
+      "CDN",
+      "Performance",
+      "S3"
     ]
   },
   {

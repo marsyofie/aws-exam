@@ -274,31 +274,31 @@
   {
     "id": "saa-950",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global application backed by DynamoDB needs low-latency reads and writes from users in multiple regions simultaneously, with built-in multi-region write conflict resolution, and no custom replication code.",
+    "question": "A global gaming company is developing an application backed by an Amazon DynamoDB table. Players located in North America, Europe, and Asia need to read and write player state data simultaneously with single-digit millisecond latency. The architecture must handle multi-region write conflicts automatically without requiring the development team to write custom data replication or conflict resolution code. Which architectural pattern should the company implement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Cross-region replication of the DynamoDB table's underlying S3 export",
-      "B": "DynamoDB Streams triggering a Lambda function that manually copies items to tables in other regions",
-      "C": "DynamoDB Global Tables",
-      "D": "A single-region DynamoDB table accessed cross-region by all users"
+      "A": "Implement cross-region replication of the DynamoDB table's underlying Amazon S3 export data.",
+      "B": "Use DynamoDB Streams to trigger AWS Lambda functions that manually copy items to tables in other regions.",
+      "C": "Configure the Amazon DynamoDB database to use the fully managed Global Tables feature.",
+      "D": "Provision a single-region DynamoDB table and force all global users to access it over the public internet."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "DynamoDB Global Tables provide fully managed, multi-region, multi-active replication with automatic last-writer-wins conflict resolution, letting applications read and write to a local regional table with low latency while changes propagate to other regions automatically. A single-region table forces cross-region latency for distant users, and building custom Streams-based replication reinvents what Global Tables already provides, with none of the built-in conflict handling.",
+    "explanation": "C is correct because Amazon DynamoDB Global Tables provide a fully managed, multi-region, active-active database solution. It automatically replicates data across your chosen AWS regions with single-digit millisecond latency. Crucially, it has built-in conflict resolution (last writer wins) so developers do not need to write custom replication or conflict management code.",
     "whyOthersAreWrong": {
-      "A": "Replicating S3 exports of DynamoDB data is an offline batch backup mechanism and cannot serve live, low-latency multi-region read and write requests.",
-      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "D": "Routing global users to a single AWS region introduces significant cross-region internet latency and creates a single regional point of failure."
+      "A": "Exporting data to S3 and replicating the bucket is an asynchronous, slow batch process. It cannot provide real-time, low-latency multi-region reads and writes.",
+      "B": "Using DynamoDB Streams and Lambda to manually replicate data is a complex, build-it-yourself pattern that forces the development team to write and maintain custom replication and conflict resolution code.",
+      "D": "Forcing global users to access a single region introduces massive network latency, completely failing the requirement for single-digit millisecond reads and writes globally."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
+    "learningObjective": "Deploy Amazon DynamoDB Global Tables for fully managed, active-active, multi-region applications requiring automatic conflict resolution.",
     "topic": "Amazon DynamoDB",
     "tags": [
+      "Databases",
       "DynamoDB",
-      "Lambda",
-      "S3",
-      "Networking"
+      "Global Architecture",
+      "High Availability"
     ]
   },
   {
@@ -361,89 +361,92 @@
   {
     "id": "saa-953",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company hosting a mix of static and dynamic content has a disaster recovery requirement of an RTO of a few hours and an RPO of 24 hours, and wants the lowest-cost DR approach that still meets these targets.",
+    "question": "A company hosts a mix of static and dynamic content on AWS. The business has defined a Disaster Recovery (DR) requirement with a Recovery Time Objective (RTO) of 12 hours and a Recovery Point Objective (RPO) of 24 hours. The finance department has mandated that the DR strategy must be the absolute lowest-cost approach possible that still meets these specific RTO and RPO targets. Which DR strategy should the architect select?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Backup and restore: cross-region backup copies (AMIs, DB snapshots, S3 replication) with resources launched on demand after a disaster is declared",
-      "B": "Pilot light with continuously running compute in the DR region",
-      "C": "Warm standby with a scaled-down but always-running copy of the full stack",
-      "D": "Full active-active multi-region deployment"
+      "A": "Implement a Backup and Restore strategy, utilizing cross-region backups and launching resources only when a disaster is declared.",
+      "B": "Deploy a Pilot Light strategy with continuously running, minimal compute infrastructure in the secondary DR region.",
+      "C": "Configure a Warm Standby strategy with a scaled-down but always-running copy of the full application stack.",
+      "D": "Establish a full Active-Active multi-region deployment to ensure zero downtime and immediate failover."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Backup and restore is the lowest-cost DR pattern because nothing runs continuously in the DR region -- only backups (snapshots, AMIs, replicated data) are maintained, and resources are provisioned from those backups only after a disaster is declared. This comfortably meets an RTO of hours and RPO of 24 hours. Pilot light, warm standby, and active-active all involve progressively more continuously running infrastructure and cost, which is unnecessary when the RTO/RPO targets are this relaxed.",
+    "explanation": "A is correct because the 'Backup and Restore' strategy is the absolute lowest-cost disaster recovery option. Because the RTO is relaxed (12 hours) and the RPO is generous (24 hours), the company can afford to simply store daily backups (snapshots, S3 replication) in a secondary region. No compute resources are provisioned or paid for until a disaster actually occurs, minimizing costs perfectly in line with the constraints.",
     "whyOthersAreWrong": {
-      "B": "Pilot light keeps core infrastructure continuously running in the secondary region, incurring unnecessary ongoing costs when an RTO of hours can be met by restoring on demand.",
-      "C": "Warm standby maintains a scaled-down running copy of the entire application stack, which incurs substantial ongoing compute and storage costs compared to backup and restore.",
-      "D": "Provisioning full multi-Region infrastructure introduces substantial ongoing compute costs and cross-Region data replication complexity that exceed the workload's constraints."
+      "B": "Pilot Light keeps minimal infrastructure (like a database server) continuously running. This incurs higher ongoing costs than Backup and Restore, which is unnecessary given the relaxed 12-hour RTO.",
+      "C": "Warm Standby keeps a scaled-down version of the entire application running continuously. This is significantly more expensive and typically used for RTOs measured in minutes.",
+      "D": "Active-Active is the most expensive DR strategy, duplicating full production infrastructure in multiple regions. It is massive overkill for a 12-hour RTO requirement."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
-    "topic": "Amazon S3",
+    "learningObjective": "Select the Backup and Restore disaster recovery strategy when cost minimization is the primary goal and RTO/RPO targets are relaxed.",
+    "topic": "Disaster Recovery",
     "tags": [
-      "S3",
-      "High Availability",
+      "Architecture",
+      "Disaster Recovery",
       "Cost Optimization"
     ]
   },
   {
     "id": "saa-954",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to increase both the availability and the read scalability of its RDS for PostgreSQL database. (Choose TWO.)",
+    "question": "A company runs a monolithic application backed by a single Amazon RDS for PostgreSQL database instance. The database is struggling to keep up with an increasing volume of read queries from analytics dashboards, and the application experiences complete downtime during routine database maintenance windows. The architect needs to increase the read scalability of the database AND improve its high availability to prevent downtime during single-instance failures. Which TWO actions should be taken? (Choose TWO.)",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
-      "A": "Add one or more read replicas in different Availability Zones to offload read traffic",
-      "B": "Enable Multi-AZ deployment, giving a synchronously replicated standby in a different AZ that automatic failover can promote",
-      "C": "Increase the allocated storage size of the primary instance",
-      "D": "Take manual snapshots every hour",
-      "E": "Enable enhanced monitoring"
+      "A": "Add one or more Amazon RDS Read Replicas in different Availability Zones to offload the heavy read traffic.",
+      "B": "Enable the Multi-AZ deployment feature to provision a synchronously replicated standby instance for automatic failover.",
+      "C": "Significantly increase the allocated storage size of the primary RDS instance to improve its baseline IOPS.",
+      "D": "Schedule automated Amazon RDS snapshots to be taken every hour to improve the recovery time objective.",
+      "E": "Enable Enhanced Monitoring on the RDS instance to automatically tune the database engine for higher performance."
     },
     "correctAnswers": [
       "A",
       "B"
     ],
-    "explanation": "Multi-AZ provides high availability through a synchronous standby that RDS automatically fails over to during an AZ outage or instance failure, while read replicas provide horizontal read scalability by offloading read-only queries to one or more asynchronously replicated copies -- together they address both stated goals. Manual snapshots are a backup/DR mechanism, not an availability or scaling mechanism; increasing storage size affects capacity, not availability or read throughput; and enhanced monitoring is purely observability, with no effect on resilience or scaling.",
+    "explanation": "A and B are correct. A is correct because Amazon RDS Read Replicas specifically address the 'read scalability' requirement by allowing the analytics dashboards to query the replicas instead of the primary instance. B is correct because a Multi-AZ deployment specifically addresses the 'high availability' requirement by synchronously replicating data to a standby instance in a different AZ, enabling automatic failover during maintenance or failures.",
     "whyOthersAreWrong": {
-      "C": "Increasing storage allocation expands database disk volume capacity, but does not scale read query throughput or provide multi-AZ failover redundancy.",
-      "D": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "E": "Enhanced Monitoring collects operating system metrics for performance analysis, but has no direct effect on query scaling or database failover availability."
+      "C": "Increasing storage size does increase baseline IOPS, but it does not decouple read traffic (scalability) nor does it provide a standby instance for failover (high availability).",
+      "D": "Taking hourly snapshots is a backup and disaster recovery strategy. It does not prevent downtime during an instance failure, as restoring a snapshot takes time and manual effort.",
+      "E": "Enhanced Monitoring provides deeper OS-level metrics for the database instance; it does not automatically tune the database or provide high availability."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
+    "learningObjective": "Combine Amazon RDS Read Replicas for read scalability with Multi-AZ deployments for high availability and automatic failover.",
     "topic": "Amazon RDS",
     "tags": [
+      "Databases",
       "RDS",
-      "High Availability"
+      "High Availability",
+      "Scalability"
     ]
   },
   {
     "id": "saa-955",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company runs its application in two AWS regions and wants Route 53 to automatically stop sending traffic to the primary region's ALB the moment its health check fails, redirect all traffic to the secondary region, and automatically resume sending traffic to the primary once it recovers.",
+    "question": "A company runs its critical web application simultaneously in the `us-east-1` (primary) and `us-west-2` (secondary) AWS regions. The architecture requires Amazon Route 53 to automatically stop sending traffic to the primary region's Application Load Balancer the exact moment its health check fails. All traffic must then be immediately redirected to the secondary region. Once the primary region recovers, Route 53 must automatically resume sending traffic there. Which routing policy is required?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Route 53 weighted routing policy with a fixed 50/50 split",
-      "B": "Route 53 geolocation routing policy",
-      "C": "Route 53 simple routing policy pointing only to the primary region",
-      "D": "Route 53 failover routing policy with health checks on both endpoints"
+      "A": "Configure a Route 53 weighted routing policy with a fixed 50/50 split across both regional endpoints.",
+      "B": "Implement a Route 53 geolocation routing policy to direct users based on their physical location.",
+      "C": "Utilize a Route 53 simple routing policy pointing exclusively to the primary region's IP addresses.",
+      "D": "Deploy a Route 53 failover routing policy with active health checks configured on both regional endpoints."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Failover routing is purpose-built for exactly this active-passive pattern: Route 53 continuously monitors the primary record's health check and automatically shifts all DNS answers to the secondary record when the primary is unhealthy, then reverts automatically once the health check passes again. Simple routing has no failover logic at all, weighted routing distributes a fixed proportion of traffic regardless of health, and geolocation routing selects a target based on the requester's location, not endpoint health.",
+    "explanation": "D is correct because the Route 53 Failover routing policy is explicitly designed for active-passive high availability patterns. Route 53 continuously monitors the primary endpoint using health checks. If the primary health check fails, Route 53 automatically updates DNS resolution to route all traffic to the secondary endpoint. When the primary recovers, traffic fails back automatically.",
     "whyOthersAreWrong": {
-      "A": "Weighted routing with a fixed 50/50 split sends half of user traffic to the secondary region during normal operation and continues sending traffic to the primary during an outage.",
-      "B": "DNS-based routing decisions depend on client DNS resolvers honoring record TTLs and cannot react instantaneously to granular Availability Zone health degradations.",
-      "C": "Simple routing provides no health checking or automated failover capabilities to redirect traffic when the primary ALB fails."
+      "A": "Weighted routing distributes traffic continuously to both endpoints (active-active). The prompt describes an active-passive failover scenario where traffic only goes to the secondary region if the primary fails.",
+      "B": "Geolocation routing directs users based on where they live (e.g., European users to Frankfurt). It is not a failover mechanism.",
+      "C": "Simple routing provides no health checking capabilities. If the primary region goes down, Route 53 will continue handing out the dead IP addresses, causing a total outage."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Route 53.",
+    "learningObjective": "Configure Amazon Route 53 Failover routing with health checks to implement automatic active-passive disaster recovery.",
     "topic": "Amazon Route 53",
     "tags": [
+      "Networking",
       "Route 53",
-      "IAM",
-      "High Availability"
+      "Disaster Recovery",
+      "Failover"
     ]
   },
   {
@@ -539,30 +542,31 @@
   {
     "id": "saa-959",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A compliance requirement states that a critical S3-based document store must be recoverable from accidental deletion or accidental overwrite to any prior state of an object, with an additional control preventing even an account administrator from permanently deleting version history without secondary authorization.",
+    "question": "A stringent financial compliance requirement states that a critical document store in Amazon S3 must be recoverable to any prior state if an object is accidentally deleted or overwritten. Furthermore, there must be an additional, robust security control preventing even an AWS account administrator from permanently deleting the version history without providing a secondary, out-of-band authorization mechanism. Which combination of S3 features satisfies this requirement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Enable S3 Versioning only, with default settings",
-      "B": "Take manual point-in-time exports of the bucket to a separate account weekly",
-      "C": "Enable S3 Transfer Acceleration",
-      "D": "Enable S3 Versioning with MFA Delete enabled on the bucket"
+      "A": "Enable Amazon S3 Versioning only, utilizing the default settings for the entire bucket.",
+      "B": "Schedule manual point-in-time exports of the S3 bucket to a completely separate, isolated AWS account weekly.",
+      "C": "Enable the Amazon S3 Transfer Acceleration feature to securely route the traffic over the AWS backbone network.",
+      "D": "Enable Amazon S3 Versioning and configure the MFA Delete feature on the S3 bucket."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "S3 Versioning preserves every version of an object so any prior state can be restored after an accidental overwrite or delete, and MFA Delete adds a requirement for MFA authentication to permanently delete an object version or to disable versioning itself -- directly matching the 'secondary authorization' requirement, since it can't be bypassed by IAM permissions alone. Versioning without MFA Delete still allows an admin with sufficient IAM permissions to permanently purge versions. Transfer Acceleration is unrelated, and manual weekly exports don't provide recovery to an arbitrary point in time between exports.",
+    "explanation": "D is correct because Amazon S3 Versioning provides the ability to recover from accidental deletions or overwrites by keeping previous versions of an object. The MFA Delete feature adds the mandated robust security control: once enabled, permanently deleting an object version or suspending versioning requires the user to authenticate with an active Multi-Factor Authentication (MFA) device, preventing rogue administrators from silently destroying data.",
     "whyOthersAreWrong": {
-      "A": "S3 Versioning preserves previous versions of modified or deleted objects, but does not prevent public exposure or enforce bucket access controls.",
-      "B": "A manual administrative process fails the requirement for automated high availability and introduces human error and operational delay during incidents.",
-      "C": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits."
+      "A": "S3 Versioning alone protects against accidental overwrites, but an administrator with `s3:DeleteObjectVersion` permissions can still permanently destroy the history without secondary authorization.",
+      "B": "Manual weekly backups do not provide the immediate recoverability of S3 Versioning, nor do they natively enforce an out-of-band authorization mechanism for deletions.",
+      "C": "S3 Transfer Acceleration speeds up object uploads and downloads. It provides absolutely no data protection or versioning capabilities."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
+    "learningObjective": "Combine Amazon S3 Versioning with MFA Delete to protect critical data from accidental overwrites and unauthorized permanent deletion.",
     "topic": "Amazon S3",
     "tags": [
+      "Security",
+      "Storage",
       "S3",
-      "IAM",
-      "Security"
+      "Data Protection"
     ]
   },
   {

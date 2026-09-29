@@ -90,30 +90,31 @@
   {
     "id": "saa-1104",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company runs a global SaaS application. Customer data must be stored in the AWS Region closest to the customer to comply with data residency requirements. The company needs a single endpoint that automatically routes users to the correct Region. Which Route 53 routing policy should they use?",
+    "question": "A global Software-as-a-Service (SaaS) company provides a web application to customers worldwide. To strictly comply with complex international data residency laws, European customer data must be stored and processed exclusively in the `eu-central-1` AWS Region, while North American customer data must be stored and processed exclusively in the `us-east-1` AWS Region. The company requires a single, unified DNS endpoint (e.g., `app.example.com`) that automatically routes users to the legally correct AWS Region based entirely on the physical location of the user's IP address. Which Amazon Route 53 routing policy is required?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Simple routing",
-      "B": "Latency-based routing",
-      "C": "Geolocation routing",
-      "D": "Geoproximity routing"
+      "A": "Configure a Route 53 simple routing policy with multiple A records pointing to the different regional endpoints.",
+      "B": "Utilize a Route 53 latency-based routing policy to direct users to the AWS Region providing the fastest network response.",
+      "C": "Implement a Route 53 geolocation routing policy to explicitly map continents or countries to their respective AWS Regions.",
+      "D": "Deploy a Route 53 geoproximity routing policy with traffic bias to finely control the geographic boundaries."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "Route 53 geolocation routing routes traffic based on the geographic location of the user. This ensures users are directed to the AWS Region closest to them (or the Region designated for their location), which directly meets the data residency requirement.",
+    "explanation": "C is correct because Amazon Route 53 Geolocation routing lets you choose the exact resources that serve your traffic based on the geographic location of your users (by country or continent). This is the only policy that guarantees European users are always routed to the European region, ensuring strict compliance with data residency and sovereignty laws.",
     "whyOthersAreWrong": {
-      "A": "Simple routing doesn't consider the user's location.",
-      "B": "Latency-based routing routes to the lowest-latency endpoint, which may not always be the geographically closest Region due to network conditions. It doesn't explicitly guarantee data residency.",
-      "D": "Geoproximity routing routes based on geographic distance and can bias traffic, but it's more complex and designed for shifting traffic between resources, not strictly for data residency compliance."
+      "A": "Simple routing simply returns all IP addresses randomly. It provides no geographic intelligence and would frequently route European users to the US.",
+      "B": "Latency-based routing directs users to the region with the lowest network latency. While often accurate geographically, network anomalies could easily cause a European user to be routed to the US, violating the strict data residency laws.",
+      "D": "Geoproximity routing routes traffic based on the geographic location of the *resources* (with optional bias). While similar, Geolocation is the explicit, standard policy used to map specific user countries/continents to specific endpoints for legal compliance."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
-    "topic": "AWS IAM",
+    "learningObjective": "Configure Amazon Route 53 Geolocation routing to ensure compliance with strict international data residency and sovereignty laws.",
+    "topic": "Amazon Route 53",
     "tags": [
-      "IAM",
+      "Networking",
       "Route 53",
-      "Networking"
+      "Compliance",
+      "Architecture"
     ]
   },
   {
@@ -248,7 +249,7 @@
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Kinesis Data Streams with Lambda provides at-least-once delivery semantics, meaning records may be processed more than once. The recommended approach is to make the processing logic idempotent \u2014 design the application to handle duplicate records gracefully, such as by checking a unique identifier before processing.",
+    "explanation": "Kinesis Data Streams with Lambda provides at-least-once delivery semantics, meaning records may be processed more than once. The recommended approach is to make the processing logic idempotent — design the application to handle duplicate records gracefully, such as by checking a unique identifier before processing.",
     "whyOthersAreWrong": {
       "A": "Using a DynamoDB GSI to track processed records adds complexity and cost. Idempotency is the standard approach.",
       "C": "Increasing batch size doesn't prevent duplicate processing; it just processes more records per invocation.",
@@ -505,60 +506,61 @@
   {
     "id": "saa-1118",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company's application stores user session data in Amazon ElastiCache for Redis. The cache must be highly available and survive a node failure. Which ElastiCache configuration meets this requirement?",
+    "question": "A company's critical e-commerce application stores active user session data in Amazon ElastiCache for Redis. The architecture dictates that the cache layer must be highly available; it must automatically survive the failure of an underlying hardware node without losing session data and without requiring manual administrative intervention to restore service. Which ElastiCache configuration satisfies this strict high availability requirement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "A single-node cache cluster.",
-      "B": "A cluster with multiple shards, each with a read replica, and Multi-AZ enabled.",
-      "C": "A cluster with a single shard and multiple read replicas in the same Availability Zone.",
-      "D": "A cluster with Multi-AZ disabled and automatic failover enabled."
+      "A": "Deploy a single-node cache cluster and rely on automated daily snapshots for recovery.",
+      "B": "Configure a Redis cluster with multiple shards and enable the Multi-AZ deployment feature.",
+      "C": "Provision a cluster with a single shard and multiple read replicas located in the exact same Availability Zone.",
+      "D": "Deploy a cluster with Multi-AZ disabled but enable the automatic failover feature manually."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "A Redis cluster with multiple shards (each with a primary and read replica) and Multi-AZ enabled provides high availability. If a primary node fails, ElastiCache automatically promotes the read replica in the same shard, ensuring the cluster continues to function.",
+    "explanation": "B is correct because Amazon ElastiCache for Redis achieves high availability through Multi-AZ deployments with automatic failover. By configuring a cluster with read replicas and enabling Multi-AZ, ElastiCache automatically monitors the primary node. If it fails, ElastiCache automatically promotes a read replica (located in a different Availability Zone) to become the new primary, ensuring the cache survives hardware failures with minimal disruption.",
     "whyOthersAreWrong": {
-      "A": "A single-node cluster has no redundancy; data is lost if the node fails.",
-      "C": "Multiple read replicas in the same AZ don't protect against AZ failure.",
-      "D": "Without Multi-AZ, failover can only happen within the same AZ, which doesn't provide true high availability."
+      "A": "A single-node cluster has no replicas. If the node fails, all session data in memory is lost, and the application experiences downtime while a new node is provisioned from a snapshot.",
+      "C": "Placing all replicas in the exact same Availability Zone provides zero protection against a broader AZ outage.",
+      "D": "Automatic failover intrinsically relies on having nodes in multiple Availability Zones (Multi-AZ). You cannot enable automatic failover while simultaneously disabling Multi-AZ."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon RDS.",
-    "topic": "Amazon RDS",
+    "learningObjective": "Configure Amazon ElastiCache for Redis with Multi-AZ and automatic failover to ensure high availability for in-memory data.",
+    "topic": "Amazon ElastiCache",
     "tags": [
-      "RDS",
+      "Databases",
+      "Caching",
       "ElastiCache",
-      "Lambda",
       "High Availability"
     ]
   },
   {
     "id": "saa-1119",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company uses AWS Organizations with multiple member accounts. The security team needs to centrally manage security findings from AWS GuardDuty, AWS Security Hub, and Amazon Inspector across all accounts. Which service should they use to aggregate findings?",
+    "question": "An enterprise uses AWS Organizations to manage dozens of member accounts. The central security team is overwhelmed by navigating between individual accounts to review security findings generated by AWS GuardDuty, AWS Config, and Amazon Inspector. They need a single, unified dashboard to centrally manage and aggregate these security findings across the entire AWS Organization. Which service should they configure to achieve this centralized visibility?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon CloudWatch dashboards",
-      "B": "AWS Security Hub with delegated administrator and finding aggregation",
-      "C": "AWS Config aggregator",
-      "D": "Amazon Detective"
+      "A": "Create custom Amazon CloudWatch dashboards in the management account to aggregate the security metrics.",
+      "B": "Enable AWS Security Hub and designate a delegated administrator account to aggregate findings.",
+      "C": "Configure an AWS Config aggregator to centrally monitor compliance rules across all accounts.",
+      "D": "Deploy Amazon Detective to analyze the root cause of the disparate security findings globally."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Security Hub provides a centralized view of security findings from multiple AWS security services including GuardDuty, Security Hub's own checks, and Amazon Inspector. With a delegated administrator account and finding aggregation enabled, all findings from all member accounts are centrally aggregated and managed.",
+    "explanation": "B is correct because AWS Security Hub is specifically designed to provide a comprehensive, centralized view of your security state across all AWS accounts. It natively aggregates, normalizes, and prioritizes security alerts (findings) from multiple AWS services (like GuardDuty, Inspector, and Config) into a single unified dashboard. Using a delegated administrator allows the security team to manage this globally across the AWS Organization.",
     "whyOthersAreWrong": {
-      "A": "CloudWatch dashboards display metrics, not security findings.",
-      "C": "AWS Config aggregator shows configuration compliance, not aggregated security findings.",
-      "D": "Amazon Detective analyzes security investigations but doesn't aggregate findings from multiple security services."
+      "A": "CloudWatch dashboards visualize metrics and logs, not complex, structured security findings. Building a custom aggregation system would require massive development effort.",
+      "C": "An AWS Config aggregator only aggregates Config compliance state data (whether resources comply with specific rules). It does not aggregate threat detections from GuardDuty or vulnerability scans from Inspector.",
+      "D": "Amazon Detective is a service used to investigate and identify the root cause of *existing* security issues. It is not a centralized dashboard for aggregating alerts from other services."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon CloudWatch.",
-    "topic": "Amazon CloudWatch",
+    "learningObjective": "Use AWS Security Hub to centrally aggregate and manage security findings from various AWS security services across multiple accounts.",
+    "topic": "AWS Security Hub",
     "tags": [
-      "CloudWatch",
-      "Organizations",
-      "Security"
+      "Security",
+      "Security Hub",
+      "Governance",
+      "Operations"
     ]
   },
   {

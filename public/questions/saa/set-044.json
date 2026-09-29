@@ -156,31 +156,31 @@
   {
     "id": "saa-866",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to inspect and filter HTTP traffic to its public-facing Application Load Balancer to block common web exploits such as SQL injection and cross-site scripting, and also rate-limit abusive IP addresses. Which service should be used?",
+    "question": "A retail company wants to actively inspect and filter incoming HTTP and HTTPS traffic to its public-facing Application Load Balancer (ALB). The security team needs the ability to configure custom rules that block common web exploits (such as SQL injection and cross-site scripting attacks) and proactively rate-limit traffic from abusive IP addresses that are scraping their product catalog. Which AWS service provides these specific capabilities?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon GuardDuty",
-      "B": "AWS WAF with a web ACL attached to the ALB",
-      "C": "Network ACLs on the ALB's subnet",
-      "D": "AWS Shield Standard"
+      "A": "Enable Amazon GuardDuty to detect the malicious activity and automatically update the ALB security groups.",
+      "B": "Implement AWS WAF (Web Application Firewall) and attach the web ACL directly to the ALB.",
+      "C": "Configure Network ACLs on the ALB's public subnet to drop the malicious payload packets.",
+      "D": "Subscribe to AWS Shield Standard to automatically protect against Layer 7 application exploits."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS WAF operates at Layer 7 and provides managed rule groups for SQLi/XSS protection plus rate-based rules to throttle abusive IPs, and it attaches directly to an ALB, API Gateway, or CloudFront distribution. GuardDuty is a threat detection service, not an inline traffic filter. NACLs operate at Layer 3/4 and cannot inspect HTTP payloads. Shield Standard provides free DDoS protection but not application-layer request filtering.",
+    "explanation": "B is correct because AWS WAF (Web Application Firewall) operates at Layer 7 and is specifically designed to inspect HTTP/HTTPS traffic. It provides native managed rules to block SQL injection and XSS, and allows you to create custom rate-based rules to automatically block abusive IP addresses scraping the site.",
     "whyOthersAreWrong": {
-      "A": "Amazon GuardDuty is an asynchronous, detective threat detection service that analyzes logs; it does not operate inline at Layer 7 to inspect or block live HTTP exploits.",
-      "C": "Network ACLs are stateless and apply to entire subnet CIDR blocks; they cannot dynamically reference instance security groups or maintain stateful connection tracking.",
-      "D": "AWS Shield Standard defends against Layer 3 and Layer 4 infrastructure DDoS attacks, but does not inspect or filter Layer 7 application vulnerabilities."
+      "A": "Amazon GuardDuty is a detective threat intelligence service. While it can detect threats, it does not sit inline to filter HTTP traffic or actively rate-limit scraping IP addresses.",
+      "C": "Network ACLs operate at Layer 4 (ports and IPs). They cannot inspect Layer 7 HTTP payloads for SQL injections or XSS attacks.",
+      "D": "AWS Shield Standard protects against volumetric network and transport layer (Layer 3 and 4) DDoS attacks. It does not inspect Layer 7 traffic for SQL injection or provide rate-limiting for scraping."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS WAF.",
+    "learningObjective": "Deploy AWS WAF on an Application Load Balancer to filter HTTP traffic, block web exploits, and rate-limit abusive IPs.",
     "topic": "AWS WAF",
     "tags": [
+      "Security",
       "WAF",
-      "CloudFront",
-      "VPC",
-      "Networking"
+      "Networking",
+      "Web Application"
     ]
   },
   {
@@ -363,91 +363,93 @@
   {
     "id": "saa-873",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to centrally manage and rotate database credentials used by multiple Lambda functions, with automatic rotation every 30 days and no application code changes required to fetch the current credentials at runtime. Which service is BEST suited?",
+    "question": "A development team has deployed a microservices architecture using multiple AWS Lambda functions that connect to an Amazon RDS database. Corporate security policy mandates that the database credentials must be centrally managed and automatically rotated every 30 days. Furthermore, the Lambda functions must fetch the current credentials at runtime without requiring any application code deployments when the rotation occurs. Which service is BEST suited for this?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Systems Manager Parameter Store (Standard tier) with manual rotation",
-      "B": "AWS Secrets Manager with automatic rotation configured using a Lambda rotation function",
-      "C": "Hardcoded credentials in Lambda environment variables encrypted with KMS",
-      "D": "AWS IAM database authentication only"
+      "A": "Store the credentials in AWS Systems Manager Parameter Store and manually rotate them every 30 days.",
+      "B": "Store the credentials in AWS Secrets Manager and configure automatic rotation via a Lambda function.",
+      "C": "Hardcode the database credentials directly into the Lambda environment variables and encrypt them with KMS.",
+      "D": "Enforce AWS IAM database authentication exclusively to completely eliminate the need for database passwords."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Secrets Manager natively supports automatic, scheduled rotation of database credentials (including built-in rotation Lambda templates for RDS/Aurora) and provides an SDK/API call to fetch the current secret at runtime, so application code just requests the latest value.",
+    "explanation": "B is correct because AWS Secrets Manager is explicitly designed to centrally manage, store, and seamlessly automate the rotation of database credentials (using a managed Lambda rotation function). The microservices can query Secrets Manager via API at runtime, ensuring they always receive the current, valid credentials without any code deployments.",
     "whyOthersAreWrong": {
-      "A": "Parameter Store Standard does not include built-in automatic rotation workflows. Hardcoded environment variables require a redeploy to rotate. IAM database authentication is a valid alternative for some engines but doesn't address rotating existing stored credentials for arbitrary secrets.",
-      "C": "Storing credentials in environment variables requires application redeployments whenever keys change and does not support scheduled, automated credential rotation.",
-      "D": "IAM database authentication is engine-dependent and does not support storing or automatically rotating arbitrary third-party database passwords without application architectural changes."
+      "A": "AWS Systems Manager Parameter Store does not have the native, built-in capability to automatically rotate database credentials on a schedule.",
+      "C": "Hardcoding credentials into environment variables violates security best practices and makes rotation extremely difficult, requiring a redeployment of every Lambda function every 30 days.",
+      "D": "While IAM database authentication is an excellent pattern, the prompt specifically asks to centrally manage and rotate *credentials*. Furthermore, IAM auth has strict connection limits per second that may not suit high-throughput Lambda architectures."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Utilize AWS Secrets Manager to centrally manage and automatically rotate database credentials for serverless applications.",
+    "topic": "AWS Secrets Manager",
     "tags": [
-      "Lambda",
-      "Systems Manager",
-      "IAM",
-      "RDS",
-      "Security"
+      "Security",
+      "Secrets Manager",
+      "Databases",
+      "Lambda"
     ]
   },
   {
     "id": "saa-874",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company hosts a public website on Amazon CloudFront with an S3 origin and wants to ensure the S3 bucket content can ONLY be accessed through CloudFront, never directly via the S3 URL. (Choose TWO)",
+    "question": "A media company hosts a public website distributing large video files using Amazon CloudFront with an Amazon S3 bucket configured as the origin. The security team wants to ensure that users can ONLY download the videos by accessing the CloudFront distribution URLs. They must strictly prevent users from bypassing the CDN and downloading the videos directly via the S3 bucket URLs. Which combination of actions must be taken to enforce this? (Choose TWO.)",
     "answerType": "multiple",
     "answerInstruction": "Choose TWO answers.",
     "options": {
-      "A": "Configure CloudFront Origin Access Control (OAC)",
-      "B": "Update the S3 bucket policy to allow access only from the specific CloudFront distribution using the OAC service principal condition",
-      "C": "Make the S3 bucket public and rely on obscurity of the URL",
-      "D": "Enable S3 Transfer Acceleration",
-      "E": "Attach a NACL to the S3 bucket"
+      "A": "Configure an Origin Access Control (OAC) configuration on the Amazon CloudFront distribution.",
+      "B": "Update the S3 bucket policy to allow access only from the CloudFront OAC service principal.",
+      "C": "Make the S3 bucket publicly accessible and rely on the obscurity of the complex bucket URL.",
+      "D": "Enable the Amazon S3 Transfer Acceleration feature on the bucket to route traffic through CloudFront.",
+      "E": "Attach a strict Network ACL (NACL) to the S3 bucket's subnet to block direct internet access."
     },
     "correctAnswers": [
       "A",
       "B"
     ],
-    "explanation": "Origin Access Control (OAC), AWS's current recommended replacement for the legacy OAI, allows CloudFront to sign requests to S3, and the bucket policy is then scoped to allow s3:GetObject only when the request comes from that specific CloudFront distribution (via the AWS:SourceArn condition). Together these ensure direct S3 URL access is denied while CloudFront access works. Public buckets fail the requirement outright. Transfer Acceleration is unrelated to access control.",
+    "explanation": "A and B are correct because securing an S3 bucket behind CloudFront requires two steps. First, you configure CloudFront with an Origin Access Control (OAC) identity. Second, you update the Amazon S3 bucket policy to explicitly deny public access and only grant `s3:GetObject` permissions to the specific CloudFront OAC service principal. This absolutely prevents direct access to the S3 bucket URLs.",
     "whyOthersAreWrong": {
-      "E": "S3 is a managed service and does not sit inside a VPC subnet, so NACLs do not apply.",
-      "C": "Exposing resources publicly or assigning public IP addresses violates network isolation requirements and introduces unacceptable security risks.",
-      "D": "S3 Transfer Acceleration optimizes upload latency across long geographic distances using CloudFront edges, but does not provide content caching or solve internal VPC throughput limits."
+      "C": "Making the S3 bucket public directly violates the security requirement. Security by obscurity is never an acceptable AWS architecture pattern.",
+      "D": "S3 Transfer Acceleration speeds up uploads to S3 using the AWS edge network; it does not restrict access or prevent direct downloads from the bucket.",
+      "E": "Amazon S3 is a global service managed by AWS; it does not reside within your VPC subnets, so you cannot attach a NACL to it."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS CloudFront.",
-    "topic": "AWS CloudFront",
+    "learningObjective": "Implement CloudFront Origin Access Control (OAC) and strict S3 bucket policies to enforce access exclusively through the CDN.",
+    "topic": "Amazon CloudFront",
     "tags": [
+      "Security",
       "CloudFront",
       "S3",
-      "IAM"
+      "Access Control"
     ]
   },
   {
     "id": "saa-875",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An organization needs a centralized location to store and manage security findings, and to view a consolidated compliance score against CIS AWS Foundations Benchmark across dozens of AWS accounts. Which service should be used?",
+    "question": "An enterprise organization operates dozens of AWS accounts managed via AWS Organizations. The Chief Information Security Officer (CISO) needs a centralized dashboard to view a consolidated compliance score against the CIS AWS Foundations Benchmark across all member accounts. The dashboard must also ingest, aggregate, and prioritize security alerts from various AWS services like Amazon GuardDuty and Amazon Inspector. Which AWS service provides this centralized posture management?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Config alone",
-      "B": "AWS Security Hub",
-      "C": "Amazon Macie",
-      "D": "AWS Artifact"
+      "A": "Deploy AWS Config rules and manually aggregate the findings into a custom dashboard.",
+      "B": "Enable AWS Security Hub in a delegated administrator account to aggregate the findings.",
+      "C": "Provision Amazon Macie to continuously monitor the organization for compliance violations.",
+      "D": "Use AWS Artifact to download the consolidated compliance reports for the entire organization."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Security Hub aggregates findings from GuardDuty, Inspector, Macie, Config, and partner tools, and runs automated checks against standards such as CIS AWS Foundations Benchmark, PCI DSS, and AWS FSBP, producing a consolidated compliance score across the organization. AWS Config evaluates resource configuration compliance but doesn't provide the cross-service aggregated security score. Macie focuses specifically on discovering sensitive data in S3. AWS Artifact is a portal for downloading AWS compliance reports/agreements, not an active finding aggregator.",
+    "explanation": "B is correct because AWS Security Hub is a comprehensive cloud security posture management service. It automatically runs continuous, automated compliance checks against standards like the CIS AWS Foundations Benchmark and provides a consolidated score. It also natively aggregates and prioritizes security findings from services like GuardDuty, Inspector, and Macie across all accounts in an AWS Organization.",
     "whyOthersAreWrong": {
-      "A": "AWS Config is a detective control that detects and remediates non-compliance asynchronously after resources are created, failing preventive enforcement requirements.",
-      "C": "Amazon Macie is focused exclusively on discovering and protecting sensitive personal data (PII) in Amazon S3, rather than aggregating cross-service posture findings or compliance scores.",
-      "D": "AWS Artifact is a self-service portal for retrieving on-demand AWS compliance reports and agreements, not an automated runtime security monitoring and aggregation service."
+      "A": "AWS Config checks configurations, but manually aggregating the data into a custom dashboard across dozens of accounts requires significant engineering effort. Security Hub does this natively.",
+      "C": "Amazon Macie is a data security service that discovers sensitive data (like PII) in S3. It does not provide CIS benchmark compliance scoring or aggregate GuardDuty alerts.",
+      "D": "AWS Artifact provides on-demand access to AWS’s security and compliance reports (like AWS's own SOC 2 reports), not compliance scores for your specific AWS resources."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
-    "topic": "Amazon S3",
+    "learningObjective": "Use AWS Security Hub for centralized cloud security posture management, compliance scoring, and finding aggregation across an organization.",
+    "topic": "AWS Security Hub",
     "tags": [
-      "S3",
-      "Security"
+      "Security",
+      "Security Hub",
+      "Compliance",
+      "Governance"
     ]
   },
   {
@@ -483,32 +485,31 @@
   {
     "id": "saa-877",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A Solutions Architect is designing a Lambda function that must read a secret from Secrets Manager and write objects to a specific S3 bucket prefix only. Following least privilege, what should the Lambda execution role's policy include?",
+    "question": "A Solutions Architect is designing an IAM execution role for a new AWS Lambda function. The function's sole purpose is to read a specific database password from AWS Secrets Manager and write processing logs to a specific prefix (`/processed/`) within an Amazon S3 bucket named `company-logs-bucket`. Following the security principle of least privilege, what permissions should the Lambda execution role's IAM policy include?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AdministratorAccess managed policy for simplicity",
-      "B": "secretsmanager:GetSecretValue scoped to the specific secret ARN, and s3:PutObject scoped to the specific bucket ARN and prefix",
-      "C": "Full access to all Secrets Manager secrets and all S3 buckets in the account",
-      "D": "IAM permissions are not required if the Lambda function is inside a VPC"
+      "A": "Attach the `AdministratorAccess` managed policy to ensure the function does not encounter permission errors.",
+      "B": "Grant `secretsmanager:GetSecretValue` for the specific secret ARN, and `s3:PutObject` for the specific bucket prefix ARN.",
+      "C": "Provide full `secretsmanager:*` and `s3:*` access to allow the function to interact with any secret or bucket in the account.",
+      "D": "Provide no IAM permissions, as the Lambda function executes inside a private VPC and does not require them."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Least privilege requires scoping each action to the minimum resource needed: secretsmanager:GetSecretValue restricted to the exact secret ARN, and s3:PutObject restricted to the specific bucket ARN with a resource condition/prefix (e.g., arn:aws:s3:::bucket/prefix/*). Options A and C grant far broader access than necessary, increasing blast radius if the function or its role is compromised. VPC placement is unrelated to IAM authorization-Lambda still needs an execution role regardless of networking, and VPC-attached Lambdas additionally need ENI permissions.",
+    "explanation": "B is correct because the principle of least privilege requires granting only the exact permissions needed to perform a task, restricted to the exact resources required. Granting `GetSecretValue` constrained to the specific Secret ARN, and `PutObject` constrained to the specific S3 bucket prefix ARN (`arn:aws:s3:::company-logs-bucket/processed/*`), perfectly adheres to this principle.",
     "whyOthersAreWrong": {
-      "A": "Granting AdministratorAccess provides unrestricted privileges across all services in the account, severely violating least privilege and exposing infrastructure to compromise.",
-      "C": "Granting full access to all Secrets Manager secrets and all S3 buckets allows the function to access unrelated sensitive data across the entire account.",
-      "D": "Placing a Lambda function inside a VPC provides private network routing but does not grant IAM authorization; AWS API calls still require explicit IAM execution role permissions."
+      "A": "Attaching `AdministratorAccess` is a massive security violation. If the Lambda function is compromised, the attacker gains full control of the entire AWS account.",
+      "C": "Providing wildcard `*` access allows the function to delete buckets or read unrelated, highly sensitive secrets, violating the principle of least privilege.",
+      "D": "Placing a Lambda function inside a VPC controls network routing; it does not bypass the AWS IAM authorization model. The function still requires an execution role to interact with AWS APIs like S3 and Secrets Manager."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using AWS IAM.",
+    "learningObjective": "Apply the principle of least privilege by scoping IAM policies to specific API actions and specific resource ARNs.",
     "topic": "AWS IAM",
     "tags": [
+      "Security",
       "IAM",
-      "S3",
-      "Lambda",
-      "VPC",
-      "Security"
+      "Least Privilege",
+      "Lambda"
     ]
   },
   {
@@ -544,32 +545,31 @@
   {
     "id": "saa-879",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company operates a multi-account environment and wants new member accounts to automatically receive a baseline security configuration (CloudTrail, Config, GuardDuty, and account guardrails) the moment the account is created, with minimal manual setup. Which AWS service is purpose-built for this?",
+    "question": "A large corporation operates a complex multi-account environment. They want to ensure that whenever a new AWS account is provisioned for a project team, it automatically receives a standardized baseline security configuration without any manual intervention. This baseline must automatically enable AWS CloudTrail, AWS Config, Amazon GuardDuty, and apply preventative guardrails (SCPs) to enforce compliance. Which AWS service is purpose-built to orchestrate and automate this secure account provisioning process?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Control Tower with Account Factory",
-      "B": "AWS CloudFormation StackSets run manually per account",
-      "C": "AWS Systems Manager Automation documents",
-      "D": "AWS Trusted Advisor"
+      "A": "Utilize AWS Control Tower and its Account Factory to automatically provision compliant accounts.",
+      "B": "Execute AWS CloudFormation StackSets manually via the CLI every time a new account is requested.",
+      "C": "Write custom AWS Systems Manager Automation documents to configure the accounts after creation.",
+      "D": "Rely on the AWS Trusted Advisor dashboard to notify administrators when an account lacks the baseline."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "AWS Control Tower provides Account Factory, which automatically provisions new accounts into a landing zone with pre-configured guardrails (SCPs), centralized logging (CloudTrail, Config), and baseline security services already enabled-purpose-built for automated, governed multi-account setup. CloudFormation StackSets can deploy resources across accounts but require manual account enrollment and orchestration that Control Tower automates. Systems Manager Automation handles operational runbooks, not account provisioning. Trusted Advisor provides recommendations, not automated account baselining.",
+    "explanation": "A is correct because AWS Control Tower provides the easiest way to set up and govern a secure, multi-account AWS environment based on best practices. Its Account Factory feature automates the provisioning of new accounts, automatically applying the required baselines (CloudTrail, Config) and preventative guardrails (SCPs) without manual intervention.",
     "whyOthersAreWrong": {
-      "B": "Developing and maintaining custom automation scripts introduces significant operational overhead and failure points compared to using native, fully managed AWS services.",
-      "C": "Systems Manager Automation documents execute predefined runbooks on managed instances and AWS resources, but do not automate multi-account governance baseline provisioning upon account creation.",
-      "D": "AWS Trusted Advisor provides automated recommendations for cost, performance, and security posture, but cannot automatically provision baseline configurations into new accounts."
+      "B": "While CloudFormation StackSets are often used *under the hood* by Control Tower, manually executing them every time an account is created introduces operational overhead and the risk of human error, violating the 'without manual intervention' requirement.",
+      "C": "Writing custom Automation documents is a complex, build-it-yourself approach to a problem that AWS Control Tower solves natively as a managed service.",
+      "D": "AWS Trusted Advisor is a monitoring and recommendation tool. It cannot provision new accounts or enforce security baselines automatically."
     },
-    "learningObjective": "Design a resilient architecture meeting strict recovery objectives (RPO/RTO) with AWS Systems Manager.",
-    "topic": "AWS Systems Manager",
+    "learningObjective": "Use AWS Control Tower to automate the provisioning of secure, compliant, multi-account AWS environments.",
+    "topic": "AWS Control Tower",
     "tags": [
-      "Systems Manager",
-      "CloudTrail",
+      "Governance",
       "Control Tower",
-      "Security",
-      "High Availability"
+      "Organizations",
+      "Security"
     ]
   },
   {

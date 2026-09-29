@@ -2,123 +2,121 @@
   {
     "id": "saa-1541",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An enterprise development team implements Attribute-Based Access Control (ABAC) to simplify IAM policy management across dozens of internal engineering squads. Corporate security requires that developers in a department (e.g. `Billing`, `HR`, `Engineering`) can only start, stop, or terminate Amazon EC2 instances that have an AWS resource tag `Department` whose value matches the developer's own IAM principal tag `Department`. Which condition key in the IAM policy enforces this dynamic authorization?",
+    "question": "An enterprise development team implements Attribute-Based Access Control (ABAC) to simplify IAM policy management across dozens of internal engineering squads. Corporate security requires that developers in a department (e.g., `Billing`, `HR`, `Engineering`) can only start, stop, or terminate Amazon EC2 instances that possess an AWS resource tag key `Department` whose value exactly matches the developer's own IAM principal tag `Department`. Which condition key in the IAM policy correctly enforces this dynamic authorization?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Condition: `{\"StringEquals\": {\"aws:ResourceTag/Department\": \"${aws:PrincipalTag/Department}\"}}`",
-      "B": "Condition: `{\"StringEquals\": {\"ec2:InstanceType\": \"t3.micro\"}}`",
-      "C": "Condition: `{\"ArnEquals\": {\"aws:PrincipalArn\": \"arn:aws:iam::*:role/Developers\"}}`",
-      "D": "Condition: `{\"StringEquals\": {\"aws:RequestTag/Department\": \"Engineering\"}}`"
+      "A": "Implement the condition block: `{\"StringEquals\": {\"aws:ResourceTag/Department\": \"${aws:PrincipalTag/Department}\"}}` to dynamically compare the tags.",
+      "B": "Implement the condition block: `{\"StringEquals\": {\"ec2:InstanceType\": \"t3.micro\"}}` to restrict the instance size.",
+      "C": "Implement the condition block: `{\"ArnEquals\": {\"aws:PrincipalArn\": \"arn:aws:iam::*:role/Developers\"}}` to verify the ARN.",
+      "D": "Implement the condition block: `{\"StringEquals\": {\"aws:RequestTag/Department\": \"Engineering\"}}` to enforce a hardcoded string."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Attribute-Based Access Control (ABAC) in AWS allows you to define permissions based on tags attached to IAM principals (users or roles) and tags attached to AWS resources. Using the condition block `\"StringEquals\": {\"aws:ResourceTag/Department\": \"${aws:PrincipalTag/Department}\"}`, AWS dynamically evaluates whether the `Department` tag on the target EC2 instance matches the `Department` tag on the calling user/role during the API call. This eliminates the need to maintain separate IAM policies for every individual department: a single reusable policy dynamically governs access across all departments.",
+    "explanation": "A is correct because Attribute-Based Access Control (ABAC) relies on comparing tags. The IAM policy condition `aws:ResourceTag/Department` represents the tag on the EC2 instance being acted upon. The variable `${aws:PrincipalTag/Department}` dynamically resolves to the value of the `Department` tag attached to the IAM user or role making the request. By using `StringEquals`, the policy dynamically ensures that a developer tagged `Department: Billing` can only manage instances also tagged `Department: Billing`.",
     "whyOthersAreWrong": {
-      "B": "Filtering on instance type restricts the hardware size of instances, but does not enforce department-level ownership or ABAC isolation.",
-      "C": "Hardcoding IAM principal ARNs creates rigid, static policies that require manual updates whenever roles change, violating ABAC design principles.",
-      "D": "`aws:RequestTag` evaluates tags passed during resource creation (such as `RunInstances`), but cannot restrict actions on existing resources like `StopInstances`."
+      "B": "This condition simply restricts the user to starting or stopping a specific EC2 instance size (`t3.micro`); it does absolutely nothing to implement tag-based access control.",
+      "C": "This condition uses Role-Based Access Control (RBAC) to verify the ARN of the IAM role. It does not compare the attributes (tags) of the principal to the attributes (tags) of the resource.",
+      "D": "The `aws:RequestTag` condition is used to control which tags a user is allowed to *apply* during resource creation (e.g., passing tags during `RunInstances`). It does not dynamically compare principal tags to existing resource tags."
     },
-    "learningObjective": "Implement dynamic Attribute-Based Access Control (ABAC) using IAM policy tag conditions.",
+    "learningObjective": "Implement Attribute-Based Access Control (ABAC) in AWS IAM by dynamically comparing `aws:ResourceTag` to `aws:PrincipalTag`.",
     "topic": "AWS IAM",
     "tags": [
+      "Security",
       "IAM",
       "ABAC",
-      "Security",
       "Governance"
     ]
   },
   {
     "id": "saa-1542",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A business intelligence team runs data warehousing queries against multi-terabyte datasets. Query activity is concentrated strictly during business hours (Monday through Friday, 8:00 AM to 5:00 PM), with zero query activity during nights and weekends. The company wants a serverless data warehouse solution that automatically provisions and scales query compute capacity based on workload demands, charges only for the compute capacity used while queries are actively running, and requires zero cluster maintenance. Which service meets these criteria?",
+    "question": "A business intelligence team runs complex data warehousing queries against multi-terabyte datasets. Query activity is concentrated strictly during business hours (Monday through Friday, 8:00 AM to 5:00 PM), with absolutely zero query activity during nights and weekends. The company wants a data warehouse solution that automatically provisions and scales query compute capacity based on workload demands, charges only for the compute capacity used while queries are actively running, and requires zero cluster maintenance. Which service meets these exact criteria?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon Redshift Serverless",
-      "B": "Amazon Redshift Provisioned cluster with ra3.4xlarge nodes",
-      "C": "Amazon EMR with persistent EC2 Core nodes",
-      "D": "Amazon RDS for PostgreSQL with automated pause"
+      "A": "Deploy Amazon Redshift Serverless to automatically provision compute capacity and pay only for active query execution time.",
+      "B": "Provision an Amazon Redshift cluster with `ra3.4xlarge` nodes and write a Lambda function to pause it nightly.",
+      "C": "Deploy an Amazon EMR cluster with persistent EC2 Core nodes to run the data warehousing queries using Spark.",
+      "D": "Provision an Amazon RDS for PostgreSQL database and enable the automated pause feature during the night."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon Redshift Serverless makes it easy to run and scale analytics in seconds without having to set up, configure, manage, or tune data warehouse clusters. It automatically provisions and scales warehouse capacity (measured in Redshift Processing Units / RPUs) based on query complexity and concurrency, and automatically shuts down/pauses when idle. You pay only for the compute capacity consumed while queries are actively running (per RPU-hour on a per-second basis), resulting in massive cost savings for business-hours-only workloads. Provisioned Redshift clusters incur fixed hourly node costs 24/7 regardless of query activity.",
+    "explanation": "A is correct because Amazon Redshift Serverless is specifically designed to provide a high-performance data warehouse without managing infrastructure. It automatically provisions compute capacity when a query is submitted, scales seamlessly, and crucially, pauses billing when there is zero query activity. This perfectly matches the requirement for a workload that is completely idle during nights and weekends, ensuring zero compute costs during those times with zero manual maintenance.",
     "whyOthersAreWrong": {
-      "B": "Amazon Redshift provisioned clusters run continuously 24/7, incurring thousands of dollars in idle compute charges during nights and weekends.",
-      "C": "Amazon EMR with persistent EC2 instances requires managing cluster nodes, software frameworks, and paying continuous server infrastructure fees.",
-      "D": "Amazon RDS for PostgreSQL does not provide native serverless auto-pausing for standard OLTP engines, nor is it optimized for complex multi-terabyte OLAP analytical queries."
+      "B": "While you *can* script a Lambda function to pause a provisioned Redshift cluster, this violates the 'zero cluster maintenance' and 'automatically provisions' requirements, and Redshift Serverless is the modern, native solution for this exact use case.",
+      "C": "An Amazon EMR cluster with persistent EC2 Core nodes will incur continuous hourly compute charges 24/7, regardless of whether queries are running or not.",
+      "D": "Amazon RDS for PostgreSQL is a transactional database, not a multi-terabyte data warehouse. Furthermore, RDS does not have a native 'automated pause' feature based on query inactivity."
     },
-    "learningObjective": "Optimize data warehouse costs and scaling using Amazon Redshift Serverless.",
+    "learningObjective": "Select Amazon Redshift Serverless for analytical workloads with intermittent or unpredictable usage patterns to eliminate idle compute costs.",
     "topic": "Amazon Redshift",
     "tags": [
-      "Redshift",
-      "Serverless",
       "Analytics",
+      "Data Warehouse",
+      "Serverless",
       "Cost Optimization"
     ]
   },
   {
     "id": "saa-1543",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A web startup has packaged a web application into a Docker container image stored in Amazon Elastic Container Registry (Amazon ECR). The startup team has zero experience with container orchestration platforms (like Kubernetes or ECS task definitions) and no dedicated DevOps engineers. They want a fully managed service where they can simply point to the ECR image repository, and the service will automatically build, deploy, assign an SSL/TLS domain name, and auto-scale container instances based on incoming web traffic. Which service should they choose?",
+    "question": "A web startup has packaged its web application into a Docker container image stored in Amazon Elastic Container Registry (Amazon ECR). The startup team consists entirely of frontend developers with zero experience managing container orchestration platforms (like Kubernetes or ECS task definitions) and no dedicated DevOps engineers. They want a fully managed service where they can simply select the ECR image repository, and the service will automatically build, deploy, assign an SSL/TLS domain name, and auto-scale the container instances based on incoming web traffic. Which service should they choose?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS App Runner",
-      "B": "Amazon Elastic Kubernetes Service (Amazon EKS)",
-      "C": "AWS Elastic Beanstalk with Multi-Container Docker",
-      "D": "Amazon EC2 instances with user data scripts"
+      "A": "Deploy the container image using AWS App Runner, which provides a fully managed, simple container application service.",
+      "B": "Provision an Amazon Elastic Kubernetes Service (Amazon EKS) cluster and write a deployment manifest to run the containers.",
+      "C": "Deploy an AWS Elastic Beanstalk environment utilizing the Multi-Container Docker platform to orchestrate the containers.",
+      "D": "Launch Amazon EC2 instances with user data scripts to manually pull and run the Docker containers using docker-compose."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "AWS App Runner is a fully managed service that makes it extremely easy for developers to quickly deploy containerized web applications and APIs at scale, with no prior infrastructure or container orchestration experience required. You simply connect App Runner to an Amazon ECR container image repository (or source code repo). App Runner automatically handles building, deploying, provisioning load balancers, terminating TLS/HTTPS certificates with custom domains, and automatically scaling container instances up and down in response to incoming HTTP request traffic. Amazon EKS and ECS require complex cluster and task management.",
+    "explanation": "A is correct because AWS App Runner is explicitly designed to be the simplest and fastest way to deploy containerized web applications and APIs. It abstracts away all infrastructure management. A developer simply points App Runner to a source code repository or a container registry (like ECR), and App Runner entirely manages the build, deployment, load balancing, SSL/TLS certificate provisioning, and auto-scaling, requiring zero DevOps expertise.",
     "whyOthersAreWrong": {
-      "B": "Amazon EKS requires deep Kubernetes knowledge, pod specifications, ingress controller configurations, and continuous cluster operations.",
-      "C": "AWS Elastic Beanstalk with Multi-Container Docker requires configuring dockerrun definitions, EC2 underlying instances, and VPC networking.",
-      "D": "Managing raw EC2 instances with user data scripts requires configuring load balancers, auto-scaling groups, SSL renewal, and host OS patching."
+      "B": "Amazon EKS requires deep expertise in Kubernetes, including managing nodes, writing complex YAML manifests, and configuring ingress controllers. This violates the 'zero experience managing container orchestration' requirement.",
+      "C": "While AWS Elastic Beanstalk manages infrastructure, it is a much older service that still exposes the underlying EC2 instances and requires configuration files. App Runner is the modern, simpler, purpose-built choice for this exact serverless container scenario.",
+      "D": "Manually running containers on EC2 with bash scripts is the exact opposite of a 'fully managed service' and requires significant manual DevOps overhead to implement scaling and SSL."
     },
-    "learningObjective": "Deploy scalable containerized web applications with zero infrastructure management using AWS App Runner.",
+    "learningObjective": "Identify AWS App Runner as the simplest, fully managed service for deploying and scaling containerized web applications without infrastructure expertise.",
     "topic": "AWS App Runner",
     "tags": [
-      "App Runner",
       "Containers",
       "Serverless",
-      "ECR",
-      "Deployment"
+      "App Runner",
+      "Compute"
     ]
   },
   {
     "id": "saa-1544",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An IoT platform ingests temperature sensor readings into an Amazon DynamoDB table. The engineering team needs to filter the table's change stream specifically for readings where the temperature exceeds 80 degrees Celsius, enrich each record by calling an AWS Lambda function to look up asset owner details, and deliver the enriched records directly into an Amazon SQS queue. The team wants to achieve this integration with MINIMAL custom integration code. Which service fulfills this point-to-point integration?",
+    "question": "An IoT platform ingests temperature sensor readings into an Amazon DynamoDB table. The engineering team needs to filter the table's DynamoDB Streams specifically for readings where the temperature exceeds 80 degrees Celsius, enrich each matching record by calling an AWS Lambda function to look up asset owner details, and deliver the final enriched records directly into an Amazon SQS queue. The team wants to achieve this integration pipeline with MINIMAL custom integration code. Which service is explicitly designed for this point-to-point integration?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon EventBridge Pipes",
-      "B": "Amazon Simple Notification Service (SNS)",
-      "C": "AWS Step Functions Standard Workflow",
-      "D": "Amazon Kinesis Data Streams"
+      "A": "Configure Amazon EventBridge Pipes to connect the DynamoDB Stream, filter the records, call Lambda for enrichment, and deliver to SQS.",
+      "B": "Create an Amazon Simple Notification Service (SNS) topic and write a massive AWS Lambda function to handle the entire workflow.",
+      "C": "Deploy an AWS Step Functions Standard Workflow to manually orchestrate the reading, filtering, enrichment, and SQS delivery.",
+      "D": "Utilize Amazon Kinesis Data Streams to ingest the DynamoDB changes and process them with Kinesis Data Analytics."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon EventBridge Pipes provides a simple, consistent, and cost-effective way to create point-to-point integrations between event producers (sources like DynamoDB Streams, Kinesis, SQS) and event consumers (targets like SQS, SNS, Step Functions, EventBridge). Crucially, EventBridge Pipes includes built-in filtering (filtering JSON records directly on temperature > 80) and an optional enrichment step (calling an AWS Lambda function or API Destination to enrich records) before delivering to the target SQS queue—completely eliminating the need to write custom polling, filtering, and error-handling glue code.",
+    "explanation": "A is correct because Amazon EventBridge Pipes is a fully managed service explicitly designed to create point-to-point integrations between event producers (like DynamoDB Streams) and consumers (like Amazon SQS). It natively provides built-in event filtering (e.g., temp > 80) and allows you to seamlessly insert an enrichment step (calling an AWS Lambda function) before delivering the data, all without writing any complex orchestration or polling code.",
     "whyOthersAreWrong": {
-      "B": "Amazon SNS is a pub/sub fanout topic service; it cannot directly poll DynamoDB streams or perform inline Lambda data enrichment.",
-      "C": "AWS Step Functions can orchestrate complex state workflows, but requires writing custom state machine JSON definitions and state transitions compared to native EventBridge Pipes.",
-      "D": "Amazon Kinesis Data Streams is an event ingestion streaming engine; it does not provide native point-to-point DynamoDB filtering and enrichment."
+      "B": "Writing a massive custom Lambda function to poll the stream, filter the data, enrich it, and send it to SQS requires significant custom integration code and error handling, violating the 'MINIMAL custom integration code' requirement.",
+      "C": "While AWS Step Functions can orchestrate complex workflows, EventBridge Pipes is the simpler, purpose-built service for a linear, high-throughput, point-to-point streaming integration pipeline.",
+      "D": "Amazon Kinesis Data Analytics is used for complex, stateful streaming SQL or Flink applications. It is severe overkill for a simple filter-enrich-deliver pipeline and requires significant code."
     },
-    "learningObjective": "Build point-to-point event filtering and enrichment pipelines using Amazon EventBridge Pipes.",
+    "learningObjective": "Utilize Amazon EventBridge Pipes to build simple, serverless point-to-point integrations with native filtering and enrichment capabilities.",
     "topic": "Amazon EventBridge",
     "tags": [
+      "Application Integration",
+      "Event-Driven",
       "EventBridge",
-      "DynamoDB",
-      "Lambda",
-      "SQS",
-      "Serverless"
+      "Architecture"
     ]
   },
   {
@@ -155,63 +153,61 @@
   {
     "id": "saa-1546",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An enterprise is migrating an on-premises VMware and NAS storage environment to AWS. The application ecosystem requires a shared file system that natively supports multiprotocol access (clients accessing the same underlying files concurrently via both NFS and SMB protocols), block storage over iSCSI, thin provisioning, data deduplication and compression, and snapshot replication back to on-premises NetApp storage arrays. Which AWS managed storage service provides these native capabilities?",
+    "question": "An enterprise is migrating a massive on-premises VMware and NAS storage environment to AWS. The legacy application ecosystem requires a shared file system that natively supports multiprotocol access (allowing clients to access the exact same underlying files concurrently via both NFS and SMB protocols). The storage must also provide block storage over iSCSI, thin provisioning, data deduplication, compression, and snapshot replication back to the remaining on-premises NetApp storage arrays. Which AWS managed storage service provides these specific native capabilities?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon FSx for NetApp ONTAP",
-      "B": "Amazon Elastic File System (Amazon EFS)",
-      "C": "Amazon FSx for Windows File Server",
-      "D": "Amazon FSx for OpenZFS"
+      "A": "Provision an Amazon FSx for NetApp ONTAP file system, which natively provides multiprotocol access, deduplication, and NetApp replication features.",
+      "B": "Deploy an Amazon Elastic File System (Amazon EFS) file system, which provides POSIX-compliant NFS access and automatic deduplication.",
+      "C": "Provision an Amazon FSx for Windows File Server file system to provide the required SMB and iSCSI block storage capabilities.",
+      "D": "Deploy an Amazon FSx for OpenZFS file system to achieve the extreme performance required for VMware NFS datastores."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon FSx for NetApp ONTAP is a fully managed AWS service that provides NetApp's popular ONTAP enterprise file system. It uniquely supports full multiprotocol access (concurrent NFS, SMB, and iSCSI access to the same shared data volume), advanced storage efficiency features (deduplication, compression, and compaction), thin provisioning, and native integration with NetApp tools like SnapMirror for hybrid replication between on-premises NetApp arrays and AWS. Amazon EFS supports only NFS. FSx for Windows supports only SMB. FSx for OpenZFS supports only NFS and lacks NetApp SnapMirror integration.",
+    "explanation": "A is correct because Amazon FSx for NetApp ONTAP is a fully managed service built on the popular NetApp ONTAP file system. It uniquely provides concurrent multiprotocol access (NFS, SMB, and iSCSI) to the same underlying data volume. It natively includes enterprise features like thin provisioning, inline deduplication, and compression. Crucially, it supports NetApp SnapMirror, allowing seamless replication back to on-premises NetApp hardware.",
     "whyOthersAreWrong": {
-      "B": "Amazon EFS supports only the NFS protocol and lacks support for SMB, iSCSI block storage, and NetApp SnapMirror replication.",
-      "C": "Amazon FSx for Windows File Server supports SMB only and does not support NFS multiprotocol access or NetApp storage replication tools.",
-      "D": "Amazon FSx for OpenZFS supports NFS, but does not provide concurrent SMB/NFS multiprotocol file access or NetApp SnapMirror compatibility."
+      "B": "Amazon EFS only supports the NFS protocol (Linux). It does not support SMB (Windows), nor does it provide iSCSI block storage or SnapMirror replication to on-premises NetApp arrays.",
+      "C": "Amazon FSx for Windows File Server provides SMB file shares for Windows workloads. It does not provide native NFS support for Linux clients, nor does it provide iSCSI block storage.",
+      "D": "Amazon FSx for OpenZFS provides extreme performance over NFS. However, it does not natively support the SMB protocol for Windows clients, nor does it support NetApp SnapMirror replication."
     },
-    "learningObjective": "Select enterprise multiprotocol shared storage using Amazon FSx for NetApp ONTAP.",
+    "learningObjective": "Select Amazon FSx for NetApp ONTAP for enterprise migrations requiring concurrent multiprotocol (NFS/SMB/iSCSI) access and advanced data management features.",
     "topic": "Amazon FSx",
     "tags": [
-      "FSx",
-      "NetApp",
       "Storage",
-      "Hybrid",
-      "Migration"
+      "Migration",
+      "FSx",
+      "Enterprise"
     ]
   },
   {
     "id": "saa-1547",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A global cloud governance team oversees 350 Amazon S3 buckets distributed across 40 AWS accounts in AWS Organizations. The team needs organization-wide visibility into storage growth, cost optimization opportunities (such as identifying buckets with incomplete multipart uploads or non-current object versions lacking lifecycle rules), and security compliance metrics (identifying buckets with public read access or unencrypted objects) from a single centralized dashboard. Which S3 feature should be configured?",
+    "question": "A global cloud governance team oversees 350 Amazon S3 buckets distributed across 40 AWS accounts managed by AWS Organizations. The team needs organization-wide visibility into storage growth, cost optimization opportunities (such as identifying buckets with millions of incomplete multipart uploads or massive numbers of non-current object versions lacking lifecycle rules), and security compliance metrics (identifying buckets with unencrypted objects) from a single centralized dashboard. Which S3 feature should be configured?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon S3 Storage Lens with an organization-level dashboard",
-      "B": "AWS Trusted Advisor organization view",
-      "C": "Amazon CloudWatch Metrics Insights",
-      "D": "AWS Config conformance packs"
+      "A": "Enable Amazon S3 Storage Lens with an organization-level dashboard to gain centralized visibility into storage usage, cost optimization, and security.",
+      "B": "Utilize the AWS Trusted Advisor organization view to automatically identify incomplete multipart uploads and missing lifecycle rules globally.",
+      "C": "Configure Amazon CloudWatch Metrics Insights to query the S3 bucket size metrics across all 40 AWS accounts simultaneously.",
+      "D": "Deploy AWS Config conformance packs across the organization to calculate the total storage costs and identify missing lifecycle rules."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon S3 Storage Lens is a cloud storage analytics feature that delivers organization-wide visibility into object storage usage, activity trends, cost-optimization opportunities, and data protection metrics. When configured at the AWS Organizations root or OU level, S3 Storage Lens aggregates metrics across all member accounts and buckets into a single interactive dashboard. It provides actionable cost-optimization recommendations (flagging incomplete multipart uploads and un-lifecycle non-current versions) and security insights (evaluating encryption and public access settings). Trusted Advisor provides basic account checks but lacks deep granular S3 bucket analytics.",
+    "explanation": "A is correct because Amazon S3 Storage Lens provides organization-wide visibility into object storage usage, activity trends, and makes actionable recommendations to improve cost efficiency and apply data protection best practices. It explicitly supports AWS Organizations, allowing the central governance team to view metrics like incomplete multipart upload bytes, non-current version bytes, and encryption status across all 350 buckets in all 40 accounts from a single, centralized dashboard.",
     "whyOthersAreWrong": {
-      "B": "AWS Trusted Advisor provides high-level service check summaries, but does not provide granular per-bucket storage pattern analysis or multipart upload tracking.",
-      "C": "CloudWatch Metrics Insights queries numeric metric time-series, but cannot inspect S3 object metadata, lifecycle anomalies, or storage tier breakdowns.",
-      "D": "AWS Config evaluates compliance rules against resource configurations, but does not provide holistic S3 storage usage dashboards or cost optimization analytics."
+      "B": "AWS Trusted Advisor provides high-level checks, but it does not provide the granular, highly specific S3 metrics (like calculating incomplete multipart upload bytes) across hundreds of buckets that Storage Lens provides.",
+      "C": "Amazon CloudWatch Metrics Insights can query metrics, but it does not natively generate the specific cost optimization and security posture insights (like missing lifecycle rules) required by the prompt.",
+      "D": "AWS Config is for auditing resource configuration state. While it can check if encryption is enabled, it cannot calculate storage growth, track incomplete multipart uploads, or generate comprehensive storage usage dashboards."
     },
-    "learningObjective": "Gain organization-wide visibility into S3 cost and security metrics using Amazon S3 Storage Lens.",
-    "topic": "Amazon S3",
+    "learningObjective": "Deploy Amazon S3 Storage Lens for organization-wide visibility, cost optimization, and data protection monitoring of massive S3 deployments.",
+    "topic": "Amazon S3 Storage Lens",
     "tags": [
-      "S3",
-      "Storage Lens",
-      "Cost Optimization",
+      "Storage",
       "Governance",
-      "Organizations"
+      "S3",
+      "Cost Optimization"
     ]
   },
   {
@@ -251,57 +247,56 @@
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Configure Amazon SNS subscription filter policies on each SQS subscription based on message attributes.",
-      "B": "Create three separate SNS topics and have the publishing service send messages to the appropriate topic.",
-      "C": "Deploy an AWS Lambda function between the SNS topic and each SQS queue to inspect and drop messages.",
-      "D": "Configure SQS message deduplication IDs."
+      "A": "Configure Amazon SNS subscription filter policies on each SQS subscription to filter messages based on the message attributes.",
+      "B": "Create three separate Amazon SNS topics and require the publishing service to route messages to the appropriate topic manually.",
+      "C": "Deploy an AWS Lambda function between the Amazon SNS topic and each Amazon SQS queue to inspect and drop irrelevant messages.",
+      "D": "Configure Amazon SQS message deduplication IDs on each queue to automatically discard the irrelevant messages sent by SNS."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon SNS Subscription Filter Policies allow subscriber endpoints (such as SQS queues) to declare a filter policy based on message attributes or payload attributes. SNS evaluates the policy on each published message: if the message attributes match the subscriber's filter policy, SNS delivers the message; otherwise, the message is dropped for that specific subscription without incurring delivery or consumer processing costs. This decouples the publisher (which publishes to a single topic) from subscriber filtering logic with zero intermediate compute infrastructure. Creating separate topics requires publisher code changes.",
+    "explanation": "A is correct because Amazon SNS subscription filter policies allow you to define rules on a per-subscription basis. The publisher includes message attributes (like `shipping_tier` or `order_total`) when publishing to the single SNS topic. SNS evaluates these attributes against the filter policy of each subscribed SQS queue. If the attributes match the policy, SNS delivers the message; otherwise, SNS silently drops the message for that specific subscription, entirely offloading the filtering logic from your application code.",
     "whyOthersAreWrong": {
-      "B": "Creating multiple topics couples the publishing application to routing logic and requires extensive code modifications as new subscriber rules emerge.",
-      "C": "Placing intermediate Lambda functions between SNS and SQS adds unnecessary execution latency, invocation charges, and custom code maintenance.",
-      "D": "SQS message deduplication IDs prevent duplicate deliveries in FIFO queues; they do not filter or route messages based on business attributes."
+      "B": "Creating separate topics (one for express shipping, one for fraud) forces the publisher to contain complex routing logic, tightly coupling the services and breaking the pub/sub decoupling pattern.",
+      "C": "Adding a Lambda function just to filter messages adds unnecessary complexity, latency, and compute costs. Native SNS filter policies handle this seamlessly for free.",
+      "D": "SQS message deduplication IDs are used exclusively in FIFO queues to prevent a message with the exact same ID from being processed twice in 5 minutes. They do not inspect message attributes or filter messages based on content."
     },
-    "learningObjective": "Filter pub/sub message fanout using Amazon SNS subscription filter policies.",
+    "learningObjective": "Implement Amazon SNS subscription filter policies to route relevant messages to subscribers and prevent irrelevant message delivery.",
     "topic": "Amazon SNS",
     "tags": [
+      "Application Integration",
+      "Messaging",
       "SNS",
-      "SQS",
-      "Decoupling",
-      "Architecture",
-      "Event-Driven"
+      "Architecture"
     ]
   },
   {
     "id": "saa-1550",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A financial technology application uses a MongoDB-compatible JSON document database to store flexible transaction records. The architecture requires a managed AWS database service that provides automatic multi-AZ failover in under 30 seconds, automated continuous backups with 1-second point-in-time recovery granularity, and the ability to scale read throughput independently by provisioning up to 15 read replicas. Which service meets these criteria?",
+    "question": "A financial technology application uses a MongoDB-compatible JSON document database to store flexible transaction records. The architecture requires a fully managed AWS database service that natively provides automatic multi-AZ failover in under 30 seconds, automated continuous backups with 1-second point-in-time recovery granularity, and the ability to scale read throughput independently by provisioning up to 15 low-latency read replicas. Which service meets these criteria?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon DocumentDB (with MongoDB compatibility)",
-      "B": "Amazon DynamoDB",
-      "C": "Amazon RDS for PostgreSQL with JSONB columns",
-      "D": "Self-managed MongoDB on an Amazon EC2 Auto Scaling group"
+      "A": "Provision an Amazon DocumentDB (with MongoDB compatibility) cluster, which provides a highly available, Aurora-like architecture for document databases.",
+      "B": "Deploy an Amazon DynamoDB database and utilize DynamoDB Accelerator (DAX) to provide the required read replica scaling and point-in-time recovery.",
+      "C": "Provision an Amazon RDS for PostgreSQL database cluster and utilize native JSONB columns to store the flexible transaction records.",
+      "D": "Deploy a self-managed MongoDB cluster spanning across multiple Amazon EC2 instances managed by an Auto Scaling group for high availability."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon DocumentDB (with MongoDB compatibility) is a fully managed, purpose-built document database service designed for storing, querying, and indexing JSON data. Its decoupled compute-and-storage architecture replicates storage six times across three Availability Zones. Failover to an existing replica completes in under 30 seconds, backups are continuous and incremental with point-in-time restore to any second within the retention window, and up to 15 read replicas can be added to scale read throughput without provisioning additional storage. DynamoDB is a proprietary NoSQL key-value store, not MongoDB-compatible.",
+    "explanation": "A is correct because Amazon DocumentDB is a fully managed, MongoDB-compatible document database. It is built on a purpose-built, distributed, fault-tolerant storage volume (identical to the architecture underlying Amazon Aurora). Because of this shared storage layer, DocumentDB natively supports up to 15 low-latency read replicas, rapid automatic failover (under 30 seconds), and continuous backups providing 1-second point-in-time recovery (PITR) granularity.",
     "whyOthersAreWrong": {
-      "B": "Amazon DynamoDB is a key-value and document NoSQL database with its own proprietary API; it is not compatible with MongoDB drivers and queries.",
-      "C": "Amazon RDS for PostgreSQL is a relational database; while it supports JSONB, it is not a native MongoDB-compatible document database service.",
-      "D": "Self-managed MongoDB on EC2 requires manual cluster maintenance, custom backup scripts, OS patching, and complex manual failover orchestration."
+      "B": "Amazon DynamoDB is a NoSQL database, but it is not natively MongoDB-compatible. Furthermore, DAX is an in-memory cache, not a mechanism for providing 15 read replicas or point-in-time recovery.",
+      "C": "While PostgreSQL supports JSONB columns, it is a relational database. It is not natively MongoDB-compatible (it uses SQL, not the MongoDB API), which would require a massive rewrite of the application's database layer.",
+      "D": "A self-managed MongoDB cluster on EC2 violates the strict requirement for a 'fully managed AWS database service' and requires massive operational overhead to manage backups, replication, and failover."
     },
-    "learningObjective": "Select high-availability document databases using Amazon DocumentDB.",
+    "learningObjective": "Select Amazon DocumentDB for MongoDB-compatible document database workloads requiring Aurora-like high availability, read scalability, and point-in-time recovery.",
     "topic": "Amazon DocumentDB",
     "tags": [
-      "DocumentDB",
       "Databases",
-      "MongoDB",
+      "DocumentDB",
+      "NoSQL",
       "High Availability"
     ]
   },
@@ -339,61 +334,61 @@
   {
     "id": "saa-1552",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An enterprise is establishing a multi-account AWS architecture for 150 accounts across multiple business units. The cloud architecture team needs a service to set up a well-architected multi-account landing zone in an automated fashion, enforce mandatory organizational security baselines (such as disallowing public S3 buckets and enforcing MFA), and deploy automated guardrails across all existing and newly provisioned accounts. Which service should they use?",
+    "question": "An enterprise is establishing a multi-account AWS architecture for 150 accounts across multiple business units. The cloud architecture team needs a service to set up a well-architected multi-account landing zone in an automated fashion. They must enforce mandatory organizational security baselines (such as disallowing public S3 buckets, enabling CloudTrail, and enforcing MFA) and deploy these automated guardrails across all existing and newly provisioned accounts seamlessly. Which service should they use?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Control Tower",
-      "B": "AWS Systems Manager Patch Manager",
-      "C": "AWS Trusted Advisor",
-      "D": "AWS Cloud9"
+      "A": "Deploy AWS Control Tower to automatically provision a secure landing zone and enforce preventative and detective guardrails across the organization.",
+      "B": "Utilize AWS Systems Manager Patch Manager to deploy security patches and configure the mandatory baselines across all the AWS accounts.",
+      "C": "Rely on AWS Trusted Advisor to manually identify security baseline deviations and manually apply the guardrails across the 150 accounts.",
+      "D": "Provision an AWS Cloud9 integrated development environment (IDE) to centrally write and execute the security baseline deployment scripts."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "AWS Control Tower is the easiest way to set up and govern a secure, multi-account AWS environment (landing zone) based on best practices. Control Tower automates the creation of organizational units (OUs), configures centralized identity via IAM Identity Center, sets up centralized log archives and audit accounts, and enforces pre-packaged governance guardrails (preventive Service Control Policies and detective AWS Config rules). It continuously monitors account compliance across the organization. Systems Manager Patch Manager handles OS patches. Trusted Advisor provides advisory recommendations, not automated multi-account landing zone orchestration.",
+    "explanation": "A is correct because AWS Control Tower is explicitly designed to set up and govern a secure, compliant, multi-account AWS environment (a landing zone). It uses AWS Organizations to create accounts and then automatically applies pre-packaged 'guardrails' (both preventative guardrails via Service Control Policies and detective guardrails via AWS Config rules) to enforce security baselines like disallowing public S3 buckets across the entire organization seamlessly.",
     "whyOthersAreWrong": {
-      "B": "AWS Systems Manager Patch Manager is used to automate operating system patching on individual EC2 instances, not multi-account governance.",
-      "C": "AWS Trusted Advisor inspects existing AWS environments to provide cost, performance, and security recommendations; it cannot build landing zones.",
-      "D": "AWS Cloud9 is a cloud-based integrated development environment (IDE) for writing code, with no relationship to multi-account organizational governance."
+      "B": "AWS Systems Manager Patch Manager is used to automate the process of patching operating systems and applications on EC2 instances. It does not provision multi-account landing zones or enforce account-level IAM/S3 security policies.",
+      "C": "AWS Trusted Advisor provides manual recommendations. It is not an automation engine for provisioning landing zones or enforcing organizational guardrails.",
+      "D": "AWS Cloud9 is a cloud-based IDE for writing code. Relying on custom bash scripts written in an IDE to manually manage 150 accounts is the exact opposite of using a managed service to automate a landing zone."
     },
-    "learningObjective": "Govern multi-account enterprise landing zones using AWS Control Tower.",
+    "learningObjective": "Use AWS Control Tower to automate the setup and governance of secure, multi-account AWS landing zones utilizing predefined guardrails.",
     "topic": "AWS Control Tower",
     "tags": [
-      "Control Tower",
-      "Organizations",
       "Governance",
-      "Security"
+      "Security",
+      "Control Tower",
+      "Organizations"
     ]
   },
   {
     "id": "saa-1553",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A business intelligence analyst needs to prepare and clean raw sales CSV datasets stored in Amazon S3 for reporting in Amazon QuickSight. The dataset contains missing values, inconsistent date formats, and duplicate records. The analyst has no programming experience with Python, PySpark, or SQL, and requires a visual point-and-click data preparation tool with over 250 pre-built transformations that can automate data cleaning pipelines. Which AWS service should be used?",
+    "question": "A business intelligence analyst needs to prepare and clean massive raw sales CSV datasets stored in Amazon S3 before reporting in Amazon QuickSight. The dataset contains missing values, highly inconsistent date formats, and duplicate records. The analyst has absolutely no programming experience with Python, PySpark, or SQL. They require a visual, point-and-click data preparation tool that provides hundreds of pre-built transformations to automate these data cleaning pipelines without writing code. Which AWS service should be used?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Glue DataBrew",
-      "B": "Amazon EMR with Apache Spark",
-      "C": "Amazon Kinesis Data Analytics",
-      "D": "AWS Lambda with custom Python code"
+      "A": "Utilize AWS Glue DataBrew, a visual data preparation tool designed specifically for analysts to clean and normalize data without writing code.",
+      "B": "Deploy an Amazon EMR cluster with Apache Spark and utilize Jupyter notebooks to clean the datasets using Python and PySpark.",
+      "C": "Provision Amazon Kinesis Data Analytics to filter the missing values and deduplicate the records using real-time SQL queries.",
+      "D": "Create an AWS Lambda function and write custom Python code utilizing the Pandas library to execute the data cleaning transformations."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "AWS Glue DataBrew is a visual data preparation tool that enables data analysts and data scientists to clean, normalize, and enrich data with an interactive, point-and-click visual interface without writing any code. It provides over 250 pre-built transformations to automate tasks like filtering anomalies, standardizing date/time formats, replacing null values, and deduplicating records. Analysts can save transformations as recipes and run them on scheduled datasets in S3. EMR, Kinesis Data Analytics, and Lambda all require writing code (Python, Scala, SQL, or Java).",
+    "explanation": "A is correct because AWS Glue DataBrew is a visual data preparation tool that makes it easy for data analysts and data scientists to clean and normalize data to prepare it for analytics and machine learning. It provides an intuitive point-and-click interface with over 250 pre-built transformations (like fixing date formats or removing duplicates), specifically solving the problem for users with no programming experience.",
     "whyOthersAreWrong": {
-      "B": "Amazon EMR requires managing big data clusters and writing code in Apache Spark, Python, or Scala, which the analyst cannot do.",
-      "C": "Amazon Kinesis Data Analytics is designed for real-time streaming SQL or Apache Flink analytics, not visual batch file preparation.",
-      "D": "AWS Lambda requires writing and maintaining custom Python code and packaging libraries, which violates the requirement for a no-code visual tool."
+      "B": "Amazon EMR requires deep expertise in distributed systems, and using Jupyter notebooks requires writing complex Python/PySpark code, violating the 'no programming experience' requirement.",
+      "C": "Amazon Kinesis Data Analytics requires writing SQL queries (which the analyst does not know). Furthermore, it is designed for streaming data, not batch processing of static CSV files in S3.",
+      "D": "Writing a custom AWS Lambda function in Python requires programming experience, which the prompt explicitly states the analyst does not have."
     },
-    "learningObjective": "Perform visual no-code data preparation and cleaning using AWS Glue DataBrew.",
+    "learningObjective": "Identify AWS Glue DataBrew as the purpose-built, visual, no-code data preparation tool for cleaning datasets.",
     "topic": "AWS Glue",
     "tags": [
-      "Glue",
-      "DataBrew",
       "Analytics",
-      "S3"
+      "Data Preparation",
+      "Glue DataBrew",
+      "Machine Learning"
     ]
   },
   {
@@ -523,32 +518,31 @@
   {
     "id": "saa-1558",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An enterprise with multiple AWS accounts in AWS Organizations has a centralized networking team that manages network infrastructure and security. The network team wants to centrally create and maintain a set of Amazon VPCs, subnets, route tables, and NAT Gateways. Application development teams in other AWS accounts should be able to deploy their own Amazon EC2 instances, AWS Lambda functions, and Amazon RDS databases into these centrally managed private subnets without having administrative control over the VPCs themselves. Which AWS feature enables this cross-account network sharing?",
+    "question": "An enterprise with multiple AWS accounts in AWS Organizations has a centralized networking team that manages the core network infrastructure and security. The network team wants to centrally create and maintain a set of Amazon VPCs, subnets, route tables, and NAT Gateways in a central 'Networking' account. Application development teams in completely different AWS accounts should be able to deploy their own Amazon EC2 instances and AWS Lambda functions directly into these centrally managed private subnets without having administrative control over the VPCs themselves. Which AWS feature enables this cross-account network topology?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "VPC Sharing using AWS Resource Access Manager (AWS RAM)",
-      "B": "AWS Transit Gateway VPC attachments",
-      "C": "Inter-account VPC Peering",
-      "D": "AWS PrivateLink Endpoint Services"
+      "A": "Implement VPC Sharing using AWS Resource Access Manager (AWS RAM) to share specific subnets with the application development accounts.",
+      "B": "Deploy AWS Transit Gateway and configure VPC attachments to route traffic between the application VPCs and the central Networking VPC.",
+      "C": "Configure Inter-account VPC Peering connections to link every individual application development VPC back to the central Networking VPC.",
+      "D": "Provision AWS PrivateLink Endpoint Services in the central Networking account and allow the development accounts to connect to them."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "VPC Sharing (powered by AWS Resource Access Manager / AWS RAM) allows multiple AWS accounts in the same AWS Organization to share subnets from a centrally managed VPC. The network owner account creates and manages the VPC, subnets, route tables, NAT gateways, and Network ACLs. Participant accounts (application teams) can view the shared subnets and launch their application resources (EC2, ECS, RDS, Lambda) directly into those subnets, managing their own security groups while sharing the same network topology. This enforces centralized network governance and reduces the number of VPCs and NAT gateways needed. Transit Gateway connects separate VPCs; it does not share subnets.",
+    "explanation": "A is correct because VPC Sharing allows multiple AWS accounts within AWS Organizations to create application resources (like EC2 instances and Lambda functions) into shared, centrally managed Amazon VPCs. Using AWS Resource Access Manager (AWS RAM), the networking account shares specific subnets with the development accounts. The developers can deploy resources into the subnet, but they cannot modify the subnet's route tables, NACLs, or NAT Gateways, fulfilling the strict separation of duties requirement.",
     "whyOthersAreWrong": {
-      "B": "AWS Transit Gateway connects separate, distinct VPCs; it does not allow multiple accounts to launch resources into the same shared subnets.",
-      "C": "VPC Peering connects independent VPCs; it does not provide centralized multi-account subnet sharing.",
-      "D": "AWS PrivateLink exposes specific service endpoints privately across accounts; it is not a mechanism for sharing VPC subnets."
+      "B": "AWS Transit Gateway is used to route traffic *between* different VPCs. It requires the development teams to create and manage their own VPCs in their own accounts, violating the prompt's requirement that they deploy directly into centrally managed subnets.",
+      "C": "VPC Peering connects independent VPCs. Like Transit Gateway, it requires the developers to manage their own VPCs.",
+      "D": "AWS PrivateLink allows you to expose a specific application as a service endpoint. It does not allow an account to deploy EC2 compute instances directly into another account's subnet."
     },
-    "learningObjective": "Implement centralized multi-account network governance using VPC Sharing with AWS RAM.",
+    "learningObjective": "Implement VPC Sharing via AWS RAM to allow multiple AWS accounts to deploy resources into centrally managed subnets.",
     "topic": "Amazon VPC",
     "tags": [
-      "VPC",
-      "RAM",
+      "Networking",
       "VPC Sharing",
-      "Organizations",
-      "Networking"
+      "AWS RAM",
+      "Organizations"
     ]
   },
   {
@@ -585,31 +579,31 @@
   {
     "id": "saa-1560",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A security operations center (SOC) monitors multiple AWS accounts for anomalous activity. The security team needs an automated solution to identify suspicious API access to Amazon S3 buckets, such as unusual bulk downloads from an unfamiliar IP address, access from known malicious Tor exit nodes, or requests without proper encryption. The detection must occur in near-real-time without requiring the security team to ingest, parse, or query S3 server access logs manually. Which service should be enabled?",
+    "question": "A security operations center (SOC) monitors multiple AWS accounts for anomalous activity. The security team needs an automated solution to identify suspicious API access to Amazon S3 buckets, such as unusual bulk data downloads from an unfamiliar IP address, access originating from known malicious Tor exit nodes, or requests without proper encryption headers. The detection must occur in near-real-time without requiring the security team to ingest, parse, or query S3 server access logs manually. Which service should be enabled?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon GuardDuty with S3 Protection enabled",
-      "B": "AWS CloudTrail Insights",
-      "C": "AWS WAF attached to the S3 bucket",
-      "D": "Amazon Macie"
+      "A": "Enable Amazon GuardDuty with S3 Protection enabled to intelligently analyze S3 data events for malicious or anomalous behavior automatically.",
+      "B": "Configure AWS CloudTrail Insights to automatically detect unusual spikes in the volume of S3 API calls across the organization.",
+      "C": "Attach AWS WAF to the S3 bucket to inspect the incoming HTTP requests and block access from known malicious IP addresses.",
+      "D": "Deploy Amazon Macie to continuously scan the S3 buckets and identify objects that contain sensitive data like PII or credit card numbers."
     },
     "correctAnswers": [
       "A"
     ],
-    "explanation": "Amazon GuardDuty S3 Protection continuously monitors and profiles object-level API operations (such as `GetObject`, `ListObjects`, `PutObject`) from CloudTrail S3 data events and S3 management events. GuardDuty applies machine learning and integrated threat intelligence to detect suspicious activities, including requests originating from unusual geographic locations, Tor exit nodes, or anomalous spikes in data volume access that indicate credential compromise or data exfiltration. CloudTrail Insights detects account-level write API rate anomalies, but lacks threat intelligence and S3 data-plane behavioral modeling. AWS WAF cannot attach directly to S3 buckets. Macie scans document content for PII, not behavioral access threats.",
+    "explanation": "A is correct because Amazon GuardDuty is an intelligent threat detection service. When the 'S3 Protection' feature is enabled, GuardDuty continuously monitors AWS CloudTrail S3 data events (object-level API operations like GetObject). It uses machine learning and threat intelligence feeds to automatically detect anomalous behavior—such as data exfiltration via unusual bulk downloads, or access from malicious IP addresses (like Tor nodes)—without the user having to manage or query any logs themselves.",
     "whyOthersAreWrong": {
-      "B": "AWS CloudTrail Insights monitors management API call volume spikes; it does not analyze S3 data-plane object events for threat intelligence or Tor IP access.",
-      "C": "AWS WAF cannot be attached directly to Amazon S3 buckets; it only attaches to CloudFront, ALBs, API Gateways, and AppSync.",
-      "D": "Amazon Macie identifies sensitive personal information (PII) inside objects; it does not detect compromised credential usage or Tor exit node access."
+      "B": "AWS CloudTrail Insights detects unusual spikes in API *volume* (e.g., you normally make 10 DescribeInstances calls, today you made 1,000). It does not analyze the context of the data access (like checking if the IP address is a known Tor node).",
+      "C": "AWS WAF cannot be attached directly to an Amazon S3 bucket. It must be attached to an Application Load Balancer, API Gateway, or Amazon CloudFront distribution.",
+      "D": "Amazon Macie is a data classification service. It looks *inside* the S3 objects to identify sensitive data (like PII). It does not monitor the API traffic for anomalous download behaviors or malicious IP access."
     },
-    "learningObjective": "Detect suspicious S3 data access and compromised credentials using Amazon GuardDuty S3 Protection.",
+    "learningObjective": "Enable Amazon GuardDuty S3 Protection for automated, machine-learning powered detection of anomalous or malicious S3 access patterns.",
     "topic": "Amazon GuardDuty",
     "tags": [
-      "GuardDuty",
-      "S3",
       "Security",
-      "Threat Detection"
+      "Threat Detection",
+      "GuardDuty",
+      "S3"
     ]
   }
 ]

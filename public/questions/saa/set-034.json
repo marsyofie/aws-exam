@@ -181,266 +181,271 @@
   {
     "id": "saa-667",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An architecture requires decoupling a web tier from a worker tier. The worker tier processing takes several minutes per job. If a worker instance fails, the job must not be lost and should be processed by another instance. Which AWS service is best suited for this?",
+    "question": "An architecture involves a public-facing web tier that accepts image upload requests, and a backend worker tier that processes the images. The image processing is resource-intensive and takes up to 5 minutes per job. The web tier must immediately return a success message to the user, while the backend processes the jobs asynchronously. If a backend worker instance crashes in the middle of processing an image, the job must not be lost; it must eventually be picked up and processed by a different healthy worker. Which AWS service is BEST suited to decouple these tiers and guarantee message durability?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon SNS",
-      "B": "Amazon SQS",
-      "C": "Amazon Kinesis Data Streams",
-      "D": "AWS Step Functions"
+      "A": "Publish the upload events to an Amazon SNS topic and configure the worker instances to subscribe to it.",
+      "B": "Send the image processing jobs to an Amazon SQS queue and configure the backend worker instances to poll the queue.",
+      "C": "Ingest the upload requests into an Amazon Kinesis Data Stream and use a Kinesis Client Library application to process them.",
+      "D": "Use AWS Step Functions to visually orchestrate the image processing workflow directly from the web tier."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon SQS provides a highly scalable message queuing service that decouples components. Messages remain in the queue until successfully processed and deleted, ensuring no data loss if a worker fails.",
+    "explanation": "B is correct because Amazon SQS (Simple Queue Service) provides durable message queuing that decouples the fast web tier from the slow worker tier. If a worker instance crashes, the SQS visibility timeout expires, and the message automatically becomes visible again for another healthy worker to pick up.",
     "whyOthersAreWrong": {
-      "A": "Amazon SNS is a pub/sub fan-out notification service and lacks message queuing, buffering, and persistent backpressure handling on its own.",
-      "C": "Amazon Kinesis Data Streams is designed for high-throughput real-time streaming analytics with shard-based partitioning, rather than long-running discrete task queueing with per-message acknowledgement.",
-      "D": "AWS Step Functions is a state machine workflow orchestrator; while it can coordinate distributed steps, it is not a decoupled message queue for buffering asynchronous worker tasks."
+      "A": "Amazon SNS is a push-based pub/sub service. If a worker crashes while processing an SNS notification, the message is lost forever because SNS does not hold the message waiting for successful completion.",
+      "C": "Amazon Kinesis Data Streams is designed for real-time streaming analytics, not for basic task decoupling. It requires complex checkpointing logic (KCL) to handle failed jobs.",
+      "D": "AWS Step Functions is for orchestrating multi-step workflows. While it could trigger the jobs, it is not a message queue designed to buffer millions of requests and handle visibility timeouts for EC2 worker fleets."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon Kinesis.",
-    "topic": "Amazon Kinesis",
+    "learningObjective": "Select Amazon SQS to reliably decouple application tiers and ensure fault-tolerant message processing.",
+    "topic": "Amazon SQS",
     "tags": [
-      "Kinesis",
       "SQS",
-      "SNS",
-      "Step Functions"
+      "Messaging",
+      "Decoupling",
+      "Architecture"
     ]
   },
   {
     "id": "saa-668",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to migrate its on-premises MySQL database to AWS. The database is highly critical and requires automatic failover and high availability. The team has minimal database administration experience. Which service should they choose?",
+    "question": "A retail company is migrating its mission-critical, on-premises MySQL database to AWS. The database must be highly available and support automatic failover in the event of an infrastructure failure or Availability Zone outage. The company's IT team has very little database administration experience and explicitly wants AWS to manage the operating system patching, database backups, and the complex failover logic. Which AWS database service is the BEST fit for these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon EC2 with MySQL installed",
-      "B": "Amazon RDS for MySQL with Multi-AZ deployment",
-      "C": "Amazon Aurora with multi-master enabled",
-      "D": "Amazon DynamoDB"
+      "A": "Provision an Amazon EC2 instance, install the MySQL engine manually, and configure custom failover scripts.",
+      "B": "Deploy Amazon RDS for MySQL and enable a Multi-AZ deployment to provide automatic, synchronous replication and failover.",
+      "C": "Migrate the relational database schema and data to Amazon DynamoDB to achieve serverless high availability.",
+      "D": "Set up an Amazon ElastiCache for Redis cluster to serve as a highly available, in-memory replacement for the MySQL database."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon RDS is a managed relational database service that handles administration tasks. Multi-AZ provides high availability and automatic failover, making it ideal for critical databases.",
+    "explanation": "B is correct because Amazon RDS for MySQL is a fully managed service that handles OS patching and backups. By enabling Multi-AZ, AWS automatically provisions and maintains a synchronous standby replica in a different Availability Zone, and automatically fails over to it without manual intervention if the primary instance fails.",
     "whyOthersAreWrong": {
-      "A": "Running MySQL on Amazon EC2 requires manual installation, OS patching, backup scripting, and custom high availability failover configuration, introducing heavy administrative overhead.",
-      "C": "Amazon Aurora multi-master is designed for specialized continuous write availability across multiple AZs within a single region, but introduces complex application-level conflict resolution and is not supported on standard MySQL RDS.",
-      "D": "Amazon DynamoDB is a NoSQL key-value database that does not natively support relational joins, complex SQL queries, or foreign key constraints."
+      "A": "Running MySQL on EC2 requires the customer to manage the OS, patches, backups, and write complex custom failover scripts, which violates the requirement for a managed service.",
+      "C": "Amazon DynamoDB is a NoSQL database. Migrating a relational MySQL database to DynamoDB would require a complete re-architecture of the application and its queries.",
+      "D": "Amazon ElastiCache is an in-memory caching service, not a durable, relational database system designed to permanently store a company's mission-critical data."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging Amazon RDS.",
+    "learningObjective": "Use Amazon RDS Multi-AZ deployments to provide fully managed high availability and automatic failover for relational databases.",
     "topic": "Amazon RDS",
     "tags": [
       "RDS",
-      "EC2",
-      "Aurora",
-      "DynamoDB",
-      "High Availability"
+      "Databases",
+      "High Availability",
+      "Failover"
     ]
   },
   {
     "id": "saa-669",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A media company needs to store petabytes of video archives. These archives are rarely accessed, perhaps once a year, but when requested, they must be retrieved within 12 hours. Which storage class offers the LOWEST cost?",
+    "question": "A national broadcasting company needs to durably store petabytes of raw, uncompressed video archives. Historical access patterns show that these specific archives are extremely rarely accessed—often untouched for years at a time. However, in the rare event that a historical clip is requested for a documentary, the production team has a strict SLA requiring the video to be retrieved and available within 12 hours. Which Amazon S3 storage class offers the LOWEST possible storage cost while strictly meeting this retrieval requirement?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon S3 Standard",
-      "B": "Amazon S3 Standard-IA",
-      "C": "Amazon S3 Glacier Flexible Retrieval",
-      "D": "Amazon S3 Glacier Deep Archive"
+      "A": "Store the video archives in Amazon S3 Standard to ensure they are immediately available if requested.",
+      "B": "Use Amazon S3 Standard-Infrequent Access (S3 Standard-IA) to lower costs while maintaining millisecond access.",
+      "C": "Transition the objects to Amazon S3 Glacier Flexible Retrieval to balance low storage costs with retrieval times in minutes to hours.",
+      "D": "Move the archives to Amazon S3 Glacier Deep Archive to achieve the absolute lowest storage cost, as the 12-hour standard retrieval time is acceptable."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "S3 Glacier Deep Archive is the lowest-cost storage class in AWS and supports retrieval times of 12 hours, perfectly matching the scenario's requirements.",
+    "explanation": "D is correct because Amazon S3 Glacier Deep Archive is the lowest-cost storage class in AWS. It is designed for long-term data archiving where access is rarely needed. Its standard retrieval time is within 12 hours, which perfectly meets the production team's strict SLA.",
     "whyOthersAreWrong": {
-      "A": "Amazon S3 Standard charges the highest storage fees ($0.023/GB) designed for frequent access, making it cost-prohibitive for rarely accessed petabyte-scale archives.",
-      "B": "Infrequent Access tiers have a 30-day minimum storage duration and retrieval fees that are suboptimal for immediate, active analytical queries.",
-      "C": "Transitioning to archive storage classes introduces retrieval delays (minutes to hours) and minimum storage duration charges that do not suit frequently accessed data."
+      "A": "Amazon S3 Standard is the most expensive storage class. Storing petabytes of rarely accessed data here would waste significant budget.",
+      "B": "S3 Standard-IA is cheaper than Standard, but it is vastly more expensive than Glacier Deep Archive. The millisecond access speed is unnecessary given the 12-hour SLA.",
+      "C": "Glacier Flexible Retrieval provides faster retrieval options (minutes to hours), but it is more expensive than Glacier Deep Archive. Since 12 hours is acceptable, Deep Archive is the optimal choice."
     },
-    "learningObjective": "Select the most cost-effective architecture using Amazon S3 to satisfy workload requirements.",
+    "learningObjective": "Identify Amazon S3 Glacier Deep Archive as the optimal storage class for rarely accessed data with a 12-hour retrieval SLA.",
     "topic": "Amazon S3",
     "tags": [
+      "Storage",
       "S3",
-      "Cost Optimization"
+      "Cost Optimization",
+      "Archiving"
     ]
   },
   {
     "id": "saa-670",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A high-performance computing (HPC) application runs on hundreds of EC2 instances. The instances need to access a shared file system that supports POSIX permissions, concurrent access, and provides sub-millisecond latencies. Which AWS service is most appropriate?",
+    "question": "A meteorology institute is building a High Performance Computing (HPC) cluster on AWS to run complex weather forecasting models. The application runs on hundreds of Amazon EC2 Linux instances simultaneously. The forecasting software requires a shared, POSIX-compliant file system that provides extreme performance, supporting millions of IOPS and sub-millisecond latencies to ensure the EC2 instances are not bottlenecked by storage I/O. Which AWS storage service is explicitly designed for this workload?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon EFS",
-      "B": "Amazon FSx for Lustre",
-      "C": "Amazon S3",
-      "D": "Amazon EBS Multi-Attach"
+      "A": "Provision an Amazon Elastic File System (Amazon EFS) file system in Max I/O mode and mount it to the HPC instances.",
+      "B": "Deploy Amazon FSx for Lustre to provide a massively parallel, high-performance file system optimized for HPC workloads.",
+      "C": "Store the weather data in Amazon S3 and configure the forecasting application to use the S3 API for direct data access.",
+      "D": "Create an Amazon EBS Provisioned IOPS SSD (io2) volume and enable Multi-Attach to share it across the entire cluster."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "Amazon FSx for Lustre is designed specifically for fast processing of workloads like machine learning, high performance computing (HPC), and video processing, offering sub-millisecond latencies.",
+    "explanation": "B is correct because Amazon FSx for Lustre is a fully managed file system optimized for compute-intensive workloads like HPC, machine learning, and video processing. It provides sub-millisecond latencies, massive throughput, and millions of IOPS to hundreds of EC2 instances concurrently.",
     "whyOthersAreWrong": {
-      "A": "Amazon EFS is a distributed NFS file system with millisecond latencies; it cannot provide sub-millisecond block-level I/O performance or serve as a raw boot disk.",
-      "C": "Amazon S3 is an object store accessed via REST API (HTTP/HTTPS) and does not natively support POSIX file system semantics, file locking, or sub-millisecond local file system operations.",
-      "D": "Amazon EBS volumes are typically restricted to a single instance within a single Availability Zone and cannot provide shared multi-AZ file access."
+      "A": "Amazon EFS is a great general-purpose NFS file system, but it cannot deliver the extreme sub-millisecond latency and massive parallel IOPS required by HPC workloads as well as Lustre can.",
+      "C": "Amazon S3 is object storage. It does not provide a POSIX-compliant file system interface, and it cannot provide sub-millisecond latencies for file I/O operations.",
+      "D": "Amazon EBS Multi-Attach only supports attaching a volume to up to 16 instances simultaneously within a single AZ. It cannot be shared across 'hundreds' of instances like a true network file system."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon FSx.",
+    "learningObjective": "Select Amazon FSx for Lustre as the shared, POSIX-compliant file system for extreme performance HPC workloads.",
     "topic": "Amazon FSx",
     "tags": [
+      "Storage",
       "FSx",
-      "S3",
-      "EC2",
-      "EFS"
+      "HPC",
+      "Performance"
     ]
   },
   {
     "id": "saa-671",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company requires a managed NoSQL database service that provides single-digit millisecond performance at any scale. Which AWS service meets this requirement?",
+    "question": "A rapidly growing tech startup needs a fully managed database for its new user session management service. The database must provide consistent, single-digit millisecond latency regardless of whether the service is handling 100 requests per second or 100,000 requests per second. The data consists of simple key-value pairs, and the engineering team explicitly requires a serverless NoSQL solution to avoid managing any underlying instances or clusters. Which AWS service perfectly matches these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Amazon Redshift",
-      "B": "Amazon RDS",
-      "C": "Amazon DocumentDB",
-      "D": "Amazon DynamoDB"
+      "A": "Provision an Amazon Redshift cluster to manage the massive scale of the user session data.",
+      "B": "Deploy an Amazon RDS for PostgreSQL database and configure it with auto-scaling read replicas.",
+      "C": "Launch an Amazon DocumentDB cluster to provide MongoDB compatibility and high availability.",
+      "D": "Use Amazon DynamoDB to provide a fully managed, highly scalable NoSQL database with single-digit millisecond performance."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Amazon DynamoDB is a fully managed NoSQL database service that provides fast and predictable performance with seamless scalability and single-digit millisecond latency.",
+    "explanation": "D is correct because Amazon DynamoDB is a fully managed, serverless NoSQL database that delivers consistent, single-digit millisecond performance at any scale. It is natively designed for key-value pair and document storage patterns, perfectly matching the session management requirements.",
     "whyOthersAreWrong": {
-      "A": "Amazon Redshift is a columnar relational data warehouse intended for complex analytical (OLAP) queries across large datasets, not a low-latency NoSQL transactional store.",
-      "B": "Amazon RDS is a managed relational database service (SQL) that uses structured schemas and ACID transactions, not a horizontally scalable NoSQL database.",
-      "C": "Amazon DocumentDB is a MongoDB-compatible JSON document database, but it relies on an Aurora-like cluster architecture that does not scale out writes with seamless single-digit millisecond latency at arbitrary global scale like DynamoDB."
+      "A": "Amazon Redshift is a petabyte-scale data warehouse designed for complex OLAP analytics queries, not for high-throughput, low-latency key-value lookups like session management.",
+      "B": "Amazon RDS is a relational (SQL) database, not a NoSQL database. It is also not serverless (unless using Aurora Serverless) and requires managing instance types and read replicas.",
+      "C": "Amazon DocumentDB is a fully managed document database, but it is not completely serverless; you still provision and manage the underlying cluster instances."
     },
-    "learningObjective": "Optimize workload throughput and latency using Amazon DynamoDB.",
+    "learningObjective": "Identify Amazon DynamoDB as the ideal serverless NoSQL database for scalable, low-latency key-value workloads.",
     "topic": "Amazon DynamoDB",
     "tags": [
+      "Databases",
       "DynamoDB",
-      "RDS",
-      "Networking"
+      "Serverless",
+      "Performance"
     ]
   },
   {
     "id": "saa-672",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A security team wants to ensure that all Amazon S3 buckets in their AWS account have object encryption enabled by default. Which AWS service can be used to monitor and evaluate compliance automatically?",
+    "question": "A security team wants to ensure that all Amazon S3 buckets in their AWS account have server-side encryption enabled by default. They need a continuous monitoring solution that will automatically evaluate all current and future S3 buckets against this compliance rule, trigger alerts if a non-compliant bucket is found, and provide a dashboard of the account's overall compliance status. Which AWS service provides these capabilities natively?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS CloudTrail",
-      "B": "AWS Config",
-      "C": "AWS IAM",
-      "D": "Amazon Macie"
+      "A": "Use AWS CloudTrail to monitor the S3 API calls and trigger a Lambda function to check compliance.",
+      "B": "Enable AWS Config and deploy the `s3-bucket-server-side-encryption-enabled` managed rule to continuously evaluate compliance.",
+      "C": "Configure AWS IAM Access Analyzer to scan the S3 bucket policies for missing encryption enforcement statements.",
+      "D": "Deploy Amazon Macie to scan the S3 object metadata and classify buckets that lack encryption."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Config enables you to assess, audit, and evaluate the configurations of your AWS resources, including checking if S3 buckets have default encryption enabled.",
+    "explanation": "B is correct because AWS Config is a continuous monitoring and assessment service. It provides out-of-the-box AWS Managed Rules (such as `s3-bucket-server-side-encryption-enabled`) that automatically evaluate the configuration of your resources against desired compliance standards.",
     "whyOthersAreWrong": {
-      "A": "AWS CloudTrail records API activity and event history across your AWS infrastructure, but it does not evaluate resource configuration compliance against desired rules.",
-      "C": "AWS IAM manages identities, roles, and permissions, but cannot scan or continuously evaluate resource configurations for encryption compliance.",
-      "D": "Amazon Macie uses machine learning to discover and protect sensitive data (such as PII) stored in S3, but does not monitor or enforce bucket default encryption settings."
+      "A": "While CloudTrail + Lambda can be used to build a custom compliance engine, it requires significant development and maintenance effort, whereas AWS Config provides this natively out-of-the-box.",
+      "C": "IAM Access Analyzer analyzes resource-based policies to identify unintended public or cross-account access; it does not evaluate whether a bucket has default encryption enabled.",
+      "D": "Amazon Macie is a data security service that discovers sensitive data (like PII) in S3. It is not a configuration compliance engine for evaluating bucket encryption settings."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with Amazon S3.",
-    "topic": "Amazon S3",
+    "learningObjective": "Use AWS Config managed rules to continuously evaluate and monitor resource compliance against organizational policies.",
+    "topic": "AWS Config",
     "tags": [
-      "S3",
-      "IAM",
-      "CloudTrail",
-      "Security"
+      "Security",
+      "Compliance",
+      "Config",
+      "S3"
     ]
   },
   {
     "id": "saa-673",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A legacy application uses hardcoded IP addresses to connect to a database. The database is being migrated to an Amazon RDS DB instance. How can the Solutions Architect ensure the application can connect without changing its code?",
+    "question": "A company operates a legacy on-premises application that sends high volumes of UDP telemetry data to an AWS backend. The legacy application is notoriously difficult to update and requires the backend destination to be configured with hardcoded, static IP addresses. The AWS backend consists of an Auto Scaling group of Amazon EC2 instances spread across multiple Availability Zones. The architecture must provide high availability, distribute the UDP traffic across the instances, and expose static IP addresses to the legacy on-premises application. Which solution meets these requirements?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Use an AWS Lambda function to route traffic to RDS.",
-      "B": "Use AWS Global Accelerator.",
-      "C": "Create a Network Load Balancer (NLB) with a static IP and route traffic to the RDS instance.",
-      "D": "Assign an Elastic IP directly to the RDS instance."
+      "A": "Deploy an Application Load Balancer (ALB) and assign Elastic IP addresses to it directly.",
+      "B": "Configure Amazon Route 53 with an A record pointing to the Auto Scaling group instances.",
+      "C": "Provision a Network Load Balancer (NLB) to distribute the UDP traffic, which natively provides one static IP address per Availability Zone.",
+      "D": "Use AWS Global Accelerator and configure it to route UDP traffic directly to the individual EC2 instances using their private IPs."
     },
     "correctAnswers": [
       "C"
     ],
-    "explanation": "An NLB provides static IP addresses and can route traffic to an RDS instance. RDS itself cannot be assigned an Elastic IP directly in a typical managed deployment, making NLB the correct choice.",
+    "explanation": "C is correct because the Network Load Balancer (NLB) operates at Layer 4, supports UDP traffic natively, and provides a single, static IP address per Availability Zone (which can be associated with an Elastic IP). This perfectly satisfies the requirement for hardcoded IP addresses while providing high availability.",
     "whyOthersAreWrong": {
-      "A": "AWS Lambda functions cannot provide a dedicated static TCP listening IP address to proxy long-lived database connection streams directly to RDS.",
-      "B": "AWS Global Accelerator routes user traffic over anycast static IPs to regional endpoints (like ALBs, NLBs, or EC2), but it cannot directly attach to a private RDS DB instance without a supported fronting endpoint.",
-      "D": "Amazon RDS DB instances do not support direct Elastic IP assignment; their IP addresses are dynamic within private or public subnets, relying on DNS endpoints."
+      "A": "An Application Load Balancer (ALB) operates at Layer 7 and only supports HTTP/HTTPS traffic. It does not support UDP, nor does it support static Elastic IP addresses.",
+      "B": "Route 53 relies on DNS resolution. The legacy application requires hardcoded, static IP addresses, meaning DNS (and the changing IPs of EC2 instances) cannot be used.",
+      "D": "While Global Accelerator provides static IPs and supports UDP, it routes traffic to endpoints like ALBs, NLBs, or EC2 instances. Using an NLB is the standard and simpler architectural choice for load balancing UDP across an ASG."
     },
-    "learningObjective": "Design an efficient cloud migration strategy leveraging AWS Lambda.",
-    "topic": "AWS Lambda",
+    "learningObjective": "Select the Network Load Balancer (NLB) to load balance UDP traffic while providing static IP addresses for legacy clients.",
+    "topic": "Elastic Load Balancing",
     "tags": [
-      "Lambda",
-      "RDS"
+      "Networking",
+      "NLB",
+      "UDP",
+      "Load Balancing"
     ]
   },
   {
     "id": "saa-674",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "A company wants to securely connect its on-premises data center to its AWS VPC. The connection must be encrypted over the public internet and should be established quickly. What should they use?",
+    "question": "A startup needs to establish a secure connection between its on-premises corporate office and an Amazon VPC. The corporate security policy dictates that all traffic traversing the public internet must be encrypted using IPsec. The engineering team has a limited budget and needs the connection established within the next 24 hours to support an urgent application migration. Which AWS service is the most appropriate and cost-effective choice?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "AWS Direct Connect",
-      "B": "AWS Site-to-Site VPN",
-      "C": "AWS Transit Gateway",
-      "D": "VPC Peering"
+      "A": "Provision an AWS Direct Connect dedicated connection to bypass the public internet and provide a secure, private link.",
+      "B": "Implement an AWS Site-to-Site VPN connection to establish an encrypted IPsec tunnel over the public internet immediately.",
+      "C": "Deploy an AWS Transit Gateway and configure it to route traffic over the public internet without encryption.",
+      "D": "Establish a VPC Peering connection between the corporate office network router and the AWS VPC."
     },
     "correctAnswers": [
       "B"
     ],
-    "explanation": "AWS Site-to-Site VPN uses IPsec to establish a secure, encrypted connection over the public internet. It can be set up quickly, unlike Direct Connect which takes weeks.",
+    "explanation": "B is correct because AWS Site-to-Site VPN establishes an encrypted IPsec tunnel over the public internet. It is highly cost-effective and can be provisioned in minutes, satisfying the urgent 24-hour timeline and the security requirements.",
     "whyOthersAreWrong": {
-      "A": "Deploying a dedicated VPN or AWS Direct Connect circuit introduces unnecessary infrastructure cost and setup complexity for intra-cloud service communication.",
-      "C": "AWS Transit Gateway is a centralized hub that connects VPCs and on-premises networks; it does not independently establish encrypted tunnels over the internet without a VPN attachment.",
-      "D": "VPC Peering connects two AWS VPCs together and cannot connect on-premises data centers to AWS."
+      "A": "AWS Direct Connect provides a dedicated, private physical network connection. It is expensive and takes weeks or months to provision with a telecom provider, violating the 24-hour timeline and tight budget.",
+      "C": "AWS Transit Gateway connects VPCs and on-premises networks, but it relies on attachments (like a VPN or Direct Connect) to reach on-premises. It does not natively provide unencrypted public internet routing to a corporate office.",
+      "D": "VPC Peering connects two Amazon VPCs together over the private AWS network. It cannot be used to connect an AWS VPC to an on-premises corporate router."
     },
-    "learningObjective": "Implement secure architectural controls and access policies with Amazon VPC.",
-    "topic": "Amazon VPC",
+    "learningObjective": "Use AWS Site-to-Site VPN for rapid, cost-effective, and encrypted IPsec connectivity between on-premises networks and AWS.",
+    "topic": "AWS VPN",
     "tags": [
-      "VPC",
-      "Transit Gateway",
-      "Direct Connect",
-      "Security",
-      "Networking"
+      "Networking",
+      "VPN",
+      "Hybrid Cloud",
+      "Security"
     ]
   },
   {
     "id": "saa-675",
     "exam": "AWS Certified Solutions Architect - Associate",
-    "question": "An application is experiencing intermittent traffic spikes. The architect wants to configure Amazon EC2 Auto Scaling to proactively scale out instances before anticipated spikes occur. Which scaling policy should be used?",
+    "question": "An e-commerce application runs on a fleet of Amazon EC2 instances managed by an Auto Scaling group. The application experiences massive, predictable traffic spikes every morning at 9:00 AM when daily deals are published. Currently, the Auto Scaling group uses target tracking scaling based on CPU utilization, but the instances take several minutes to boot, causing the application to become sluggish during the initial surge at 9:00 AM. Which scaling policy should the Solutions Architect implement to proactively launch instances *before* the anticipated spike occurs?",
     "answerType": "single",
     "answerInstruction": "Choose the correct answer.",
     "options": {
-      "A": "Target tracking scaling",
-      "B": "Step scaling",
-      "C": "Simple scaling",
-      "D": "Predictive scaling"
+      "A": "Modify the existing Target tracking scaling policy to use a lower CPU utilization threshold.",
+      "B": "Implement Step scaling policies to rapidly add massive blocks of instances when the CPU hits 50%.",
+      "C": "Configure Simple scaling with a CloudWatch alarm that triggers exactly at 9:00 AM.",
+      "D": "Enable Predictive scaling to utilize machine learning to forecast traffic and proactively scale out instances ahead of the daily spike."
     },
     "correctAnswers": [
       "D"
     ],
-    "explanation": "Predictive scaling uses machine learning to predict upcoming traffic spikes and scales out instances proactively, making it the perfect fit.",
+    "explanation": "D is correct because Predictive Scaling uses machine learning to analyze historical traffic patterns and forecast future demand. It proactively launches instances *before* the predicted traffic spike occurs, completely eliminating the boot-time latency issue during the 9:00 AM surge.",
     "whyOthersAreWrong": {
-      "A": "Target tracking scaling monitors real-time metrics (like average CPU utilization) and reacts after the load increases, rather than proactively provisioning capacity ahead of anticipated traffic.",
-      "B": "Simple scaling reacts only after a CloudWatch alarm threshold is breached, which is too slow to absorb rapid, sudden traffic surges.",
-      "C": "Step scaling is reactive to threshold breaches rather than predictive, requiring manual configuration of step adjustments without machine-learning forecasting."
+      "A": "Lowering the target tracking threshold still relies on reactive scaling. Instances will only launch *after* CPU increases, failing to solve the boot-time delay problem.",
+      "B": "Step scaling is also reactive. It waits for a metric to breach an alarm threshold before taking action, meaning instances will still boot late during the initial surge.",
+      "C": "Simple scaling is a legacy reactive policy. To schedule instances for exactly 9:00 AM, you would use Scheduled Scaling, not Simple Scaling. However, Predictive Scaling is superior as it learns the exact pattern automatically without hardcoding schedules."
     },
-    "learningObjective": "Architect a reliable and scalable cloud solution using Amazon EC2.",
-    "topic": "Amazon EC2",
+    "learningObjective": "Implement Predictive Scaling to proactively launch Amazon EC2 capacity ahead of predictable traffic spikes.",
+    "topic": "Amazon EC2 Auto Scaling",
     "tags": [
-      "EC2",
-      "IAM"
+      "Auto Scaling",
+      "Compute",
+      "Performance",
+      "Machine Learning"
     ]
   },
   {
