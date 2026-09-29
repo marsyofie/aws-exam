@@ -1,0 +1,620 @@
+[
+    {
+        "id": "saa-1901",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A central security account runs automated remediation Lambda functions that must assume an IAM role in each of 50 member accounts under AWS Organizations. The security team must prevent a confused-deputy scenario where another AWS customer's service could trick the automation into assuming a role on their behalf, and must avoid any long-lived credentials.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure each member account's role trust policy with Principal set to \"*\" and rely on an IAM policy in the central account to restrict which roles can be assumed.",
+            "B": "Distribute a shared IAM user access key to the automation service and rotate it manually every 90 days.",
+            "C": "Configure each member account's role trust policy to specify the exact central automation role's ARN as Principal, and require a unique ExternalId value in every AssumeRole call.",
+            "D": "Grant the automation service AdministratorAccess via an IAM Identity Center permission set scoped to the Organizations management account only."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "Scoping the trust policy Principal to the specific calling role's ARN plus requiring a unique ExternalId ensures only the intended central automation identity, using the agreed-upon secret value, can assume the role — the standard mitigation for the confused-deputy problem in cross-account role assumption, with no long-lived credentials involved.",
+        "whyOthersAreWrong": {
+            "A": "A wildcard Principal combined with only central-account restrictions still leaves the member account's trust policy open to being assumed by any principal that satisfies the central account's IAM policy, weakening the intended boundary and not using ExternalId at all.",
+            "B": "Long-lived IAM user access keys violate least-privilege and credential-rotation best practices, have a large blast radius if leaked, and require manual rotation rather than automatic, short-lived credentials.",
+            "D": "A permission set scoped to the management account grants no access into the member accounts at all, so it cannot fulfill the automation requirement, and broad AdministratorAccess also violates least privilege."
+        },
+        "learningObjective": "Design a secure cross-account IAM role trust policy using a specific principal ARN and ExternalId to prevent confused-deputy attacks.",
+        "topic": "Cross-account IAM roles and trust policies",
+        "tags": [
+            "IAM",
+            "STS",
+            "Organizations",
+            "ExternalId"
+        ]
+    },
+    {
+        "id": "saa-1902",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs Lambda functions triggered by API Gateway that read and write to an Aurora MySQL Multi-AZ cluster. During flash-sale traffic spikes, Lambda concurrency jumps into the thousands and the cluster starts rejecting connections with \"too many connections\" errors, failing checkouts. The fix must require no application code changes to connection handling and must preserve fast failover behavior, which the team is actively testing.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Increase the max_connections parameter in the DB parameter group to the highest allowed value.",
+            "B": "Place Amazon RDS Proxy in front of the Aurora cluster and point the Lambda functions at the proxy endpoint instead of the cluster endpoint.",
+            "C": "Migrate the workload from Aurora to DynamoDB in on-demand capacity mode.",
+            "D": "Configure Lambda reserved concurrency equal to the cluster's current max_connections value."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "RDS Proxy pools and multiplexes database connections, absorbing spikes in Lambda concurrency without requiring the application to manage connections differently, and it also maintains connections during Multi-AZ failover, cutting failover impact — satisfying both stated constraints with no code changes.",
+        "whyOthersAreWrong": {
+            "A": "Raising max_connections increases memory pressure on the instance and only shifts the ceiling higher; it does not eliminate connection exhaustion at sufficiently high concurrency and can destabilize the instance under load.",
+            "C": "Migrating to DynamoDB is a major redesign, not a minimal fix, and nothing in the scenario indicates the relational access patterns can be dropped.",
+            "D": "Capping Lambda concurrency at the connection limit throttles invocations during exactly the traffic spike the business needs to handle, causing failed checkouts by design rather than solving the pooling problem."
+        },
+        "learningObjective": "Use Amazon RDS Proxy to manage connection pooling for high-concurrency serverless workloads without application code changes.",
+        "topic": "RDS Proxy connection pooling",
+        "tags": [
+            "RDS Proxy",
+            "Aurora",
+            "Lambda",
+            "Multi-AZ"
+        ]
+    },
+    {
+        "id": "saa-1903",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media analytics team is migrating an on-premises Hadoop cluster running custom Spark jobs, which depend on proprietary JARs and Hadoop-specific libraries, processing 20 TB of clickstream data nightly. They want to lift-and-shift the existing Spark code with minimal rewrite, keep the same cluster-based execution model, and cut compute cost by running most worker capacity on interruptible instances while keeping the primary node stable.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Rewrite the jobs as AWS Glue ETL scripts running on the Glue Spark runtime.",
+            "B": "Convert the pipeline into AWS Lambda functions triggered by S3 event notifications.",
+            "C": "Load the raw clickstream data into Redshift and rewrite the transformations as SQL using Redshift Spectrum.",
+            "D": "Deploy an Amazon EMR cluster with an on-demand primary node and Spot Instances for the core/task nodes, running the existing Spark JARs unchanged."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "EMR runs standard Hadoop/Spark clusters and can execute existing custom JARs and libraries largely unmodified, while letting worker (core/task) nodes run on Spot Instances for cost savings and keeping the primary node on-demand for stability — the closest match to a lift-and-shift with minimal rewrite.",
+        "whyOthersAreWrong": {
+            "A": "Glue requires porting jobs into Glue's managed Spark job model and typically doesn't support arbitrary proprietary Hadoop libraries without adaptation, exceeding the stated minimal-rewrite goal.",
+            "B": "Lambda has execution time and resource limits far below what's needed for 20 TB nightly Spark-scale processing and has no native Spark execution environment.",
+            "C": "Redshift Spectrum requires rewriting the transformation logic as SQL against external tables, discarding the existing Spark/JAR-based logic entirely."
+        },
+        "learningObjective": "Choose Amazon EMR with Spot worker nodes to lift-and-shift an existing Hadoop/Spark codebase while minimizing compute cost.",
+        "topic": "EMR for large-scale data processing",
+        "tags": [
+            "EMR",
+            "Spot Instances",
+            "Spark",
+            "migration"
+        ]
+    },
+    {
+        "id": "saa-1904",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "Following an acquisition, Company A's VPC and the acquired Company B's VPC both use the identical CIDR block 10.0.0.0/16 and cannot be re-addressed due to hundreds of hardcoded internal references. One specific internal API in Company B's VPC must become reachable from Company A's application tier, in the same region, without changing IP addressing in either VPC, and exposure should be limited to only that API rather than full network reachability.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create a Network Load Balancer in front of the API in Company B's VPC, publish it as a VPC endpoint service, and create an interface VPC endpoint for it in Company A's VPC.",
+            "B": "Create a VPC peering connection between the two VPCs and update the route tables accordingly.",
+            "C": "Attach both VPCs to a Transit Gateway and configure a TGW route table to route between them.",
+            "D": "Set up a Site-to-Site VPN tunnel between virtual private gateways in each VPC."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "AWS PrivateLink (a VPC endpoint service backed by an NLB) routes traffic at the service level over ENIs rather than relying on VPC-to-VPC IP routing, so it works even when both VPCs share the same CIDR block, and it exposes only the published service rather than full network reachability.",
+        "whyOthersAreWrong": {
+            "B": "VPC peering explicitly does not support VPCs with overlapping or identical CIDR ranges; AWS blocks creation of such peering connections.",
+            "C": "Transit Gateway route tables route based on destination IP prefixes and cannot correctly route between attachments with overlapping CIDR blocks.",
+            "D": "Site-to-Site VPN also depends on non-overlapping routable IP ranges for correct routing, and additionally would expose broader network reachability rather than a single scoped API."
+        },
+        "learningObjective": "Recognize that AWS PrivateLink is the correct solution for exposing a single service between VPCs with overlapping CIDR ranges.",
+        "topic": "VPC PrivateLink and overlapping CIDR",
+        "tags": [
+            "PrivateLink",
+            "VPC Peering",
+            "Transit Gateway",
+            "overlapping CIDR"
+        ]
+    },
+    {
+        "id": "saa-1905",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A trading platform in us-east-1 must recover in us-west-2 with an RTO of 1 hour and an RPO of 15 minutes. The operations team has no automated tooling to provision and configure application servers from scratch, and manual provisioning during past incidents has taken over 2 hours. Budget allows running some standby compute continuously, but not a full-scale duplicate production environment.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Backup and restore: take periodic AMI and database snapshots, and restore them into us-west-2 only when a disaster is declared.",
+            "B": "Active-active: run full production capacity simultaneously in both regions behind Route 53 weighted routing.",
+            "C": "Warm standby: run a scaled-down but fully configured application tier continuously in us-west-2, paired with an Aurora Global Database replica, and scale out on failover.",
+            "D": "Pilot light: keep only the database replicated continuously in us-west-2 and launch application servers from an AMI when disaster is declared."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "Warm standby keeps a fully configured, already-running application tier in the secondary region, so failover only requires scaling existing capacity rather than provisioning servers from nothing — meeting the 1-hour RTO given the team's known 2+ hour manual provisioning time, while Aurora Global Database typically replicates within seconds, supporting the 15-minute RPO, at a lower cost than full active-active.",
+        "whyOthersAreWrong": {
+            "A": "Backup and restore involves restoring from snapshots, which is measured in hours and cannot reliably meet a 15-minute RPO or 1-hour RTO.",
+            "B": "Active-active meets the recovery objectives but requires running full production capacity in both regions continuously, exceeding the stated budget of \"some standby compute.\"",
+            "D": "Pilot light still requires launching and configuring application servers during the incident, which historically takes this team over 2 hours — breaching the 1-hour RTO."
+        },
+        "learningObjective": "Match a DR strategy to stated RTO/RPO targets and known operational constraints around manual provisioning time.",
+        "topic": "Disaster recovery strategies",
+        "tags": [
+            "DR",
+            "RTO",
+            "RPO",
+            "Aurora Global Database",
+            "warm standby"
+        ]
+    },
+    {
+        "id": "saa-1906",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A gaming leaderboard service performs tens of thousands of primary-key reads per second against a DynamoDB table, with a requirement for sub-millisecond read latency and automatic write-through cache invalidation, without the application implementing its own cache-aside logic or TTL management.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Place Amazon ElastiCache for Redis in front of the table and implement cache-aside logic in the application.",
+            "B": "Enable DynamoDB Accelerator (DAX) as an in-memory cache cluster in front of the table.",
+            "C": "Increase the table's provisioned RCUs and enable DynamoDB auto scaling.",
+            "D": "Enable DynamoDB Global Tables across the two regions closest to players."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "DAX is a DynamoDB-native, in-memory caching layer purpose-built for microsecond-latency primary-key and query lookups, and it transparently handles cache population and invalidation on writes without any application-side cache-aside code — directly matching both stated requirements.",
+        "whyOthersAreWrong": {
+            "A": "ElastiCache requires the application to implement and maintain its own cache-aside invalidation logic, which the requirement explicitly wants to avoid.",
+            "C": "Raising RCUs increases throughput headroom on the table itself but does not deliver the microsecond-class latency DAX provides, and adds ongoing provisioned-capacity cost.",
+            "D": "Global Tables address multi-region replication for geographically distributed writers/readers, not the in-memory caching and latency requirement described."
+        },
+        "learningObjective": "Select DynamoDB Accelerator (DAX) for microsecond-latency, primary-key read-heavy workloads needing built-in write-through cache invalidation.",
+        "topic": "DynamoDB caching strategies",
+        "tags": [
+            "DAX",
+            "DynamoDB",
+            "ElastiCache",
+            "caching"
+        ]
+    },
+    {
+        "id": "saa-1907",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "Account A owns an S3 bucket whose objects are encrypted with a customer managed KMS key (CMK) that Account A also owns. A data analytics team in Account B needs to read these objects using their own IAM role, without Account A sharing any credentials.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Add a bucket policy in Account A granting Account B's role s3:GetObject; no KMS changes are needed since S3 permissions are sufficient.",
+            "B": "Have Account B's role assume an IAM role that exists solely in Account A with full administrator permissions, then read the objects from there.",
+            "C": "Rely on the KMS key's default \"Enable IAM User Permissions\" policy statement, which automatically grants decrypt access to any account within the AWS Organization.",
+            "D": "Update the CMK's key policy in Account A to grant Account B's specific role ARN kms:Decrypt permission, and add an IAM policy in Account B granting that role kms:Decrypt and s3:GetObject."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Cross-account access to a KMS-encrypted object requires both the KMS key's resource-based policy (in the key's owning account) to authorize the calling principal, and an IAM policy in the calling account granting that principal the corresponding KMS and S3 actions — both sides must permit the access.",
+        "whyOthersAreWrong": {
+            "A": "A bucket policy alone grants S3-level access, but the GetObject call will still fail on decrypt because the KMS key policy does not authorize Account B's principal.",
+            "B": "Using a broad administrator role in Account A is an unnecessary security risk that violates least privilege and is not a scalable cross-account data-sharing pattern.",
+            "C": "The default \"Enable IAM User Permissions\" statement only delegates permission management to IAM policies within the key's own account; it grants no automatic cross-account or Organization-wide access."
+        },
+        "learningObjective": "Correctly configure both the KMS key policy and the calling account's IAM policy for cross-account access to KMS-encrypted S3 objects.",
+        "topic": "KMS key policies for cross-account access",
+        "tags": [
+            "KMS",
+            "S3",
+            "cross-account",
+            "encryption"
+        ]
+    },
+    {
+        "id": "saa-1908",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An ECS service on Fargate behind an ALB deploys several times per day. The team wants new task-set traffic shifted gradually, automatic detection of elevated 5xx error rates or latency from CloudWatch alarms during the shift, and automatic rollback to the previous task set with no manual intervention, while keeping day-to-day deployment operations simple.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure the ECS service deployment controller to use AWS CodeDeploy with a blue/green deployment, attaching CloudWatch alarms that trigger automatic rollback.",
+            "B": "Use the ECS rolling update deployment type with minimumHealthyPercent set to 100 and maximumPercent set to 200.",
+            "C": "Manually create a second target group, deploy the new task definition to it, and swap target groups on the ALB listener after reviewing CloudWatch dashboards.",
+            "D": "Use the ECS \"all at once\" deployment behavior and rely solely on ALB health checks to detect failures after full cutover."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "ECS with the CodeDeploy blue/green deployment controller supports gradual traffic shifting between task sets and lets you attach CloudWatch alarms that automatically trigger rollback to the previous task set when thresholds are breached — meeting every stated requirement with no manual steps.",
+        "whyOthersAreWrong": {
+            "B": "The native ECS rolling update deployment type replaces tasks gradually but does not support CloudWatch-alarm-triggered automatic rollback or fine-grained traffic-percentage shifting between old and new versions.",
+            "C": "Manually swapping target groups based on reviewing dashboards is exactly the manual, error-prone process the team is trying to eliminate.",
+            "D": "\"All at once\" shifts 100% of traffic to new tasks immediately, so any error surge impacts all users before detection, and it provides no automatic rollback mechanism."
+        },
+        "learningObjective": "Use ECS with CodeDeploy blue/green deployments and CloudWatch alarm-based automatic rollback for safe, hands-off traffic shifting.",
+        "topic": "ECS blue/green deployments",
+        "tags": [
+            "ECS",
+            "CodeDeploy",
+            "Fargate",
+            "ALB",
+            "rollback"
+        ]
+    },
+    {
+        "id": "saa-1909",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A non-production VPC hosts private-subnet workloads that only run during business hours (8am-8pm weekdays) and need outbound internet access for package downloads. The account currently runs one NAT Gateway per AZ across 3 AZs, and FinOps has flagged this as the largest single cost driver in the dev account, noting the environment has no high-availability requirement.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Keep one NAT Gateway per AZ to preserve high-availability best practices, since NAT Gateways should never be a single point of failure regardless of environment.",
+            "B": "Replace the NAT Gateways with Gateway VPC endpoints for S3 and DynamoDB to handle all outbound traffic.",
+            "C": "Replace the NAT Gateways with a single NAT instance on a burstable instance type, and use an EventBridge scheduled rule with Lambda to stop the instance outside business hours.",
+            "D": "Consolidate to a single NAT Gateway shared across all subnets, but leave it running 24/7."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "A NAT instance is billed like any EC2 instance and can be stopped, so scheduling it to stop outside the stated 12-hour business window directly eliminates cost during idle hours — unlike a NAT Gateway, which is billed hourly the entire time it exists regardless of traffic or usage window.",
+        "whyOthersAreWrong": {
+            "A": "The scenario explicitly states this environment has no HA requirement, so paying for redundant per-AZ NAT Gateways is unjustified spend that ignores the stated constraint.",
+            "B": "Gateway VPC endpoints only cover traffic to S3 and DynamoDB; they don't provide general internet egress needed for package downloads from arbitrary hosts.",
+            "D": "Consolidating to one NAT Gateway reduces cost versus three, but a NAT Gateway cannot be stopped like an EC2 instance — it still incurs its hourly charge during the many off-hours each day and on weekends when it isn't needed."
+        },
+        "learningObjective": "Choose a stoppable NAT instance over NAT Gateway for intermittent, non-production outbound traffic to minimize idle-hour cost.",
+        "topic": "NAT cost optimization",
+        "tags": [
+            "NAT Gateway",
+            "NAT instance",
+            "cost optimization",
+            "EventBridge"
+        ]
+    },
+    {
+        "id": "saa-1910",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company with 40 accounts under AWS Organizations wants centralized GuardDuty threat detection findings across all current and future accounts, with new accounts automatically enrolled as they are created, and without security engineers having to log into each account individually to enable the service.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable GuardDuty individually in each of the 40 accounts and configure an EventBridge rule in each to forward findings to a central account's event bus.",
+            "B": "Register a security account as the GuardDuty delegated administrator in AWS Organizations, then enable GuardDuty organization-wide with auto-enable for new accounts.",
+            "C": "Use AWS Config aggregators in a central account to collect GuardDuty configuration compliance data from each member account.",
+            "D": "Create a cross-account IAM role in every account that the security team assumes manually each day to check GuardDuty findings in the console."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Designating a delegated GuardDuty administrator account within AWS Organizations and enabling organization-wide auto-enable both centralizes findings visibility and automatically extends coverage to accounts created in the future, satisfying every stated requirement with minimal ongoing effort.",
+        "whyOthersAreWrong": {
+            "A": "This requires manual setup in all 40 current accounts and does not automatically extend to future accounts, contradicting the auto-enrollment requirement.",
+            "C": "Config aggregators collect resource configuration and compliance data, not GuardDuty's threat detection findings.",
+            "D": "Daily manual console checks per account is exactly the high-touch operational burden the requirement wants eliminated, and provides no auto-enrollment for new accounts."
+        },
+        "learningObjective": "Use AWS Organizations delegated administrator and auto-enable for centralized, self-scaling GuardDuty coverage.",
+        "topic": "Multi-account GuardDuty management",
+        "tags": [
+            "GuardDuty",
+            "Organizations",
+            "delegated administrator",
+            "multi-account"
+        ]
+    },
+    {
+        "id": "saa-1911",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A Lambda function processes SQS messages in batches of 10. Occasionally 2-3 messages in a batch fail due to a downstream dependency timeout while the rest succeed. Currently the entire batch is retried whenever any single message fails, causing already-successful messages to be reprocessed and creating duplicate downstream side effects, such as duplicate emails sent to customers.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Increase the Lambda function's timeout to give the downstream dependency more time to respond.",
+            "B": "Reduce the SQS event source mapping's batch size to 1 message per invocation.",
+            "C": "Configure a dead-letter queue (DLQ) on the source queue with a maxReceiveCount of 1.",
+            "D": "Enable \"ReportBatchItemFailures\" on the Lambda event source mapping and return only the failed message IDs so SQS retries only those messages."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Partial batch response (ReportBatchItemFailures) lets the function report exactly which message IDs in a batch failed, so SQS deletes the successfully processed messages and retries only the failed ones — eliminating duplicate reprocessing and its side effects.",
+        "whyOthersAreWrong": {
+            "A": "A longer timeout may reduce some timeout-driven failures but does nothing to change the all-or-nothing batch retry behavior for whatever failures still occur.",
+            "B": "Setting batch size to 1 eliminates batching entirely, sharply increasing Lambda invocation count and cost — a far more drastic change than necessary to solve the stated problem.",
+            "C": "A DLQ with maxReceiveCount of 1 sends the entire batch to the DLQ after one failed attempt, still treating the batch as a single unit and losing the successfully processable messages from the normal flow."
+        },
+        "learningObjective": "Use partial batch response (ReportBatchItemFailures) to retry only failed messages in an SQS-Lambda batch instead of the entire batch.",
+        "topic": "SQS-Lambda partial batch failure handling",
+        "tags": [
+            "SQS",
+            "Lambda",
+            "event source mapping",
+            "idempotency"
+        ]
+    },
+    {
+        "id": "saa-1912",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A SaaS company runs an Aurora MySQL cluster with one writer and four reader instances sized for peak reporting-dashboard load. Actual read traffic varies significantly by time of day and customer time zone, with utilization often below 15% overnight, but the team cannot predict exact scaling windows and wants to avoid manually resizing instances.",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Migrate the reader fleet to Aurora Serverless v2, configuring a minimum and maximum ACU range so capacity scales automatically with actual demand.",
+            "B": "Purchase Reserved Instances for all four reader instances at the current instance size to lock in a lower hourly rate.",
+            "C": "Write a scheduled Lambda function that resizes reader instances down at a fixed time each night and back up each morning.",
+            "D": "Migrate the entire workload, including the writer, from Aurora to DynamoDB in on-demand mode."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "Aurora Serverless v2 readers scale ACU capacity automatically and continuously in response to actual demand within a configured min/max range, directly matching the unpredictable, non-schedule-based traffic pattern described, without any manual resizing.",
+        "whyOthersAreWrong": {
+            "B": "Reserved Instances lower the hourly rate but lock in the peak instance size 24/7, so the company keeps paying for unused overnight capacity — reducing unit cost but not the underlying inefficiency.",
+            "C": "A fixed nightly schedule doesn't match the stated unpredictable, customer-timezone-driven demand pattern and will under- or over-provision on many nights.",
+            "D": "Migrating the entire relational workload to DynamoDB is a major application redesign involving schema and query-pattern changes, far beyond addressing reader capacity efficiency."
+        },
+        "learningObjective": "Use Aurora Serverless v2 for automatically scaling read capacity to match unpredictable demand without manual resizing.",
+        "topic": "Aurora Serverless v2 cost optimization",
+        "tags": [
+            "Aurora Serverless v2",
+            "RDS",
+            "cost optimization",
+            "auto scaling"
+        ]
+    },
+    {
+        "id": "saa-1913",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company centrally manages 60 AWS accounts under AWS Organizations. An audit found that several member accounts had S3 buckets containing customer PII inadvertently made public, and the security team has no visibility into which accounts hold sensitive data at all. They need to (1) prevent any account in the Organization from making an S3 bucket public going forward, and (2) discover and classify where sensitive data already exists across all accounts.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Apply a Service Control Policy at the OU level denying s3:PutBucketPolicy/s3:PutBucketAcl actions that would grant public access, and enable S3 Block Public Access at the account level via Organizations.",
+            "B": "Enable S3 Transfer Acceleration on all buckets in the Organization to improve upload performance.",
+            "C": "Enable Amazon Macie with an Organizations-wide administrator account to automatically discover, classify, and report sensitive data findings across all member accounts.",
+            "D": "Enable S3 Versioning on all buckets to protect against accidental object deletion.",
+            "E": "Configure S3 Same-Region Replication for all buckets containing customer data to a backup account."
+        },
+        "correctAnswers": [
+            "A",
+            "C"
+        ],
+        "explanation": "An SCP combined with Organizations-managed S3 Block Public Access enforces a preventive guardrail against public buckets that no member account can override, while Macie provides organization-wide, automated discovery and classification of sensitive data — together covering both stated requirements.",
+        "whyOthersAreWrong": {
+            "B": "Transfer Acceleration is a performance feature for uploads over the public internet and is unrelated to preventing public access or discovering sensitive data.",
+            "D": "Versioning protects against accidental overwrite or deletion of objects; it does nothing to prevent public exposure or classify sensitive data.",
+            "E": "Replication addresses durability and disaster recovery, not public access prevention or data discovery."
+        },
+        "learningObjective": "Combine Organizations-wide SCP guardrails and Amazon Macie to prevent public S3 exposure and discover sensitive data across a multi-account environment.",
+        "topic": "Multi-account data security governance",
+        "tags": [
+            "SCP",
+            "Macie",
+            "S3 Block Public Access",
+            "Organizations"
+        ]
+    },
+    {
+        "id": "saa-1914",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An order-processing system uses a single SQS standard queue consumed by an EC2 Auto Scaling group. During regional maintenance events, the team wants to (1) ensure new orders aren't lost if consumers are temporarily unable to process them, and (2) allow three independent downstream systems (billing, fulfillment, and analytics) to each receive a copy of every order event, without polling the same queue and competing for messages.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Increase the SQS visibility timeout to the maximum of 12 hours to prevent message loss.",
+            "B": "Configure a redrive policy with a dead-letter queue so messages that repeatedly fail processing aren't lost after retries are exhausted.",
+            "C": "Increase the number of EC2 instances in the Auto Scaling group to the maximum capacity permanently.",
+            "D": "Convert the SQS standard queue to a FIFO queue to guarantee delivery to all three downstream systems.",
+            "E": "Publish order events to an SNS topic with separate SQS queue subscriptions for billing, fulfillment, and analytics (fan-out pattern)."
+        },
+        "correctAnswers": [
+            "B",
+            "E"
+        ],
+        "explanation": "A dead-letter queue preserves messages that exhaust their processing retries instead of silently dropping them, and an SNS-to-multiple-SQS fan-out pattern delivers an independent copy of every event to each of the three downstream systems without them competing for messages from one queue.",
+        "whyOthersAreWrong": {
+            "A": "A longer visibility timeout only delays redelivery of a specific in-flight message; it does not prevent loss from exhausted retries, and 12 hours would badly delay legitimate reprocessing.",
+            "C": "Running max capacity permanently is costly and unrelated to preventing message loss or enabling fan-out to independent systems.",
+            "D": "Converting to FIFO changes ordering and deduplication semantics, but a single queue still delivers each message to only one consumer group — it does not achieve fan-out to three independent systems."
+        },
+        "learningObjective": "Use an SNS-SQS fan-out pattern with dead-letter queues to distribute events to multiple independent consumers reliably.",
+        "topic": "SNS/SQS fan-out and DLQ patterns",
+        "tags": [
+            "SNS",
+            "SQS",
+            "fan-out",
+            "dead-letter queue"
+        ]
+    },
+    {
+        "id": "saa-1915",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A read-heavy reporting application queries an Aurora PostgreSQL cluster. Some reports return stale data because they're occasionally routed to a reader instance lagging several seconds behind the writer, while other reports specifically need read-after-write consistency immediately following an update. The team wants to fix both issues without re-architecting the database layer.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Switch all reads to query the cluster's reader endpoint exclusively, including read-after-write queries.",
+            "B": "Disable all reader instances and route all traffic to the writer instance permanently.",
+            "C": "For queries requiring read-after-write consistency, query the cluster's writer endpoint directly.",
+            "D": "Monitor Aurora replica lag using the AuroraReplicaLag CloudWatch metric and route latency-sensitive reports away from lagging replicas, or scale out additional readers to reduce lag.",
+            "E": "Enable Aurora Global Database to add a secondary region for all report queries."
+        },
+        "correctAnswers": [
+            "C",
+            "D"
+        ],
+        "explanation": "Querying the writer endpoint directly guarantees read-after-write consistency for the queries that need it, while monitoring AuroraReplicaLag and adjusting routing or reader capacity addresses the staleness affecting other reports — both changes fit within the existing cluster without redesign.",
+        "whyOthersAreWrong": {
+            "A": "Routing read-after-write-sensitive queries to the reader endpoint is exactly the cause of the stale-data problem described.",
+            "B": "Disabling all readers eliminates read scaling entirely, over-correcting and creating a writer bottleneck for the whole reporting workload.",
+            "E": "Global Database secondary regions typically have more replication lag than in-region readers, making read-after-write staleness worse, and it doesn't address monitoring-based lag mitigation for existing readers."
+        },
+        "learningObjective": "Use the correct Aurora endpoint for consistency requirements and monitor AuroraReplicaLag to manage reader staleness.",
+        "topic": "Aurora reader/writer endpoint selection and replica lag",
+        "tags": [
+            "Aurora",
+            "replica lag",
+            "reader endpoint",
+            "CloudWatch"
+        ]
+    },
+    {
+        "id": "saa-1916",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial services company must ensure that developers with IAM permissions in a shared sandbox AWS account cannot disable CloudTrail logging, cannot remove the account from AWS Organizations, and cannot launch resources outside two approved regions — regardless of any IAM permissions individually granted to them — and the controls must not be bypassable by an IAM administrator within the sandbox account itself.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Apply a Service Control Policy at the sandbox account's OU that denies cloudtrail:StopLogging and cloudtrail:DeleteTrail actions.",
+            "B": "Add an IAM policy to each developer's IAM role in the sandbox account denying cloudtrail:StopLogging.",
+            "C": "Enable AWS Config rules to detect and alert when CloudTrail is disabled or resources are launched outside approved regions.",
+            "D": "Apply a Service Control Policy denying actions outside two approved regions using a condition on aws:RequestedRegion, and denying organizations:LeaveOrganization.",
+            "E": "Grant developers read-only IAM policies for the CloudTrail and Organizations services."
+        },
+        "correctAnswers": [
+            "A",
+            "D"
+        ],
+        "explanation": "Service Control Policies are enforced from the Organizations management account and set the maximum permissions boundary for every principal in the member account, including its own administrators — making them the only mechanism here that cannot be bypassed by someone with full IAM control inside the sandbox account.",
+        "whyOthersAreWrong": {
+            "B": "An IAM policy inside the sandbox account can be modified or removed by an IAM administrator with sufficient permissions in that same account, failing the \"cannot be bypassed\" requirement.",
+            "C": "Config rules detect and alert after the fact; the requirement is to prevent these actions, not just report on them.",
+            "E": "Read-only IAM policies for specific developers are, like B, in-account IAM controls that an in-account administrator could alter or route around."
+        },
+        "learningObjective": "Use Service Control Policies as the only Organizations-level control that IAM administrators within a member account cannot override.",
+        "topic": "SCP guardrails vs IAM policies",
+        "tags": [
+            "SCP",
+            "Organizations",
+            "CloudTrail",
+            "IAM"
+        ]
+    },
+    {
+        "id": "saa-1917",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A microservices application on ECS uses service discovery so that an \"orders\" service can call an \"inventory\" service by name without hardcoding IP addresses, while the ALB in front of the public-facing \"orders\" service must route traffic only to healthy tasks and drain in-flight connections gracefully during deployments.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable AWS Cloud Map service discovery for the ECS services so tasks can resolve each other via DNS names that update automatically as tasks are replaced.",
+            "B": "Assign static Elastic IP addresses to each ECS task and hardcode them in application configuration.",
+            "C": "Use Route 53 public hosted zone A records manually updated whenever a task's IP address changes.",
+            "D": "Disable ALB health checks to avoid removing tasks during brief transient failures.",
+            "E": "Configure the ALB target group with a deregistration delay so in-flight requests complete before a task is removed during deployments."
+        },
+        "correctAnswers": [
+            "A",
+            "E"
+        ],
+        "explanation": "Cloud Map-based service discovery gives ECS tasks dynamic DNS names that update automatically as tasks are replaced, solving internal service-to-service calls, while a target group deregistration delay lets in-flight requests finish before a deployment removes a task, satisfying the graceful-draining requirement.",
+        "whyOthersAreWrong": {
+            "B": "ECS tasks, especially on Fargate, receive dynamic ENIs; hardcoding static IPs is operationally fragile and doesn't scale as tasks are replaced.",
+            "C": "Manually updating DNS records for a dynamic container environment doesn't scale and reintroduces the exact problem service discovery is meant to solve.",
+            "D": "Disabling health checks removes the ALB's ability to protect users from unhealthy tasks, directly undermining reliability."
+        },
+        "learningObjective": "Combine ECS service discovery via Cloud Map with ALB target group deregistration delay for reliable internal service calls and graceful deployments.",
+        "topic": "ECS service discovery and ALB connection draining",
+        "tags": [
+            "ECS",
+            "Cloud Map",
+            "ALB",
+            "service discovery"
+        ]
+    },
+    {
+        "id": "saa-1918",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company's Cost Explorer report shows cross-AZ data transfer charges between application-tier EC2 instances and a self-managed Kafka cluster (running as EC2 instances spread across 3 AZs) as a top-five cost line item. The application's current durability needs do not require multi-AZ broker placement, and its consumers make many small, frequent requests per second.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Move the Kafka cluster to a single larger EC2 instance type to reduce per-instance costs.",
+            "B": "Consolidate Kafka brokers into a single Availability Zone where durability requirements allow, reducing cross-AZ traffic between the application tier and Kafka.",
+            "C": "Evaluate migrating to Amazon MSK, configured with rack awareness and placement to minimize unnecessary cross-AZ replication traffic while still meeting actual durability requirements.",
+            "D": "Enable S3 Transfer Acceleration between the application tier and the Kafka cluster.",
+            "E": "Increase the EBS volume size attached to each Kafka broker instance."
+        },
+        "correctAnswers": [
+            "B",
+            "C"
+        ],
+        "explanation": "Consolidating brokers into a single AZ, where the stated durability needs allow it, directly reduces the cross-AZ traffic between the chatty application tier and Kafka, and migrating to Amazon MSK with rack-awareness settings lets the team optimize replication placement while still meeting real durability requirements — both directly target the cost driver identified.",
+        "whyOthersAreWrong": {
+            "A": "A larger single instance reduces instance-hour cost but doesn't address cross-AZ data transfer charges, which are driven by network topology, not instance size.",
+            "D": "S3 Transfer Acceleration accelerates uploads to S3 over the public internet and is unrelated to EC2-to-EC2 cross-AZ traffic or Kafka.",
+            "E": "EBS volume size affects storage capacity and IOPS, not network transfer costs between Availability Zones."
+        },
+        "learningObjective": "Reduce cross-AZ data transfer costs by re-evaluating necessary AZ placement and considering managed alternatives like Amazon MSK for optimized replication traffic.",
+        "topic": "Cross-AZ data transfer cost optimization",
+        "tags": [
+            "cross-AZ transfer",
+            "MSK",
+            "cost optimization",
+            "Kafka"
+        ]
+    },
+    {
+        "id": "saa-1919",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company is designing a landing zone for a new AWS Organization with dozens of upcoming accounts. Requirements: (1) new accounts must automatically receive a baseline set of security guardrails and logging configuration at creation time, (2) centralized CloudTrail and Config logs must be delivered to a dedicated logging account that member account administrators cannot modify or delete, and (3) infrastructure teams should be able to self-service provision pre-approved account resources, such as a standard VPC, without security team involvement for every request.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Use AWS Control Tower to establish the landing zone, which automatically applies baseline guardrails and enrolls new accounts through a standardized account factory.",
+            "B": "Grant every new account's root user permanent access keys so infrastructure teams can provision resources directly via the CLI.",
+            "C": "Configure an Organizations-wide CloudTrail with a dedicated S3 bucket in a logging account, applying an SCP or bucket policy that prevents member accounts from disabling or deleting the trail or bucket.",
+            "D": "Publish approved infrastructure templates, such as standard VPC configurations, through AWS Service Catalog so teams can self-service provision within guardrails.",
+            "E": "Disable AWS Config in all member accounts to reduce operational overhead and cost."
+        },
+        "correctAnswers": [
+            "A",
+            "C",
+            "D"
+        ],
+        "explanation": "Control Tower automates baseline guardrails and account enrollment, an Organizations-wide CloudTrail with a protected logging-account bucket satisfies the immutable centralized logging requirement, and Service Catalog lets infrastructure teams self-service provision pre-approved resources within guardrails — together meeting all three requirements.",
+        "whyOthersAreWrong": {
+            "B": "Issuing permanent root access keys is a severe security anti-pattern that violates root-account security best practices and doesn't relate to guardrail automation.",
+            "E": "Disabling Config removes resource compliance visibility, directly working against a well-governed landing zone and meeting none of the stated requirements."
+        },
+        "learningObjective": "Combine Control Tower, centralized immutable CloudTrail logging, and Service Catalog to build a self-service, guardrail-enforced multi-account landing zone.",
+        "topic": "Multi-account landing zone design",
+        "tags": [
+            "Control Tower",
+            "CloudTrail",
+            "Service Catalog",
+            "Organizations"
+        ]
+    },
+    {
+        "id": "saa-1920",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A data platform ingests clickstream events at a sustained 50,000 events per second from web and mobile clients, needs near-real-time (under 60 seconds) delivery into a data lake in Parquet format for Athena analytics, and must also trigger near-real-time fraud-detection alerts from the same stream without duplicating ingestion pipelines.",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Write events directly from client applications into an S3 bucket via presigned URLs, one object per event.",
+            "B": "Ingest events into Amazon Kinesis Data Streams as the single real-time ingestion point for both downstream consumers.",
+            "C": "Use Amazon Data Firehose to deliver the stream to S3, configuring it to convert records to Parquet format using a registered schema before landing in the data lake.",
+            "D": "Run a nightly AWS Glue job that reads raw JSON files from S3 and batch-converts them to Parquet once per day.",
+            "E": "Attach a separate consumer application, such as on Lambda or a Kinesis Data Analytics application, to the same Kinesis stream to evaluate events for fraud in near real time and emit alerts."
+        },
+        "correctAnswers": [
+            "B",
+            "C",
+            "E"
+        ],
+        "explanation": "A single Kinesis Data Streams ingestion point avoids duplicate pipelines, Data Firehose consuming that stream can convert records to Parquet and land them in S3 within the required latency, and a separate consumer attached to the same stream performs near-real-time fraud detection independently — meeting both the latency and dual-consumer requirements from one ingestion path.",
+        "whyOthersAreWrong": {
+            "A": "Writing one small object per event directly from clients at 50,000/sec creates massive S3 request-rate cost and a tiny-file problem for analytics, and provides no mechanism for real-time fraud alerting.",
+            "D": "A nightly batch job violates the under-60-second near-real-time delivery requirement by design, introducing up to a 24-hour delay."
+        },
+        "learningObjective": "Design a single Kinesis Data Streams ingestion point with parallel Firehose Parquet conversion and fraud-detection consumers to avoid duplicate pipelines while meeting near-real-time latency.",
+        "topic": "Real-time streaming ingestion architecture",
+        "tags": [
+            "Kinesis Data Streams",
+            "Data Firehose",
+            "Parquet",
+            "real-time analytics"
+        ]
+    }
+]
