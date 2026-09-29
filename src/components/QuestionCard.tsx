@@ -63,10 +63,10 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
   return (
     <div className="max-w-3xl mx-auto mt-10 p-4">
       <div className="mb-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-1">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-1">
           {examName || 'AWS Solutions Architect - Associate'}
         </h2>
-        {setName && <p className="text-sm text-gray-600 mb-3">{setName}</p>}
+        {setName && <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{setName}</p>}
         <ProgressBar current={currentIndex + 1} total={total} />
       </div>
 
@@ -82,11 +82,11 @@ const QuestionCard: React.FC<QuestionCardProps> = ({
                Choose {question.correctAnswers.length}
              </span>
           )}
-          <h3 className="text-lg md:text-xl font-medium text-gray-900 leading-relaxed">
+          <h3 className="text-lg md:text-xl font-medium text-gray-900 dark:text-gray-100 leading-relaxed">
             {question.question}
           </h3>
           {question.answerInstruction && (
-            <p className="mt-2 text-sm text-gray-600 font-medium">{question.answerInstruction}</p>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400 font-medium">{question.answerInstruction}</p>
           )}
         </div>
 

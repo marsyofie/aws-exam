@@ -3,6 +3,7 @@ import ExamSetup from './components/ExamSetup';
 import QuestionCard from './components/QuestionCard';
 import ExamResult from './components/ExamResult';
 import ReviewAnswers from './components/ReviewAnswers';
+import ThemeToggle from './components/ThemeToggle';
 import { ExamState } from './types/question';
 import { fetchQuestions } from './utils/questionUtils';
 
@@ -90,11 +91,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <header className="max-w-4xl mx-auto px-4 mb-8">
-        <h1 className="text-3xl font-extrabold text-aws-blue cursor-pointer" onClick={resetExam}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors">
+      <header className="max-w-4xl mx-auto px-4 mb-8 flex justify-between items-center">
+        <h1 className="text-3xl font-extrabold text-aws-blue dark:text-gray-100 cursor-pointer" onClick={resetExam}>
           AWS <span className="text-aws-orange">Exam Practice</span>
         </h1>
+        <ThemeToggle />
       </header>
 
       <main className="max-w-4xl mx-auto px-4">

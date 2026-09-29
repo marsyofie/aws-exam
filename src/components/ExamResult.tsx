@@ -16,21 +16,21 @@ const ExamResult: React.FC<ExamResultProps> = ({ examState, onReview, onRetry })
 
   return (
     <div className="max-w-md mx-auto mt-20 card p-8 text-center">
-      <h1 className="text-3xl font-bold mb-2 text-aws-blue">Exam Complete</h1>
+      <h1 className="text-3xl font-bold mb-2 text-aws-blue dark:text-gray-100">Exam Complete</h1>
       
       <div className="my-8">
         <div className="text-6xl font-extrabold text-aws-orange mb-2">{percentage}%</div>
-        <div className="text-xl text-gray-600 font-medium">{correctCount} / {total}</div>
+        <div className="text-xl text-gray-600 dark:text-gray-400 font-medium">{correctCount} / {total}</div>
       </div>
 
-      <div className="bg-gray-50 rounded-lg p-6 mb-8 text-left space-y-4">
-        <div className="flex justify-between items-center border-b pb-2">
-          <span className="text-gray-700 font-medium">Correct</span>
-          <span className="text-green-600 font-bold">{correctCount}</span>
+      <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 mb-8 text-left space-y-4">
+        <div className="flex justify-between items-center border-b dark:border-gray-700 pb-2">
+          <span className="text-gray-700 dark:text-gray-300 font-medium">Correct</span>
+          <span className="text-green-600 dark:text-green-400 font-bold">{correctCount}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-700 font-medium">Incorrect</span>
-          <span className="text-red-600 font-bold">{incorrectCount}</span>
+          <span className="text-gray-700 dark:text-gray-300 font-medium">Incorrect</span>
+          <span className="text-red-600 dark:text-red-400 font-bold">{incorrectCount}</span>
         </div>
       </div>
 
