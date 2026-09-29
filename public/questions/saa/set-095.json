@@ -1,0 +1,646 @@
+[
+  {
+    "id": "saa-1881",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial services company runs an AWS Organizations setup with a Management account and dedicated OUs for `Production`, `Development`, `Security`, and `Sandbox`. Compliance mandates that no workload resources may ever be created outside `ap-southeast-1` and `ap-southeast-3`, **except** in the `Security` OU, which must retain the ability to use AWS Config, CloudTrail, and GuardDuty in all Regions for global visibility. The company also wants IAM users in `Sandbox` to be unable to leave the AWS Organization or disable CloudTrail, even if they hold `AdministratorAccess`.\n\nWhich combination of controls satisfies these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach an IAM permissions boundary to every IAM role in `Production`, `Development`, and `Sandbox` that denies actions in any Region except `ap-southeast-1` and `ap-southeast-3`, and denies `organizations:LeaveOrganization` and `cloudtrail:StopLogging`.",
+      "B": "Attach a Service Control Policy (SCP) at the `Production`, `Development`, and `Sandbox` OUs that denies all actions when the request Region is not `ap-southeast-1` or `ap-southeast-3` (excluding global services), and attach a second SCP at the Organization root that denies `organizations:LeaveOrganization` and `cloudtrail:StopLogging`/`cloudtrail:DeleteTrail` for all accounts except the Management account.",
+      "C": "Enable AWS Control Tower with the \"Region deny\" guardrail applied organization-wide, and manually delete the CloudTrail trail in the `Security` OU accounts to prevent tampering.",
+      "D": "Create an IAM group in every account containing a deny policy for non-approved Regions, and require every account's root user to enable MFA to prevent leaving the Organization.",
+      "E": "Use AWS Config aggregators in the Management account to detect resources created outside the approved Regions, and trigger an EventBridge rule that invokes a Lambda function to delete non-compliant resources."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "SCPs are the only control here that can reliably constrain even `AdministratorAccess`-holding identities, because SCPs define the *maximum available permissions* for every principal in an account. Using two SCPs \u2014 one for Region restriction scoped to the OUs that need it (excluding `Security`), and a second at the root denying `LeaveOrganization`/CloudTrail tampering except for a break-glass exception \u2014 is the AWS-recommended, low-operational-overhead pattern.",
+    "whyOthersAreWrong": {
+      "A": "Permissions boundaries only constrain what a specific IAM principal *can grant itself or others when creating new identities*, and they must be attached and maintained per-role/user, which is high operational overhead across many accounts and easy to bypass by simply not attaching a boundary.",
+      "C": "Control Tower's Region deny guardrail is valid, but manually deleting the CloudTrail trail in `Security` accounts is the opposite of the requirement (Security needs *global* visibility) and \"manual deletion\" is an anti-pattern, not a control.",
+      "D": "IAM groups with deny policies are identity-based and can be overridden or bypassed by any principal with sufficient IAM permissions to detach/modify the group policy; MFA on root doesn't prevent an authorized IAM principal from calling `LeaveOrganization`.",
+      "E": "This is detective/reactive (after resources already exist) and introduces risk of automated deletion of legitimate resources; it doesn't prevent creation in the first place, which is what \"no workload resources may ever be created\" demands (a preventive control)."
+    },
+    "learningObjective": "Enforce preventive security guardrails organization-wide using SCPs.",
+    "topic": "AWS Organizations",
+    "tags": [
+      "organizations",
+      "scp",
+      "security",
+      "cloudtrail"
+    ]
+  },
+  {
+    "id": "saa-1882",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company has an S3 bucket, `raw-uploads`, in Account A that receives large video files from an on-premises ingest application. A transcoding pipeline running in Account B (a separate AWS account, different Organization) needs read-only access to objects in this bucket, and a third-party analytics vendor (Account C, not part of the company's AWS environment at all) needs to be able to write processed metadata JSON files into a *different* prefix in the same bucket. The security team requires that access be auditable per external party and that no long-lived credentials be shared with the vendor.\n\nWhich approach meets these requirements with the strongest security posture?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create IAM users in Account A for the transcoding pipeline and the vendor, generate access keys, and share the keys with each party for programmatic access.",
+      "B": "Attach a bucket policy on `raw-uploads` that grants `s3:GetObject` to Account B's account ID and `s3:PutObject` to Account C's account ID, scoped to their respective prefixes using resource ARNs and `aws:PrincipalAccount` conditions.",
+      "C": "Create a cross-account IAM role in Account A that Account B can assume via `sts:AssumeRole` for read access; for the vendor, provide S3 presigned URLs generated on demand by a Lambda function that only the vendor's authenticated API caller can trigger, scoped to the metadata prefix.",
+      "D": "Make the `raw-uploads` bucket public with a bucket policy restricting write access to specific prefixes, and rely on S3 Server Access Logging for audit purposes.",
+      "E": "Use AWS Resource Access Manager (RAM) to share the S3 bucket with both Account B and Account C, then apply IAM policies in each recipient account to scope down permissions."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "Account B is a known, trusted AWS account \u2014 a cross-account IAM role assumed via STS is the standard, auditable, temporary-credential mechanism for this. Account C is an *external, non-AWS* vendor with no AWS identity to assume a role \u2014 S3 presigned URLs generated on-demand let you issue short-lived, scoped, auditable, prefix-restricted write access without ever handing out a long-lived credential of any kind.",
+    "whyOthersAreWrong": {
+      "A": "Long-lived IAM user access keys are exactly what the requirement explicitly forbids; keys can leak and aren't scoped to time.",
+      "B": "Account C is not an AWS account/principal at all \u2014 you cannot grant a bucket policy to a non-AWS third party using `aws:PrincipalAccount`; there's no principal to reference.",
+      "D": "Making the bucket public is a severe security anti-pattern for any file containing business data, and access logs are for auditing after the fact, not access control.",
+      "E": "AWS RAM shares AWS resources like subnets, Transit Gateways, and license configurations between accounts within an Organization (or invited accounts) \u2014 it does not support sharing S3 buckets, and it doesn't apply to a non-AWS third party like Account C."
+    },
+    "learningObjective": "Provide temporary, least-privilege access for cross-account and external third-party users.",
+    "topic": "AWS IAM",
+    "tags": [
+      "iam",
+      "s3",
+      "presigned-urls",
+      "security",
+      "cross-account"
+    ]
+  },
+  {
+    "id": "saa-1883",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A healthcare company replicates encrypted RDS for PostgreSQL automated snapshots from `ap-southeast-1` (primary) to `us-east-1` (DR Region) for regulatory disaster recovery. The primary database is encrypted with a customer-managed KMS key. During a DR test, the team discovers that the cross-Region snapshot copy fails with a KMS-related permission error, even though the IAM role performing the copy has `kms:Decrypt` and `kms:CreateGrant` permissions on the source key.\n\nWhat is the MOST likely root cause, and what is the correct fix?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "KMS keys are global resources; the issue is an IAM trust policy misconfiguration on the role, not a KMS key issue \u2014 fix by adding `sts:AssumeRole` permissions.",
+      "B": "AWS KMS keys are Region-specific; a customer-managed key from `ap-southeast-1` cannot decrypt or re-encrypt data in `us-east-1`. The fix is to create a KMS key in `us-east-1` and specify it as the destination key when copying the snapshot cross-Region (or use a multi-Region KMS key with a replica in `us-east-1`).",
+      "C": "The snapshot copy is failing because RDS automated snapshots cannot be copied cross-Region when encrypted; the fix is to disable encryption before copying and re-enable it afterward.",
+      "D": "The fix is to grant the KMS key an IAM resource policy that allows `kms:*` from `us-east-1` explicitly, since KMS keys default to denying cross-Region requests.",
+      "E": "The fix is to convert the customer-managed key (CMK) into an AWS managed key, since AWS managed keys automatically replicate across all Regions used by the account."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "AWS KMS keys are strictly Region-scoped resources. When RDS copies an encrypted snapshot to another Region, it must re-encrypt the data with a KMS key that exists *in the destination Region* \u2014 you cannot reference the source Region's key ARN as the destination encryption key.",
+    "whyOthersAreWrong": {
+      "A": "IAM trust policies govern *who* can assume a role, not KMS key Regionality; adding `sts:AssumeRole` permissions is unrelated to the actual error.",
+      "C": "Encrypted RDS snapshots absolutely can be copied cross-Region; disabling encryption is both unnecessary and a compliance violation for a healthcare (HIPAA-relevant) workload.",
+      "D": "KMS key resource policies don't have Region-based allow/deny semantics like this; the issue isn't a policy statement missing, it's that the referenced key literally does not exist as a resource in the target Region.",
+      "E": "AWS managed keys are also Region-specific and are not automatically replicated across Regions; this statement is factually incorrect."
+    },
+    "learningObjective": "Understand the regional nature of KMS keys and how to perform cross-region encrypted snapshot copies.",
+    "topic": "AWS KMS",
+    "tags": [
+      "kms",
+      "rds",
+      "disaster-recovery",
+      "encryption"
+    ]
+  },
+  {
+    "id": "saa-1884",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A SaaS company runs a multi-tenant order-processing platform on Aurora MySQL in `ap-southeast-1`. The business now requires that in the event of a full Regional outage, the application must fail over to `ap-southeast-3` with an RPO under 1 second for committed transactions and an RTO under 5 minutes, without requiring the application to reconnect to a different write endpoint manually. Read-heavy reporting queries from a BI tool in `ap-southeast-3` should also be served locally to reduce latency, and eventual consistency (typically sub-second lag) for those reports is acceptable.\n\nWhich architecture BEST satisfies all these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy Aurora MySQL Multi-AZ within `ap-southeast-1` only, and use AWS DMS ongoing replication to continuously copy data to a standalone RDS MySQL instance in `ap-southeast-3` for BI reporting; promote it manually during a Regional failure.",
+      "B": "Deploy an Aurora Global Database with the primary cluster in `ap-southeast-1` and a secondary cluster in `ap-southeast-3`; use the secondary cluster's reader endpoint for BI queries, and rely on Aurora Global Database's managed planned/unplanned failover to promote the secondary during a Regional outage.",
+      "C": "Deploy two independent Aurora MySQL clusters, one in each Region, and use Route 53 weighted routing to distribute writes between both clusters, relying on application-level conflict resolution.",
+      "D": "Deploy Aurora MySQL with cross-Region read replicas from `ap-southeast-1` to `ap-southeast-3`, and configure Route 53 failover routing pointing at the read replica's endpoint, which AWS automatically promotes to a writer during Regional failures.",
+      "E": "Use Aurora Global Database, but instead of relying on Aurora managed failover, build a custom Lambda function triggered by CloudWatch alarms in the secondary Region that calls `promote-db-cluster` on the secondary cluster whenever cross-Region replication lag exceeds zero."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Aurora Global Database is purpose-built for this exact requirement: it uses dedicated, storage-layer physical replication with typical replication lag under 1 second (RPO under 1 second). Its managed failover process is designed to promote a secondary Region within minutes (RTO under 5 minutes), and the secondary cluster's reader endpoint can serve local read traffic (BI/reporting) in `ap-southeast-3` today.",
+    "whyOthersAreWrong": {
+      "A": "DMS-based replication to a standalone RDS MySQL instance does not offer Aurora Global Database's sub-second, storage-layer replication guarantee, and \"promote manually\" directly fails the RTO/automation expectations.",
+      "C": "Two independent clusters with multi-master writes via Route 53 weighted routing is a dangerous, unsupported pattern for this use case \u2014 Aurora MySQL is not a multi-master, conflict-resolving database across Regions in this configuration.",
+      "D": "Cross-Region read replicas replicate via standard asynchronous replication with materially higher lag than Global Database's storage-based replication, and promotion is a manual/explicit API action, contradicting \"without requiring...manually.\"",
+      "E": "A custom Lambda watching for \"lag exceeds zero\" would trigger constant unnecessary failovers, since near-zero but non-zero lag is normal and expected."
+    },
+    "learningObjective": "Design a cross-region disaster recovery architecture for a relational database with sub-second RPO.",
+    "topic": "Amazon Aurora",
+    "tags": [
+      "aurora",
+      "disaster-recovery",
+      "global-database",
+      "rds"
+    ]
+  },
+  {
+    "id": "saa-1885",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has 40 AWS accounts under AWS Organizations, each with its own VPC in `ap-southeast-1`, spread across `Production`, `Staging`, and `Shared-Services` OUs. All VPCs need private connectivity to each other and to on-premises data centers via a single AWS Direct Connect connection terminated in the `Shared-Services` account. For cost and operational reasons, internet-bound traffic from all `Production` and `Staging` VPCs must route through a centralized set of NAT Gateways in the `Shared-Services` account rather than each VPC having its own NAT Gateways, and security must be enforced so that `Staging` VPCs cannot initiate connections into `Production` VPCs.\n\nWhich design is the MOST operationally efficient and cost-effective?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create a full mesh of VPC Peering connections between all 40 VPCs, and use route tables plus security groups on each VPC to control the flow between `Staging` and `Production`.",
+      "B": "Deploy a Transit Gateway in the `Shared-Services` account, share it via AWS RAM with all accounts, attach every VPC, attach the Direct Connect Gateway, and use separate Transit Gateway route tables (with associations/propagations) to isolate `Production` and `Staging` traffic while both can route to a centralized NAT Gateway VPC and on-premises.",
+      "C": "Deploy a Transit Gateway per OU (three total), peer all three Transit Gateways together, and give each VPC its own NAT Gateway to avoid a single point of failure for internet egress.",
+      "D": "Use AWS PrivateLink to expose a NAT Gateway endpoint service from the `Shared-Services` VPC to all other VPCs, and rely on Direct Connect Gateway with a single virtual interface shared across all 40 VPCs directly.",
+      "E": "Deploy a Transit Gateway in the `Shared-Services` account and attach every VPC to a single default Transit Gateway route table, using only Network ACLs on each VPC's subnets to block `Staging`-to-`Production` traffic."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Transit Gateway is designed exactly for this hub-and-spoke scenario. Sharing a single Transit Gateway via AWS RAM lets all 40 accounts attach their VPCs. Centralized egress is a well-established pattern. Segmentation between `Staging` and `Production` is achieved with separate Transit Gateway route tables \u2014 this is the core TGW mechanism for enforcing which attachments can route to which other attachments.",
+    "whyOthersAreWrong": {
+      "A": "A full VPC Peering mesh among 40 VPCs requires up to 780 individual peering connections, which does not scale, and VPC Peering is non-transitive (a hub VPC cannot route traffic between two spoke VPCs).",
+      "C": "Multiple peered Transit Gateways per OU is unnecessary complexity and cost versus a single shared TGW, and giving every VPC its own NAT Gateway directly contradicts the stated cost/centralization requirement.",
+      "D": "PrivateLink is for exposing a specific service to consumers, not a mechanism for routing general internet-bound NAT traffic.",
+      "E": "Using only Network ACLs (with everything in one default TGW route table) is highly error-prone and hard to audit at scale compared to native TGW route table segmentation."
+    },
+    "learningObjective": "Design centralized egress and network segmentation across multiple VPCs and AWS accounts.",
+    "topic": "AWS Transit Gateway",
+    "tags": [
+      "transit-gateway",
+      "vpc",
+      "networking",
+      "nat-gateway"
+    ]
+  },
+  {
+    "id": "saa-1886",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company is migrating a monolithic order-management application to microservices running as Amazon ECS on Fargate tasks across three services: `orders`, `inventory`, and `payments`. These services need to discover and call each other by stable internal names, retry failed calls with client-side load balancing, and the platform team wants built-in traffic metrics (success rate, request count, latency) between services without deploying and managing sidecar proxies themselves. Cross-service calls stay within a single VPC.\n\nWhich ECS capability BEST meets these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon ECS Service Connect, which provides a managed service-to-service communication layer with logical service names, client-side load balancing, and automatic CloudWatch metrics for service-to-service traffic.",
+      "B": "AWS App Mesh with Envoy sidecar containers manually added to each task definition, requiring the team to manage mesh configuration, virtual nodes, and virtual routers themselves.",
+      "C": "Route 53 private hosted zone with A records manually updated by a Lambda function triggered on ECS task state-change events, combined with an internal Application Load Balancer per service.",
+      "D": "AWS Cloud Map namespace with manual service registration, paired with a custom sidecar container built and maintained by the team to add retry logic and metrics emission.",
+      "E": "A single internal Network Load Balancer in front of all three services, using target group path-based routing rules to direct traffic between `orders`, `inventory`, and `payments`."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon ECS Service Connect provides stable logical service names for discovery, automatic client-side load balancing between service instances, and built-in CloudWatch metrics for service-to-service traffic without the team having to deploy, configure, or operate sidecar proxies themselves.",
+    "whyOthersAreWrong": {
+      "B": "App Mesh explicitly requires the team to manage mesh resources and sidecar configuration \u2014 this is the higher-operational-overhead option the question says to avoid.",
+      "C": "Route 53 private hosted zones provide basic name resolution but no client-side load balancing, no retries, and no built-in traffic metrics.",
+      "D": "Requiring a custom-built sidecar reintroduces exactly the operational burden the team wants to avoid.",
+      "E": "Network Load Balancers operate at Layer 4 and do not support path-based routing rules (that's an ALB feature); and it doesn't provide service-to-service discovery/metrics in the way Service Connect does."
+    },
+    "learningObjective": "Implement service discovery, client-side load balancing, and metrics for containerized microservices.",
+    "topic": "Amazon ECS",
+    "tags": [
+      "ecs",
+      "containers",
+      "service-connect",
+      "networking"
+    ]
+  },
+  {
+    "id": "saa-1887",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A serverless order API uses AWS Lambda functions (Node.js) invoked via API Gateway, connecting to an Aurora MySQL cluster. During flash sale events, concurrent Lambda invocations spike from a baseline of ~50 to over 4,000 within seconds, causing the database to hit `max_connections` limits and reject new connections, even though the Aurora cluster's compute (ACUs / instance class) is not CPU- or memory-constrained.\n\nWhich change BEST resolves this issue while preserving Lambda's automatic scaling behavior?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the Aurora instance class to the next larger size, which proportionally increases the `max_connections` parameter and resolves connection exhaustion.",
+      "B": "Set `ReservedConcurrentExecutions` on the Lambda function to a low fixed value to cap the number of simultaneous invocations, preventing connection storms at the cost of throttling legitimate requests during spikes.",
+      "C": "Introduce Amazon RDS Proxy in front of the Aurora cluster, and update the Lambda functions to connect through the RDS Proxy endpoint, allowing connection pooling and multiplexing so that thousands of Lambda executions share a much smaller pool of database connections.",
+      "D": "Switch the Lambda functions to use provisioned concurrency equal to the peak expected invocation count, which pre-initializes execution environments and reuses a single persistent database connection across all of them.",
+      "E": "Replace the Aurora MySQL cluster with DynamoDB and use on-demand capacity mode, since DynamoDB has no concept of a connection limit."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "Amazon RDS Proxy sits between Lambda and Aurora, maintaining a warm, pooled set of database connections and multiplexing many client (Lambda) connections over a much smaller number of actual database connections. This is the AWS-recommended pattern for \"Lambda + relational database at high concurrency,\" and it requires no change to Lambda's scaling behavior.",
+    "whyOthersAreWrong": {
+      "A": "A larger instance class raises the connection ceiling but doesn't fix the fundamental architecture problem of one-connection-per-invocation at Lambda scale, and it's a much more expensive fix than connection pooling.",
+      "B": "Reserved concurrency caps Lambda invocations, throttling legitimate customer requests during the flash sale \u2014 the worst possible outcome.",
+      "D": "Provisioned concurrency does not cause multiple Lambda execution environments to share a single database connection; each environment still manages its own connections.",
+      "E": "Migrating to DynamoDB is a full data-model migration, not a targeted fix to the existing Aurora-based system."
+    },
+    "learningObjective": "Prevent database connection exhaustion for high-concurrency serverless applications.",
+    "topic": "Amazon RDS",
+    "tags": [
+      "rds-proxy",
+      "lambda",
+      "aurora",
+      "database",
+      "serverless"
+    ]
+  },
+  {
+    "id": "saa-1888",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A retail analytics company stores clickstream data in S3. Objects are written continuously and: (1) are read frequently for the first 7\u201310 days for real-time dashboards, (2) have highly unpredictable subsequent access for the next 60 days (some objects are accessed dozens of times, most are never accessed again, and there's no reliable way to predict which), and (3) after 90 days must be retained for 5 years for compliance but essentially never read except during rare audits, where retrieval can tolerate up to 12 hours of delay. The company wants to MINIMIZE storage cost without manually tagging or classifying objects, and without risking early-deletion or retrieval fees being triggered by unpredictable access patterns during the 60-day window.\n\nWhich S3 storage strategy is MOST cost-effective?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use an S3 Lifecycle policy: Standard for 7 days \u2192 transition to Standard-IA for the next 60 days \u2192 transition to Glacier Flexible Retrieval for the remaining ~5 years.",
+      "B": "Use an S3 Lifecycle policy to transition objects to S3 Intelligent-Tiering immediately after the initial 7\u201310 day hot period, allowing it to automatically move objects between its Frequent, Infrequent, and Archive Instant Access tiers based on real observed access, then transition to Glacier Deep Archive after 90 days for long-term compliance retention.",
+      "C": "Store all objects in S3 Standard for the entire 5-year period and rely on S3 Storage Lens to periodically report on cost, manually adjusting storage classes based on the reports.",
+      "D": "Use an S3 Lifecycle policy to transition objects to S3 One Zone-IA after 7 days to reduce cost, then to Glacier Instant Retrieval after 90 days, since One Zone-IA offers the lowest per-GB cost among the IA tiers.",
+      "E": "Write objects directly to S3 Glacier Flexible Retrieval from ingestion, and use S3 Batch Operations to restore objects temporarily whenever the dashboards need to read recent data."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "S3 Intelligent-Tiering is explicitly designed for data with \"unknown or unpredictable access patterns\". It automatically moves objects between Frequent Access, Infrequent Access, and Archive Instant Access tiers based on actual observed access patterns, with no retrieval fees. After day 90, transitioning to Glacier Deep Archive is the cheapest storage class appropriate for 5-year compliance retention with occasional 12-hour-tolerant audit access.",
+    "whyOthersAreWrong": {
+      "A": "Standard-IA charges a per-GB retrieval fee *every time* an object is accessed. If some objects are accessed dozens of times, this could cost more than Intelligent-Tiering.",
+      "C": "Leaving everything in S3 Standard for 5 years and manually reacting is the most expensive option and contradicts \"minimize cost...without manual tagging/classification.\"",
+      "D": "One Zone-IA sacrifices multi-AZ resilience (data loss risk) which is inappropriate for regulated compliance data, and still carries the retrieval fee risk.",
+      "E": "Writing directly to Glacier Flexible Retrieval breaks the requirement that objects be read frequently for the first 7\u201310 days for real-time dashboards."
+    },
+    "learningObjective": "Optimize storage costs for objects with unpredictable access patterns without incurring retrieval fees.",
+    "topic": "Amazon S3",
+    "tags": [
+      "s3",
+      "storage",
+      "intelligent-tiering",
+      "cost-optimization"
+    ]
+  },
+  {
+    "id": "saa-1889",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has multiple VPCs across several AWS accounts that all need to consume a specific third-party SaaS API for fraud detection. The SaaS vendor exposes their service as an AWS PrivateLink-powered endpoint service (`com.amazonaws.vpce.ap-southeast-1.vendorservice`). Security requires that traffic to this vendor never traverses the public internet, that access is restricted to specific VPCs only (not every VPC in the Organization), and that DNS resolution of the vendor's API hostname inside consumer VPCs resolves privately without any custom application code changes.\n\nWhich configuration correctly achieves this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an S3 Gateway Endpoint in each consumer VPC pointing to the vendor's service, since Gateway Endpoints support both AWS services and third-party SaaS providers via PrivateLink.",
+      "B": "In each consumer VPC that should have access, create an Interface VPC Endpoint targeting the vendor's endpoint service, enable \"Private DNS\" on the endpoint so the vendor's standard API hostname resolves to the endpoint's private IPs, and control acceptance either automatically or manually on the vendor's side per endpoint request.",
+      "C": "Establish a VPC Peering connection between each consumer VPC and the vendor's VPC, then update each consumer VPC's route table to send API traffic over the peering connection.",
+      "D": "Deploy a Transit Gateway, attach all consumer VPCs, and create a static route to the vendor's public IP range through a NAT Gateway, since PrivateLink endpoint services cannot be consumed across accounts.",
+      "E": "Ask the vendor to whitelist the consumer VPCs' NAT Gateway public IP addresses, and configure a VPN connection from each VPC directly to the vendor's on-premises firewall."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "This is the standard AWS PrivateLink consumer-side pattern: an Interface VPC Endpoint is created per consumer VPC. Enabling \"Private DNS\" on the endpoint automatically makes the vendor's normal API hostname resolve to the endpoint's private ENI IPs within that VPC \u2014 meaning zero application code changes are needed.",
+    "whyOthersAreWrong": {
+      "A": "Gateway Endpoints only support Amazon S3 and DynamoDB \u2014 they cannot be used for third-party PrivateLink-powered services at all.",
+      "C": "VPC Peering to \"the vendor's VPC\" is not how PrivateLink works and typically isn't offered by SaaS vendors because it would expose their entire network.",
+      "D": "PrivateLink endpoint services are specifically designed to be consumed across accounts (that's the vendor's business model) via Interface Endpoints, not static routes through NAT Gateways.",
+      "E": "Whitelisting NAT Gateway IPs defeats the purpose of using the PrivateLink service the vendor built and sends traffic over a VPN instead of the private AWS backbone."
+    },
+    "learningObjective": "Consume third-party SaaS APIs privately using AWS PrivateLink and Private DNS.",
+    "topic": "AWS PrivateLink",
+    "tags": [
+      "privatelink",
+      "vpc-endpoints",
+      "networking",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-1890",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A mid-sized company runs a critical order-fulfillment system on EC2 and RDS in a single Region. Leadership defines the following DR requirement after a recent audit: \"In the event of a full Regional failure, we must be able to resume operations in another Region within 15\u201330 minutes (RTO), with no more than 5 minutes of data loss (RPO). We are willing to pay for always-on infrastructure in the DR Region running at reduced capacity, but full duplicate production-scale capacity running 24/7 in both Regions is not economically justified.\"\n\nWhich DR strategy BEST matches this requirement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Backup and Restore \u2014 take periodic RDS snapshots and AMIs, store them in S3 with cross-Region replication, and launch infrastructure from scratch in the DR Region only when a disaster is declared.",
+      "B": "Pilot Light \u2014 replicate the database continuously (e.g., cross-Region read replica) to the DR Region, keep core infrastructure (e.g., a minimal EC2 fleet or scaled-down Auto Scaling group at 0\u20131 instances) provisioned but not fully scaled, and scale out / promote the database when disaster is declared.",
+      "C": "Warm Standby \u2014 run a scaled-down but fully functional copy of the entire production stack in the DR Region at all times, with continuous data replication, and scale it up to full production capacity during failover.",
+      "D": "Multi-Site Active/Active \u2014 run full production-scale capacity in both Regions simultaneously, with Route 53 weighted routing distributing live traffic across both at all times.",
+      "E": "Rely solely on Multi-AZ RDS deployments within the primary Region, since Multi-AZ already provides automatic failover and satisfies the RPO/RTO targets without needing a second Region."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "The stated requirements (15\u201330 minute RTO, <5 minute RPO, willingness to pay for \"always-on infrastructure at reduced capacity\" but explicit unwillingness to run \"full duplicate production-scale capacity\") map precisely to the Pilot Light DR strategy: continuous data replication keeps RPO low, and a minimal footprint of core infrastructure is kept running (or ready to launch instantly), with scale-out happening only when disaster is declared.",
+    "whyOthersAreWrong": {
+      "A": "Backup and Restore typically yields RTO in hours (building infrastructure from scratch takes time) and RPO tied to snapshot frequency, which does not meet the targets.",
+      "C": "Warm Standby runs a fully functional (if smaller) complete copy of the stack continuously, which is more expensive than Pilot Light and exceeds what they might economically justify if Pilot Light already meets the 15-30min RTO.",
+      "D": "Multi-Site Active/Active is the most expensive strategy and is explicitly ruled out by \"full duplicate production-scale capacity running 24/7 in both Regions is not economically justified.\"",
+      "E": "Multi-AZ RDS only protects against an AZ-level failure within a single Region \u2014 it provides zero protection against a full Regional outage."
+    },
+    "learningObjective": "Select the appropriate disaster recovery strategy based on specific RTO, RPO, and cost constraints.",
+    "topic": "Disaster Recovery",
+    "tags": [
+      "disaster-recovery",
+      "pilot-light",
+      "architecture",
+      "rto-rpo"
+    ]
+  },
+  {
+    "id": "saa-1891",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A gaming company uses DynamoDB to store player session data, with `PlayerID` as the partition key. During a major esports tournament, a small number of celebrity streamers' `PlayerID` values receive an extremely disproportionate volume of read requests compared to regular players, causing `ProvisionedThroughputExceededException` errors and throttling for those specific players, even though the table's overall consumed capacity is well under its provisioned limits.\n\nWhich change BEST resolves this hot-partition issue while keeping read consistency requirements (strongly consistent reads for session state) intact?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Switch the table to on-demand capacity mode, which automatically scales throughput to any traffic level and completely eliminates the possibility of throttling regardless of key distribution.",
+      "B": "Enable DynamoDB Accelerator (DAX) in front of the table to cache reads for hot `PlayerID`s, but continue using strongly consistent reads for all requests to guarantee no stale data is ever returned from the cache.",
+      "C": "Redesign the partition key strategy using write sharding (e.g., append a calculated suffix to hot `PlayerID`s to spread their items across multiple partitions) combined with application-side read fan-out/aggregation, and/or increase provisioned RCUs while monitoring CloudWatch's `ReadThrottleEvents` and partition-level metrics.",
+      "D": "Increase the table's provisioned read capacity units (RCUs) to a very high fixed value across the board, since DynamoDB automatically redistributes a single hot partition's throughput evenly across all of the table's physical partitions.",
+      "E": "Add a Global Secondary Index (GSI) with the same partition key (`PlayerID`) but a different sort key, since GSIs have independent partition capacity from the base table and automatically resolve hot-key throttling on the base table."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "This is a classic hot-partition problem. The durable fix is write sharding: append a calculated suffix to the hot partition key so that a single logical `PlayerID`'s data is physically spread across multiple partitions, then have the application fan out reads across the shard suffixes. This directly addresses the root cause (physical partition-level hot-keying).",
+    "whyOthersAreWrong": {
+      "A": "On-demand capacity mode does not eliminate hot-partition throttling \u2014 DynamoDB still enforces per-partition throughput limits under on-demand mode.",
+      "B": "DAX does not support strongly consistent reads from its cache. It only serves eventually consistent cached reads, or passes strongly consistent reads straight through to DynamoDB, offering no relief for this specific requirement.",
+      "D": "DynamoDB does not \"automatically redistribute a single hot partition's throughput evenly across all physical partitions\"; each partition has its own throughput ceiling.",
+      "E": "A GSI with the same partition key inherits the same hot-key distribution problem on its own partitions."
+    },
+    "learningObjective": "Resolve hot-partition throttling in DynamoDB using write sharding.",
+    "topic": "Amazon DynamoDB",
+    "tags": [
+      "dynamodb",
+      "performance",
+      "sharding",
+      "database"
+    ]
+  },
+  {
+    "id": "saa-1892",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a mixed workload: a fleet of 50 EC2 instances running a core web application with stable, predictable usage 24/7 for the next 3 years; an EKS cluster with worker nodes whose size fluctuates significantly based on daily traffic patterns; and periodic large batch-processing jobs (video encoding) that can tolerate interruption and are only run when cost allows, with no strict deadline. The company wants to MINIMIZE total compute cost across all three workloads without sacrificing the availability guarantees each workload actually needs.\n\nWhich combination of purchasing options is MOST cost-effective?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Purchase Standard Reserved Instances for the 50 stable web application instances (3-year term, All Upfront) for the deepest discount; use Compute Savings Plans for the EKS worker nodes to cover their fluctuating baseline while retaining flexibility across instance families; and run the batch-processing jobs on Spot Instances with Spot Fleet / EC2 Auto Scaling using multiple instance types across AZs.",
+      "B": "Purchase Spot Instances for the stable web application to save the most money, use On-Demand for EKS worker nodes since their size fluctuates too unpredictably for any commitment-based discount, and use Reserved Instances for the batch-processing jobs since they run periodically.",
+      "C": "Use On-Demand Instances for all three workloads to retain maximum flexibility and avoid any long-term financial commitment, since Savings Plans and Reserved Instances both carry the risk of being locked into unused capacity.",
+      "D": "Purchase a 3-year Compute Savings Plan sized to cover 100% of the combined peak usage of the web application and EKS cluster, and use On-Demand for the batch jobs since Spot Instances are not suitable for video encoding workloads.",
+      "E": "Purchase Convertible Reserved Instances for the batch-processing jobs to allow future flexibility, use Spot Instances for the stable web application fleet, and use Dedicated Hosts for the EKS worker nodes to reduce licensing costs."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Each workload gets the purchasing option that matches its actual usage: the stable 3-year instances get Standard Reserved Instances (deepest discount). The fluctuating EKS worker nodes get a Compute Savings Plan, which applies automatically across changing instance families/sizes. The interruption-tolerant batch jobs run on Spot Instances, yielding the largest possible discount.",
+    "whyOthersAreWrong": {
+      "B": "Using Spot for the stable, always-on web application is dangerous (can be reclaimed with 2-minute warning), and skipping a commitment discount for EKS leaves cost savings on the table.",
+      "C": "All On-Demand is the most expensive approach and explicitly fails \"minimize total compute cost.\"",
+      "D": "Sizing a Savings Plan to 100% of *peak* usage means overpaying during off-peak hours. Spot is perfectly suited for batch video encoding.",
+      "E": "Convertible RIs for periodic batch jobs waste a commitment on a non-continuous workload, and Dedicated Hosts are unnecessary here."
+    },
+    "learningObjective": "Select the most cost-effective compute purchasing options based on workload predictability and flexibility requirements.",
+    "topic": "Amazon EC2",
+    "tags": [
+      "ec2",
+      "savings-plans",
+      "spot-instances",
+      "cost-optimization"
+    ]
+  },
+  {
+    "id": "saa-1893",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company enforces a security model where developers in the `Development` account are granted `AdministratorAccess` via an IAM role to move quickly, but security policy requires that: (1) developers must never be able to create an IAM user or role with permissions broader than what they themselves currently have (no privilege escalation via self-created identities), and (2) developers must never be able to disable AWS Config or modify its recorder settings, regardless of what IAM policy they attach to themselves or any role they create.\n\nWhich TWO controls, used together, correctly enforce both requirements?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Attach an IAM permissions boundary to every IAM role/user that developers are permitted to create, ensuring that any identity created by a developer can never exceed the permissions defined in the boundary \u2014 and require (via IAM policy) that developers can only create roles/users if they attach this specific boundary.",
+      "B": "Attach a Service Control Policy (SCP) at the `Development` account (or its OU) that denies `config:StopConfigurationRecorder`, `config:DeleteConfigurationRecorder`, and `config:PutConfigurationRecorder` (modification) for all principals except a designated break-glass role, ensuring no IAM policy \u2014 including `AdministratorAccess` \u2014 can override this within the account.",
+      "C": "Rely on AWS Config's own resource-based policy to block modification attempts, since AWS Config supports resource policies similar to S3 bucket policies.",
+      "D": "Grant developers `AdministratorAccess` but attach a permissions boundary directly to the `AdministratorAccess`-holding developer role that denies `iam:CreateRole` and `iam:CreateUser` entirely, preventing any new identity creation.",
+      "E": "Use IAM Access Analyzer's policy generation feature to automatically rewrite developers' `AdministratorAccess` policy into a least-privilege policy nightly, removing any permissions related to AWS Config."
+    },
+    "correctAnswers": [
+      "A",
+      "B"
+    ],
+    "explanation": "Requirement (1) is the canonical use case for IAM permissions boundaries: the boundary is attached to any role/user the developer creates and caps that new identity's *effective* maximum permissions. Requirement (2) is solved by an SCP: SCPs are evaluated independently of and in addition to IAM policies and cannot be overridden by any identity-based permission within the account, including AdministratorAccess.",
+    "whyOthersAreWrong": {
+      "C": "AWS Config does not support S3-style resource-based access policies for blocking modification attempts.",
+      "D": "Denying `iam:CreateRole`/`iam:CreateUser` entirely prevents developers from creating *any* new identity, which is overly restrictive and doesn't solve the Config requirement.",
+      "E": "IAM Access Analyzer is a tool to help author policies; it does not automatically rewrite or enforce live policies nightly."
+    },
+    "learningObjective": "Combine IAM permissions boundaries and SCPs to prevent privilege escalation and enforce mandatory security controls.",
+    "topic": "AWS IAM",
+    "tags": [
+      "iam",
+      "scp",
+      "permissions-boundary",
+      "security",
+      "organizations"
+    ]
+  },
+  {
+    "id": "saa-1894",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A global news platform serves both a primary application in `us-east-1` and a secondary, fully deployed standby in `eu-west-1`. The company uses Route 53 with a failover routing policy: the primary alias record points to an Application Load Balancer in `us-east-1` with an associated Route 53 health check, and the secondary alias record points to the ALB in `eu-west-1`. During a recent partial outage, the `us-east-1` ALB continued responding to Route 53 health checks with HTTP 200 (the ALB and underlying EC2 instances were healthy), but the application was actually returning corrupted data to end users due to a downstream RDS issue, and traffic was never failed over.\n\nWhat is the BEST way to fix this gap for future incidents?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Reduce the Route 53 health check interval from 30 seconds to 10 seconds so that failures are detected and failed over more quickly.",
+      "B": "Replace the ALB target health check with a Route 53 health check that monitors a dedicated, lightweight application endpoint (e.g., `/health`) which itself verifies downstream dependencies such as database connectivity and returns a non-200 status if those checks fail, ensuring Route 53 fails over based on true end-to-end application health rather than basic reachability.",
+      "C": "Switch from Route 53 failover routing to weighted routing with a 50/50 split between both Regions at all times, so that a downstream data issue in one Region only affects half of user traffic instead of all of it.",
+      "D": "Add a second Route 53 health check that pings the RDS instance's endpoint directly on its database port, and configure the failover record to require both the ALB health check and the RDS health check to pass.",
+      "E": "Configure CloudWatch Synthetics canaries to run every 5 minutes against the application and have them automatically update the Route 53 failover record's DNS TTL to 0 upon detecting an issue."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Route 53 health checks should point at a purpose-built health endpoint that performs a real dependency check (e.g., a lightweight DB query) and returns a failure status code when downstream systems are unhealthy. This makes DNS failover reflect true end-to-end application health.",
+    "whyOthersAreWrong": {
+      "A": "Reducing the interval only makes detection of the *same* (already-passing) health check faster; the shallow check would still return 200.",
+      "C": "Weighted routing sacrifices the active/passive failover architecture and means corrupted data reaches half the users indefinitely instead of triggering a failover.",
+      "D": "Route 53 health checks cannot check arbitrary database ports meaningfully as an application health signal in this way.",
+      "E": "Using Synthetics to manually update DNS TTL to 0 is a fragile, high-operational-overhead workaround for something Route 53 health checks natively handle."
+    },
+    "learningObjective": "Configure Route 53 health checks to validate end-to-end application health rather than just web server reachability.",
+    "topic": "Amazon Route 53",
+    "tags": [
+      "route53",
+      "health-checks",
+      "disaster-recovery",
+      "networking"
+    ]
+  },
+  {
+    "id": "saa-1895",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media company serves a global audience via CloudFront distributions backed by S3 and an API Gateway origin. Two requirements: (1) at every edge location, incoming viewer requests must have a custom header stripped and replaced based on a simple, fixed rule (no external data lookups, sub-millisecond execution needed, extremely high request volume \u2014 billions per day), and (2) for a smaller subset of requests hitting a personalization API path, the response must be enriched by calling a downstream authentication microservice and rewriting the response body before it's cached, which requires more compute time and can tolerate execution at a smaller subset of regional edge caches rather than every edge location.\n\nWhich combination of CloudFront features should be used for requirement (1) and requirement (2), respectively?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use Lambda@Edge for requirement (1) because Lambda@Edge is cheaper per invocation at extreme scale, and use CloudFront Functions for requirement (2) because CloudFront Functions support network calls to downstream services.",
+      "B": "Use CloudFront Functions for requirement (1), since they run at every CloudFront edge location with sub-millisecond startup and are designed for simple, high-volume request/response manipulation without network access, and use Lambda@Edge for requirement (2), since Lambda@Edge supports longer execution times, more compute/memory, and network calls to downstream services (typically executing at regional edge caches for origin-facing events).",
+      "C": "Use CloudFront Functions for both requirements, since CloudFront Functions can be configured with an optional network-access permission for external API calls when higher compute tiers are enabled.",
+      "D": "Use Lambda@Edge for both requirements, since Lambda@Edge is a strict superset of CloudFront Functions' capabilities with no meaningful trade-offs at high request volumes.",
+      "E": "Use AWS Lambda (regional, not @Edge) triggered via CloudFront's origin-response event for requirement (1), and use CloudFront Functions for requirement (2), since CloudFront Functions are better suited to calling authentication microservices."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "CloudFront Functions are purpose-built for lightweight, high-volume, sub-millisecond JavaScript execution at *every* edge location, but they do **not** support network/external calls \u2014 perfect for requirement (1). Lambda@Edge supports full Node.js/Python runtimes with longer execution times, more memory, and the ability to make network calls to downstream services \u2014 ideal for requirement (2).",
+    "whyOthersAreWrong": {
+      "A": "Reverses the capabilities: CloudFront Functions cannot make network calls, and Lambda@Edge is more expensive at extreme scale.",
+      "C": "CloudFront Functions do not support any network-access permission tier for external API calls.",
+      "D": "Using Lambda@Edge for billions of simple requests per day would be far more expensive and higher-latency than CloudFront Functions.",
+      "E": "Regional Lambda is not triggered directly by CloudFront origin events in this manner; only Lambda@Edge and CloudFront Functions are."
+    },
+    "learningObjective": "Choose between CloudFront Functions and Lambda@Edge based on execution time, scale, and network access requirements.",
+    "topic": "Amazon CloudFront",
+    "tags": [
+      "cloudfront",
+      "edge-compute",
+      "lambda-edge",
+      "performance"
+    ]
+  },
+  {
+    "id": "saa-1896",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company has a single AWS Direct Connect connection from its on-premises data center to `ap-southeast-1`, carrying business-critical ERP traffic. The network team must design for resilience such that: (1) the loss of the Direct Connect connection itself (e.g., fiber cut) does not cause a total outage of on-premises-to-AWS connectivity, and (2) the design should favor Direct Connect as the primary path whenever it is available, only falling back to an alternate path automatically when Direct Connect is unavailable, without requiring manual intervention.\n\nWhich TWO actions should be implemented together to meet these requirements?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Provision a Site-to-Site VPN connection over the public internet as a backup path, terminating on a Virtual Private Gateway or Transit Gateway, and rely on BGP route propagation so that on failure of the Direct Connect BGP session, routes learned via the VPN's BGP session automatically take over \u2014 ensuring the VPN path has a longer AS-PATH or is otherwise configured with a less-preferred BGP attribute so Direct Connect is preferred under normal conditions.",
+      "B": "Order a second, physically diverse Direct Connect connection (ideally to a different Direct Connect location and, if using a single DX location, at minimum a different device/cage) to eliminate the fiber cut and single point of failure that a lone DX connection represents.",
+      "C": "Configure two Direct Connect connections to the same Direct Connect device using the same fiber path to reduce cost, since Direct Connect connections are inherently redundant at the AWS side regardless of physical diversity on the customer side.",
+      "D": "Rely exclusively on Direct Connect's SLA, since AWS guarantees 99.99% availability for any single Direct Connect connection, making a backup path unnecessary for business-critical workloads.",
+      "E": "Set the VPN connection's BGP configuration to advertise a shorter AS-PATH and higher local preference than the Direct Connect BGP session, ensuring the VPN is always preferred over Direct Connect to guarantee the lowest possible latency path is never accidentally bypassed."
+    },
+    "correctAnswers": [
+      "A",
+      "B"
+    ],
+    "explanation": "To survive the loss of the DX connection, a Site-to-Site VPN over the internet acts as an independent backup path, using BGP attributes (like longer AS-PATH) to ensure DX is preferred normally but fails over automatically. Additionally, to provide physical resiliency for the primary DX path itself, a second, physically diverse Direct Connect connection (different DX location/device/cage) eliminates the single point of failure that a single fiber cut represents.",
+    "whyOthersAreWrong": {
+      "C": "Two connections sharing the same device and fiber path provides no real redundancy \u2014 a single cut takes down both.",
+      "D": "AWS's SLA is a compensation guarantee, not a technical redundancy mechanism; it does not prevent outages.",
+      "E": "Making the VPN always preferred over Direct Connect contradicts the requirement to favor Direct Connect as the primary path."
+    },
+    "learningObjective": "Design a highly resilient hybrid network connection using physical diversity and VPN backup with BGP failover.",
+    "topic": "AWS Direct Connect",
+    "tags": [
+      "direct-connect",
+      "vpn",
+      "bgp",
+      "networking",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-1897",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A biotech research company needs to migrate 400 TB of existing genomic research data from an on-premises NAS to S3 as a one-time bulk migration, plus establish an ongoing process where new experiment results (~2 TB/day) are uploaded to S3 continuously going forward. The on-premises internet uplink is a shared 500 Mbps connection also used for other business-critical traffic, and saturating it would be unacceptable. The company does not have an existing Direct Connect connection and does not want to commit to one given the migration is expected to taper off after the initial bulk transfer.\n\nWhich combination of AWS services is MOST appropriate for the one-time bulk migration and the ongoing daily uploads, respectively?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Snowball Edge (or Snowball, sized appropriately) devices for the one-time 400 TB bulk migration to avoid consuming the shared internet uplink, and use S3 Transfer Acceleration for the ongoing ~2 TB/day uploads to improve throughput over the existing uplink without needing dedicated network infrastructure.",
+      "B": "Use S3 Transfer Acceleration for the one-time 400 TB bulk migration since it can fully utilize the 500 Mbps link without impacting other traffic, and use AWS Snowball for the ongoing daily uploads since Snowball supports scheduled recurring jobs.",
+      "C": "Establish a Direct Connect connection for both the bulk migration and the ongoing uploads, since Direct Connect is always more cost-effective than Snowball regardless of connection commitment concerns.",
+      "D": "Use AWS DataSync for the one-time 400 TB bulk migration over the shared internet link with bandwidth throttling configured to protect other traffic, and use AWS Snowball for the ongoing daily 2 TB uploads since Snowball is optimized for frequent small transfers.",
+      "E": "Use multiple parallel S3 CLI `cp` commands with multipart upload over the shared 500 Mbps link for the bulk migration to maximize throughput, and use AWS Transfer Family (SFTP) for the ongoing daily uploads."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "400 TB over a shared 500 Mbps link would take prohibitively long and risk saturating business traffic. AWS Snowball/Snowball Edge handles the bulk migration offline without touching the network. For ongoing ~2 TB/day uploads, S3 Transfer Acceleration optimizes network routing over the public internet to improve throughput without requiring a dedicated connection like DX.",
+    "whyOthersAreWrong": {
+      "B": "Transfer Acceleration for 400 TB would still consume the shared 500 Mbps link's real bandwidth, impacting business traffic. Snowball is a poor fit for continuous daily uploads.",
+      "C": "The company explicitly does not want to commit to Direct Connect.",
+      "D": "AWS DataSync over the shared link, even throttled, would take a very long time for 400 TB. Snowball is designed for batch transfers, not daily incremental drips.",
+      "E": "Parallel CLI commands still saturate the shared link for the bulk transfer, and Transfer Family doesn't address bandwidth sharing better than direct S3 uploads."
+    },
+    "learningObjective": "Select appropriate data transfer mechanisms for bulk migration versus ongoing daily uploads over constrained networks.",
+    "topic": "AWS Migration Services",
+    "tags": [
+      "snowball",
+      "s3-transfer-acceleration",
+      "migration",
+      "data-transfer"
+    ]
+  },
+  {
+    "id": "saa-1898",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs a production Amazon EKS cluster spanning three Availability Zones in `ap-southeast-1`. A critical stateless API deployment currently has 6 replicas with a `Deployment` spec but no `PodDisruptionBudget` and no topology-aware scheduling constraints. During a routine EKS managed node group update (which cordons and drains nodes progressively), the team observed a brief period where 5 of the 6 pods were evicted nearly simultaneously because they were concentrated on nodes being drained together, causing a temporary capacity shortage and elevated error rates, even though the cluster as a whole had sufficient healthy capacity in other AZs.\n\nWhich combination of Kubernetes configurations would BEST prevent this issue in future node group updates?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the replica count to 20 so that even if 5 are evicted simultaneously, enough remain, without changing any scheduling or disruption configuration.",
+      "B": "Define a `PodDisruptionBudget` specifying a `minAvailable` (or `maxUnavailable`) value that limits how many pods can be evicted at once during voluntary disruptions like node drains, and add Pod Topology Spread Constraints (or anti-affinity rules) across `topology.kubernetes.io/zone` to ensure replicas are spread across all three AZs rather than concentrated together.",
+      "C": "Switch the node group from managed to self-managed, since managed node groups do not respect PodDisruptionBudgets during rolling updates and self-managed node groups always honor them.",
+      "D": "Configure a Horizontal Pod Autoscaler to scale the deployment based on CPU utilization, since autoscaling will automatically detect the reduced pod count during node drains and launch replacement pods faster than manual replica changes.",
+      "E": "Move all 6 replicas to a single Availability Zone using node affinity so that a node group update only ever affects one AZ at a time, isolating the blast radius of any single update."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "A PodDisruptionBudget (PDB) explicitly limits how many pods of a deployment can be voluntarily disrupted (like during a node drain) at once, preventing simultaneous mass evictions. Pod Topology Spread Constraints ensure the scheduler actively spreads replicas evenly across AZs so that draining nodes in one AZ during an update doesn't take out a concentrated majority of replicas.",
+    "whyOthersAreWrong": {
+      "A": "Adding replicas reduces relative impact but doesn't fix the underlying scheduling/concentration risk.",
+      "C": "Managed node groups DO respect PodDisruptionBudgets during node draining.",
+      "D": "HPA is a reactive control that scales after load increases/evictions happen; it does not prevent the evictions or the temporary capacity shortage.",
+      "E": "Concentrating replicas in a single AZ eliminates AZ-level fault tolerance entirely, which is an anti-pattern."
+    },
+    "learningObjective": "Prevent application downtime during Kubernetes node updates using PodDisruptionBudgets and Topology Spread Constraints.",
+    "topic": "Amazon EKS",
+    "tags": [
+      "eks",
+      "kubernetes",
+      "resilience",
+      "containers"
+    ]
+  },
+  {
+    "id": "saa-1899",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company with 60 AWS accounts under AWS Organizations wants centralized, organization-wide threat detection and a single-pane-of-glass security posture view, without requiring every individual account team to configure and manage their own security tooling. Requirements: (1) automated threat detection (e.g., unusual API calls, compromised credentials, malicious network activity) must be continuously enabled across all current and future member accounts without per-account manual setup, and (2) findings from multiple AWS security services (as well as select third-party tools) must be aggregated into one place per Region for the security team to triage centrally, with the ability to automatically remediate common finding types via EventBridge.\n\nWhich TWO actions correctly implement this?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Designate a Security-Tooling account as the GuardDuty delegated administrator at the Organization level, and enable \"auto-enable\" for new accounts, so that GuardDuty is automatically activated and centrally managed across all current and future member accounts without per-account action.",
+      "B": "Designate the same (or another) Security-Tooling account as the delegated administrator for AWS Security Hub, enabling it organization-wide with auto-enable for new accounts, so that findings from GuardDuty, Amazon Inspector, AWS Config, and supported third-party integrations are aggregated into Security Hub, and configure EventBridge rules on Security Hub findings to trigger automated remediation (e.g., via Lambda or Systems Manager Automation).",
+      "C": "Manually enable GuardDuty in each of the 60 member accounts individually via the GuardDuty console, since GuardDuty delegated administration is only supported for up to 20 accounts per Organization.",
+      "D": "Use AWS Trusted Advisor as the central aggregation point for all security findings across accounts, since Trusted Advisor natively ingests GuardDuty and Security Hub findings at no additional cost for Organizations customers.",
+      "E": "Enable AWS Config in only the Security-Tooling account and rely on its organization-wide aggregator to perform threat detection equivalent to GuardDuty, since Config rules can detect the same categories of findings (e.g., compromised credentials, malicious network traffic)."
+    },
+    "correctAnswers": [
+      "A",
+      "B"
+    ],
+    "explanation": "GuardDuty satisfies requirement (1) by providing continuous automated threat detection, and it supports delegated administration with auto-enable for the whole Organization. Security Hub satisfies requirement (2) by natively aggregating findings from GuardDuty and other security tools, and supports EventBridge rules for auto-remediation, also acting via delegated administration.",
+    "whyOthersAreWrong": {
+      "C": "GuardDuty delegated administration supports thousands of accounts; the 20-account limit is fabricated.",
+      "D": "Trusted Advisor does not serve as a central aggregation point for GuardDuty/Security Hub findings.",
+      "E": "AWS Config is a configuration-compliance service, not a threat-detection service; it does not analyze network traffic or API behavior anomalies like GuardDuty does."
+    },
+    "learningObjective": "Centralize threat detection and security posture management across an AWS Organization.",
+    "topic": "AWS Security",
+    "tags": [
+      "guardduty",
+      "security-hub",
+      "organizations",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-1900",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A SaaS company runs a multi-tenant reporting application on a provisioned Aurora MySQL cluster (db.r6g.2xlarge writer + 2 reader instances, running 24/7). Traffic analysis shows utilization follows a highly variable pattern: near-zero load overnight (00:00\u201306:00 local time) and on weekends, moderate steady load on weekday business hours, and unpredictable short spikes during month-end reporting periods that can be 8\u201310x the steady baseline and last 1\u20133 hours. The company wants to reduce cost significantly while maintaining the ability to handle the month-end spikes without manual intervention, and without a rearchitecture of the application (it must remain compatible with standard MySQL connections).\n\nWhich change is MOST cost-effective while meeting these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Migrate the workload to DynamoDB with on-demand capacity mode, since DynamoDB automatically scales to handle any traffic pattern including the month-end spikes, eliminating the need to manage database capacity entirely.",
+      "B": "Migrate the cluster to Aurora Serverless v2, which scales ACUs (compute capacity) automatically and near-instantly in fine-grained increments based on actual load \u2014 scaling down to a low minimum ACU during idle/overnight periods and scaling up automatically to absorb month-end spikes \u2014 while remaining fully MySQL-wire-compatible with no application changes required.",
+      "C": "Keep the provisioned Aurora MySQL cluster, but purchase a 3-year All Upfront Reserved Instance for the db.r6g.2xlarge writer instance sized for the month-end peak, since Reserved Instances provide the largest possible discount regardless of workload variability.",
+      "D": "Replace the provisioned Aurora cluster with a self-managed MySQL cluster on EC2 Spot Instances to take advantage of Spot pricing, using an Auto Scaling group to add MySQL replica nodes during month-end spikes.",
+      "E": "Keep the provisioned Aurora MySQL cluster sized for average load, and rely on Aurora Auto Scaling for the reader instances to automatically add more db.r6g.2xlarge readers during month-end spikes, while manually resizing the writer instance ahead of each known month-end period."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Aurora Serverless v2 is purpose-built for highly variable loads. It scales ACUs automatically and near-instantly, scaling down during idle periods (cutting cost) and scaling up automatically to absorb unpredictable spikes. It requires zero application rearchitecture as it remains a standard MySQL endpoint.",
+    "whyOthersAreWrong": {
+      "A": "Migrating to DynamoDB is a full data-model rearchitecture, explicitly ruled out by the requirement to remain compatible with standard MySQL connections.",
+      "C": "An RI sized for the month-end peak means paying for peak-level compute continuously, which is not cost-effective for a highly variable workload with near-zero idle periods.",
+      "D": "Self-managing MySQL on Spot instances is operationally risky for a stateful database tier and adds significant overhead.",
+      "E": "Aurora Auto Scaling only adds/removes *reader* capacity; manually resizing the writer instance ahead of spikes contradicts \"without manual intervention.\""
+    },
+    "learningObjective": "Cost-optimize a highly variable relational database workload that requires MySQL compatibility and zero-downtime scaling.",
+    "topic": "Amazon Aurora",
+    "tags": [
+      "aurora-serverless",
+      "database",
+      "cost-optimization",
+      "rds"
+    ]
+  }
+]
