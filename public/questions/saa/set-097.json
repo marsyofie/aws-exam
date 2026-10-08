@@ -1,0 +1,634 @@
+[
+    {
+        "id": "saa-1921",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs a document-intelligence model on Amazon SageMaker. Each request supplies a 200-600 MB archive stored in Amazon S3, and inference takes 5 to 20 minutes per request. Requests arrive in unpredictable bursts during business hours, with no traffic overnight or on weekends. The calling application must not hold a connection open, results must be written to an S3 location, and the application needs a completion notification. The team wants to pay for compute only while requests are being processed and keep operational effort low. The company has confirmed that real-time endpoints are limited to 60-second invocations and much smaller payloads, and that serverless inference endpoints accept payloads of only a few MB. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Deploy the model to a real-time endpoint behind Amazon API Gateway, with target-tracking scaling and a minimum of one instance.",
+            "B": "Deploy the model to a serverless inference endpoint configured with maximum memory and the highest concurrency setting.",
+            "C": "Deploy the model to an asynchronous inference endpoint, upload payloads to S3, scale to zero instances when idle, and send completion notifications through Amazon SNS.",
+            "D": "Run the model on an EC2 Auto Scaling group of GPU instances that pull job messages from an Amazon SQS queue and write results to S3."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "SageMaker Asynchronous Inference queues requests, reads large payloads from S3, supports long processing times, writes outputs to S3, and can publish success or error notifications to SNS. With an Application Auto Scaling policy that has a minimum capacity of zero, the endpoint scales down when the queue is empty, so the company pays only during bursts. This satisfies the large payload, long runtime, non-blocking caller, notification, and idle-cost constraints with the least operational effort. The closest distractor is the self-managed EC2 and SQS design: it can work but requires the team to build scaling, job tracking, and notifications.",
+        "whyOthersAreWrong": {
+            "A": "Real-time endpoints are synchronous and, per the scenario, limited to 60-second invocations and small payloads; a minimum of one instance also incurs idle cost overnight.",
+            "B": "Serverless inference accepts only a few MB per payload and has short timeouts, so it cannot handle 200-600 MB, 20-minute requests.",
+            "D": "It can meet the functional needs but requires building and operating scaling, job tracking, notification, and patching logic, which violates the low-operational-effort requirement."
+        },
+        "learningObjective": "Select SageMaker Asynchronous Inference for large-payload, long-running, bursty inference workloads that must scale to zero.",
+        "topic": "SageMaker inference deployment options",
+        "tags": [
+            "sagemaker",
+            "asynchronous-inference",
+            "sns",
+            "s3",
+            "cost-optimization"
+        ]
+    },
+    {
+        "id": "saa-1922",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An e-commerce company serves product-ranking scores through Amazon API Gateway and AWS Lambda, which invoke a SageMaker real-time endpoint backed by two instances. About 65% of requests repeat the same product ID within any 15-minute window, and a score may be up to 15 minutes old without business impact. During marketing campaigns, request volume triples and instance CPU saturates, causing latency spikes and throttled invocations. The team wants to cut p99 latency and reduce load on the endpoint with the LEAST change to the existing architecture, while keeping the endpoint highly available across Availability Zones. Which TWO actions should a solutions architect recommend?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Have the Lambda function check an Amazon ElastiCache cluster keyed by product ID with a 15-minute TTL before invoking the endpoint, and store new scores on a miss.",
+            "B": "Increase the Lambda function memory and enable provisioned concurrency to reduce time spent waiting on the endpoint.",
+            "C": "Replace the two instances with one larger instance type to increase per-request compute capacity.",
+            "D": "Attach a target-tracking scaling policy on the invocations-per-instance metric for the production variant, with a minimum of two instances.",
+            "E": "Place Amazon CloudFront in front of the API and cache the POST responses using the request body as the cache key."
+        },
+        "correctAnswers": [
+            "A",
+            "D"
+        ],
+        "explanation": "A: Because most requests repeat within a tolerable staleness window, a cache with a TTL eliminates the majority of endpoint invocations, lowering latency and load. D: Remaining traffic still spikes during campaigns, so target-tracking auto scaling on invocations per instance adds capacity as load grows, and a minimum of two instances preserves multi-AZ availability. Together they address both the repeat-request pattern and the surge.",
+        "whyOthersAreWrong": {
+            "B": "Lambda is not the bottleneck; a faster function does nothing for saturated endpoint CPU.",
+            "C": "A single larger instance is a single point of failure and still cannot scale elastically during campaigns.",
+            "E": "CloudFront does not cache POST responses, so this does not reduce endpoint load."
+        },
+        "learningObjective": "Combine result caching and endpoint auto scaling to reduce latency and load on a SageMaker real-time inference path.",
+        "topic": "High-performing ML inference architectures",
+        "tags": [
+            "sagemaker",
+            "elasticache",
+            "application-auto-scaling",
+            "api-gateway",
+            "lambda"
+        ]
+    },
+    {
+        "id": "saa-1923",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A data science team retrains a deep-learning model every day on GPU instances in Amazon SageMaker. Each run takes 10 to 14 hours, and results are needed within 24 hours, so the schedule is flexible. The training script already writes checkpoints at regular intervals and can resume from the last checkpoint after a restart. The team uses roughly 12 hours of GPU time per day and wants the MOST cost-effective approach with the LEAST operational overhead. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable managed spot training on the training job, configure an S3 checkpoint location, and set the maximum wait time above the expected training duration.",
+            "B": "Purchase a SageMaker Savings Plan sized to the daily GPU usage and keep running the job on On-Demand capacity.",
+            "C": "Launch the training on self-managed EC2 Spot Instances in an Auto Scaling group and write custom scripts to resume from checkpoints stored in S3.",
+            "D": "Keep the job on On-Demand instances and enable SageMaker warm pools so each daily run starts without provisioning delay."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "Managed spot training runs SageMaker training on spare EC2 capacity at a significant discount, and SageMaker handles interruptions by resuming from the S3 checkpoint when capacity returns. Because the job is checkpointed and the deadline is flexible, interruption risk is acceptable. A Savings Plan discount is real but smaller than Spot and requires a commitment. Self-managed Spot achieves similar pricing but forces the team to build interruption handling and orchestration.",
+        "whyOthersAreWrong": {
+            "B": "A Savings Plan reduces the hourly rate less than Spot and adds a one- or three-year commitment, so it is not the MOST cost-effective option for an interruption-tolerant job.",
+            "C": "It can reach similar Spot prices but requires custom orchestration and recovery code, which violates the low-operational-overhead requirement.",
+            "D": "Warm pools only reduce startup time between runs; the On-Demand rate is unchanged and a pool of idle instances adds cost."
+        },
+        "learningObjective": "Apply SageMaker managed spot training with S3 checkpointing to reduce cost for interruption-tolerant training jobs.",
+        "topic": "Cost-optimized ML training",
+        "tags": [
+            "sagemaker",
+            "managed-spot-training",
+            "checkpointing",
+            "savings-plans",
+            "cost-optimization"
+        ]
+    },
+    {
+        "id": "saa-1924",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial services company trains models in Amazon SageMaker using data stored in an S3 bucket. Security policy states that training traffic must not traverse the public internet, the VPC that hosts training must have no internet gateway and no NAT gateway, and the bucket must be readable only from approved network paths. The company wants to meet these requirements at the LOWEST cost, and training volume is large enough that per-GB data processing charges would be noticeable. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Run the training job without a VPC configuration and add a bucket policy that denies requests not originating from the corporate public IP range.",
+            "B": "Configure the training job with private subnets and a security group, create an S3 gateway endpoint associated with the subnet route tables, and add a bucket policy that denies access unless aws:SourceVpce matches the endpoint.",
+            "C": "Configure the training job with private subnets, deploy NAT gateways in each AZ, and restrict the bucket policy to the NAT gateway Elastic IP addresses.",
+            "D": "Configure the training job with private subnets, create an S3 interface endpoint powered by AWS PrivateLink, and add a bucket policy that denies access unless aws:SourceVpce matches the endpoint."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Training jobs attached to a VPC reach S3 through a VPC endpoint when no NAT or internet route exists. An S3 gateway endpoint keeps traffic on the AWS network and carries no hourly or per-GB endpoint charge, and a bucket policy using aws:SourceVpce restricts reads to that path. The S3 interface endpoint also satisfies the privacy requirement, but it adds hourly and data processing charges, so it loses on cost.",
+        "whyOthersAreWrong": {
+            "A": "Without VPC configuration, traffic is not constrained to the private VPC path, and an IP-based restriction does not meet the no-internet-path requirement.",
+            "C": "NAT gateways are explicitly prohibited by the requirements and add hourly and per-GB charges.",
+            "D": "It meets the security requirements but interface endpoints add hourly and data processing costs that a free gateway endpoint avoids."
+        },
+        "learningObjective": "Design private S3 access for SageMaker training jobs using a gateway endpoint and an aws:SourceVpce bucket policy.",
+        "topic": "Secure network design for ML workloads",
+        "tags": [
+            "sagemaker",
+            "vpc-endpoints",
+            "s3-gateway-endpoint",
+            "bucket-policy",
+            "network-cost"
+        ]
+    },
+    {
+        "id": "saa-1925",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company uses AWS Organizations with an OU named MLWorkloads that contains 40 accounts. The security team requires preventive controls so that, in every account in the OU, (1) no SageMaker notebook instance can be created with direct internet access enabled, and (2) no SageMaker API actions can be performed outside the approved Regions eu-west-1 and eu-central-1. Account administrators in the OU must NOT be able to remove or bypass these controls, and the team wants the controls managed centrally. Which TWO actions meet these requirements?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Deploy an IAM permissions boundary to all roles in each account by using CloudFormation StackSets.",
+            "B": "Attach an SCP to the OU that denies sagemaker:CreateNotebookInstance when the sagemaker:DirectInternetAccess condition key equals Enabled.",
+            "C": "Create an AWS Config managed rule in each account with automatic remediation that stops non-compliant notebook instances.",
+            "D": "Attach an SCP to the OU that denies sagemaker:* when aws:RequestedRegion is not in the approved Region list.",
+            "E": "Enable GuardDuty with a delegated administrator account and alert the security team on notebook instances created with direct internet access."
+        },
+        "correctAnswers": [
+            "B",
+            "D"
+        ],
+        "explanation": "SCPs set the maximum permissions for every principal in member accounts, including account administrators, and cannot be removed by those administrators. B uses the sagemaker:DirectInternetAccess condition key to block creation of internet-enabled notebook instances preventively. D uses aws:RequestedRegion to deny SageMaker actions outside the approved Regions. Both are centrally managed at the OU level.",
+        "whyOthersAreWrong": {
+            "A": "Permissions boundaries are IAM constructs that account administrators can modify or detach, so they do not guarantee the control cannot be bypassed.",
+            "C": "AWS Config with remediation is detective and reactive; the non-compliant resource exists until remediated, and administrators can alter the rule.",
+            "E": "GuardDuty detects threats and does not prevent resource creation or restrict Regions."
+        },
+        "learningObjective": "Use SCPs with SageMaker and global condition keys to enforce preventive guardrails across an Organizations OU.",
+        "topic": "Multi-account governance for ML workloads",
+        "tags": [
+            "organizations",
+            "scp",
+            "sagemaker",
+            "aws-config",
+            "guardduty"
+        ]
+    },
+    {
+        "id": "saa-1926",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A mortgage processor receives multi-page PDF loan packets, 50 to 400 pages each, in an S3 bucket. The workflow must extract tables and form key-value pairs from every page. Volume is about 30,000 packets per day with large bursts after business hours, the Textract API is subject to account-level throughput quotas, and no packet may be lost when throttling occurs. The team wants a managed, event-driven design with minimal custom document-splitting code. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Invoke a Lambda function from S3 events that calls the synchronous AnalyzeDocument API for each packet and retries with exponential backoff on throttling.",
+            "B": "Invoke a Lambda function from S3 events that calls DetectDocumentText for each packet and parses the returned lines into tables.",
+            "C": "Start an Express Step Functions workflow per packet that splits the PDF into single pages with Lambda and calls AnalyzeDocument on each page.",
+            "D": "Send S3 events to an SQS queue consumed by a concurrency-limited Lambda function that calls StartDocumentAnalysis for tables and forms with an SNS completion channel, then process completions through SNS to SQS to Lambda that retrieves paginated results and writes them to S3."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Multi-page PDFs require Textract's asynchronous operations; synchronous AnalyzeDocument handles only single-page PDF and TIFF documents. Buffering S3 events in SQS and limiting consumer concurrency absorbs bursts and respects Textract quotas without losing packets, since messages are retried. StartDocumentAnalysis with TABLES and FORMS features extracts the required structures, and an SNS completion notification lets a second consumer retrieve paginated results with GetDocumentAnalysis. The Step Functions page-splitting option is plausible but adds custom splitting code and per-page orchestration.",
+        "whyOthersAreWrong": {
+            "A": "Synchronous AnalyzeDocument does not support multi-page PDFs, and a long-running synchronous Lambda would also be fragile under bursts.",
+            "B": "DetectDocumentText returns only raw text lines and does not extract tables or form key-value pairs.",
+            "C": "It requires custom page-splitting logic and per-page orchestration, contradicting the minimal-custom-code requirement."
+        },
+        "learningObjective": "Design a resilient asynchronous Textract pipeline for multi-page PDFs using SQS buffering and SNS completion notifications.",
+        "topic": "Event-driven document processing with Textract",
+        "tags": [
+            "textract",
+            "sqs",
+            "sns",
+            "lambda",
+            "throttling"
+        ]
+    },
+    {
+        "id": "saa-1927",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A SaaS company wants to route incoming customer support tickets to one of 14 internal teams. It has 25,000 historical tickets, each labeled with the correct team, and expects to add new labeled examples weekly. New tickets arrive as plain text and must be routed within seconds. The company has no machine learning engineers and wants to avoid managing training code or model-serving infrastructure. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Call the Amazon Comprehend built-in sentiment and key phrase APIs and map phrases to teams with rules maintained in Lambda.",
+            "B": "Train an Amazon Comprehend custom classification model from the labeled data in S3, deploy a real-time endpoint, and call it from the ticketing system.",
+            "C": "Fine-tune an open-source transformer on SageMaker with custom training code and host it on a real-time endpoint.",
+            "D": "Run Comprehend topic modeling on the historical tickets and route new tickets according to the discovered topic numbers."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Comprehend custom classification trains a supervised classifier from labeled examples without any ML code, and a real-time endpoint provides low-latency inference for incoming tickets. Retraining with new weekly labels is a managed operation. A fine-tuned transformer on SageMaker could also work technically, but it demands ML expertise, code, and endpoint management, conflicting with the stated constraints.",
+        "whyOthersAreWrong": {
+            "A": "Built-in sentiment and key phrases do not produce the company's 14 custom categories, and maintaining rules would be brittle and ignore the labeled data.",
+            "C": "It satisfies accuracy needs but requires ML engineering and infrastructure management that the company explicitly wants to avoid.",
+            "D": "Topic modeling is unsupervised; discovered topics do not map to the 14 labeled teams and would ignore the labeled history."
+        },
+        "learningObjective": "Choose Comprehend custom classification when labeled text data exists and the team wants no ML code or hosting management.",
+        "topic": "Managed NLP services for text classification",
+        "tags": [
+            "comprehend",
+            "custom-classification",
+            "operational-overhead",
+            "sagemaker"
+        ]
+    },
+    {
+        "id": "saa-1928",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media company stores user-uploaded photos in S3. Each upload must be analyzed with Amazon Rekognition label detection. During events, up to 50,000 photos arrive within 10 minutes, far exceeding the per-second Rekognition API quota for the account, and AWS has declined a quota increase for this API. Currently S3 invokes a Lambda function directly, and photos are being lost when Rekognition returns throttling errors. The company must process every photo eventually, tolerate delays of up to an hour, and avoid a design that requires manual reprocessing. Which TWO actions meet these requirements?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Increase the Lambda function timeout to 15 minutes so that it can retry Rekognition calls internally until they succeed.",
+            "B": "Publish the S3 events to an SNS topic and subscribe multiple Lambda functions to parallelize the Rekognition calls.",
+            "C": "Route S3 event notifications to an SQS queue and have Lambda consume messages from the queue.",
+            "D": "Request provisioned concurrency for the Lambda function so that it can absorb the burst without throttling.",
+            "E": "Set the maximum concurrency on the SQS event source mapping so aggregate Rekognition calls stay below the API quota, and use a visibility timeout longer than the function timeout."
+        },
+        "correctAnswers": [
+            "C",
+            "E"
+        ],
+        "explanation": "C: A durable queue decouples uploads from processing, so bursts are absorbed instead of failing; unprocessed messages stay in the queue and are retried. E: The SQS event source mapping's maximum concurrency caps parallel Lambda invocations, keeping Rekognition calls under the quota, and a visibility timeout longer than the function timeout prevents premature redelivery. Together the pipeline drains the backlog at a safe rate without losing photos.",
+        "whyOthersAreWrong": {
+            "A": "S3 invokes Lambda asynchronously with limited retries, and in-function retry loops waste compute and still risk loss when events are exhausted.",
+            "B": "SNS fan-out increases parallelism and makes throttling worse, and there is no durable buffer for rate-limited processing.",
+            "D": "Provisioned concurrency reduces cold starts but does nothing to respect the Rekognition API quota."
+        },
+        "learningObjective": "Use SQS buffering with capped Lambda concurrency to protect downstream AWS API quotas during bursts.",
+        "topic": "Decoupled event-driven ML pipelines",
+        "tags": [
+            "rekognition",
+            "sqs",
+            "lambda",
+            "s3-events",
+            "throttling"
+        ]
+    },
+    {
+        "id": "saa-1929",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A social app lets users upload profile photos through presigned S3 URLs. Images are served to the public through Amazon CloudFront from an S3 origin. Policy requires that explicit or violent images are never publicly retrievable, and moderation must complete within a few seconds of upload. Volume is several thousand images per day. The company wants a low-operations design that does not require training a custom model. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Upload directly to the bucket that CloudFront serves, then run a Lambda function after upload that calls Rekognition and deletes images flagged as unsafe.",
+            "B": "Enable Amazon Macie automated sensitive data discovery on the serving bucket and delete objects that produce findings.",
+            "C": "Add an AWS WAF web ACL to the CloudFront distribution with image-inspection rules that block unsafe content.",
+            "D": "Upload to a private staging bucket, trigger a Lambda function that calls Rekognition DetectModerationLabels, copy clean images to the CloudFront-served bucket, and move flagged images to a restricted review prefix."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "A private staging bucket guarantees that nothing is publicly reachable until moderation passes. Rekognition's pretrained content moderation API detects explicit and violent content without custom training, and Lambda promotes only clean images. The post-upload delete approach is the closest distractor, but it exposes images publicly during the window between upload and deletion, violating the requirement.",
+        "whyOthersAreWrong": {
+            "A": "Images are publicly retrievable until the function finishes, and cached copies may persist in CloudFront.",
+            "B": "Macie discovers sensitive data such as PII and credentials; it does not classify explicit or violent imagery.",
+            "C": "AWS WAF inspects HTTP request attributes and does not analyze image content."
+        },
+        "learningObjective": "Implement a pre-publication moderation gate using a staging bucket and Rekognition content moderation.",
+        "topic": "Content moderation architecture with Rekognition",
+        "tags": [
+            "rekognition",
+            "s3",
+            "lambda",
+            "cloudfront",
+            "macie"
+        ]
+    },
+    {
+        "id": "saa-1930",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A payments company serves fraud scores from a SageMaker real-time endpoint in us-east-1, fronted by a Regional Amazon API Gateway API. The company must adopt a warm standby disaster recovery strategy in us-west-2 with an RTO of 15 minutes. Model artifacts are updated several times per day and the standby must be able to serve the latest approved model. The inference image is stored in a private Amazon ECR repository. The standby should run a minimal number of instances to control cost. Which THREE actions should be part of the design?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Enable S3 Cross-Region Replication from the model artifact bucket in us-east-1 to a bucket in us-west-2.",
+            "B": "Enable S3 Versioning on the existing model artifact bucket and rely on it for Regional failover.",
+            "C": "Enable ECR cross-Region replication so the inference container image is available in us-west-2.",
+            "D": "Create an AWS Backup plan that copies the SageMaker endpoint to us-west-2 on a schedule.",
+            "E": "Deploy a minimal-capacity endpoint and a Regional API Gateway API in us-west-2, and configure Route 53 failover records with health checks."
+        },
+        "correctAnswers": [
+            "A",
+            "C",
+            "E"
+        ],
+        "explanation": "A: SageMaker endpoints are Regional, so the standby needs the model artifacts in an S3 bucket in us-west-2, and Cross-Region Replication keeps them current. C: The standby endpoint must pull the same inference image from a Regional ECR repository, which cross-Region replication provides. E: A pre-deployed minimal endpoint and API Gateway in us-west-2 with Route 53 failover health checks shifts traffic within the RTO. This is the warm standby pattern.",
+        "whyOthersAreWrong": {
+            "B": "Versioning protects against overwrites within one Region but does not make artifacts available in another Region.",
+            "D": "AWS Backup does not back up SageMaker endpoints, and an endpoint is not a data resource that can be restored from a copy."
+        },
+        "learningObjective": "Assemble the components of a multi-Region warm standby for SageMaker real-time inference.",
+        "topic": "Disaster recovery for ML inference",
+        "tags": [
+            "sagemaker",
+            "s3-crr",
+            "ecr-replication",
+            "route53",
+            "warm-standby"
+        ]
+    },
+    {
+        "id": "saa-1931",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A B2B analytics platform hosts 600 per-customer scikit-learn models, each 50 to 100 MB, using the same framework and inference container. Aggregate request volume is steady, but each individual model receives only a few requests per hour. Customers tolerate a few seconds of extra latency on the first request after a model has been idle, but loaded models must respond quickly. Today every model runs on its own always-on real-time endpoint. The company wants to reduce hosting cost the MOST without rewriting models. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Host all models on a SageMaker multi-model endpoint that loads models on demand from S3 and shares instances, with auto scaling on the endpoint.",
+            "B": "Keep one real-time endpoint per model but move each to the smallest instance type and set auto scaling minimum capacity to one.",
+            "C": "Deploy each model to its own serverless inference endpoint with provisioned concurrency of one to avoid cold starts.",
+            "D": "Package each model in a separate Lambda function that downloads the model from S3 on every invocation."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "A multi-model endpoint lets many models that share a framework and container reside on a shared fleet, loading models from S3 when first requested and evicting them when memory is needed. Because aggregate traffic is steady while per-model traffic is sparse, consolidating onto shared instances greatly improves utilization and the cold-load penalty is acceptable. One endpoint per model, even on small instances, still pays for 600 idle-capable instances.",
+        "whyOthersAreWrong": {
+            "B": "It still runs at least 600 always-on instances, so utilization stays poor and cost remains high.",
+            "C": "Provisioned concurrency is billed continuously per endpoint, which reintroduces always-on cost for 600 endpoints.",
+            "D": "Downloading a model on every invocation adds large latency to every request, including those for frequently used models, and requires rewriting inference code."
+        },
+        "learningObjective": "Use SageMaker multi-model endpoints to consolidate many low-traffic models onto shared infrastructure.",
+        "topic": "Cost-optimized hosting of many ML models",
+        "tags": [
+            "sagemaker",
+            "multi-model-endpoint",
+            "cost-optimization",
+            "utilization"
+        ]
+    },
+    {
+        "id": "saa-1932",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A machine learning team explores 60 TB of gzip-compressed CSV clickstream data in S3 by using Amazon Athena. New data arrives daily under a single flat prefix. Nearly every query filters on event_date and reads only 6 of the 120 columns, yet each query scans the entire dataset, resulting in high per-query cost and slow feature exploration. The team must keep using SQL through Athena, and queries run only a few hours per week. Which TWO actions reduce scanned data and cost the MOST with reasonable effort?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Use an AWS Glue ETL job to convert the CSV data to Apache Parquet.",
+            "B": "Transition the CSV objects to S3 Glacier Flexible Retrieval after 30 days.",
+            "C": "Organize the data into Hive-style event_date partitions and register them in the AWS Glue Data Catalog.",
+            "D": "Load the CSV data into a provisioned Amazon Redshift cluster and run feature queries there.",
+            "E": "Enable S3 Intelligent-Tiering on the CSV objects to lower the amount of data Athena scans."
+        },
+        "correctAnswers": [
+            "A",
+            "C"
+        ],
+        "explanation": "A: Parquet is columnar and compressed, so Athena reads only the six referenced columns instead of entire rows, which sharply reduces bytes scanned. C: Partitioning by event_date lets Athena prune partitions when queries filter on that column, so it reads only the relevant days. Combined, they cut the data scanned per query by orders of magnitude while keeping the SQL workflow.",
+        "whyOthersAreWrong": {
+            "B": "Athena cannot query objects archived in Glacier Flexible Retrieval, and archiving does not reduce scan volume for queryable data.",
+            "D": "A provisioned cluster adds operational overhead and cost for intermittent weekly use, and does not use the existing Athena workflow.",
+            "E": "Intelligent-Tiering changes storage cost per GB, not the amount of data Athena scans."
+        },
+        "learningObjective": "Reduce Athena scan cost for ML data exploration by converting to columnar formats and partitioning on filter columns.",
+        "topic": "Cost-efficient data preparation for ML",
+        "tags": [
+            "athena",
+            "glue",
+            "parquet",
+            "partitioning",
+            "data-lake"
+        ]
+    },
+    {
+        "id": "saa-1933",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A retailer serves checkout fraud decisions from a SageMaker real-time endpoint that runs on a single ml.c5.2xlarge instance. A recent Availability Zone disruption took the endpoint offline for 40 minutes. The business requires the endpoint to survive the loss of one Availability Zone within the Region, handle traffic that varies sharply during sales, and keep cost and operational effort low. A multi-Region design has been ruled out. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create a second endpoint in another Region and use Route 53 failover routing with health checks.",
+            "B": "Move to a larger single instance type and create a CloudWatch alarm that recreates the endpoint when it becomes unhealthy.",
+            "C": "Update the endpoint configuration to use a minimum of two instances with subnets in at least two Availability Zones, and attach a target-tracking scaling policy based on invocations per instance.",
+            "D": "Host the model container on an EC2 Auto Scaling group across multiple AZs behind an Application Load Balancer and retire the SageMaker endpoint."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "When an endpoint has two or more instances and is configured with subnets in multiple AZs, SageMaker distributes instances across AZs, so losing one AZ leaves capacity running. Target-tracking scaling on invocations per instance handles variable load without manual intervention. This is the minimum change to the existing managed setup. The EC2 and ALB alternative is also resilient but adds operational responsibility for patching, scaling, and deployment.",
+        "whyOthersAreWrong": {
+            "A": "A second Region exceeds the requirement, was ruled out, and adds duplicate infrastructure cost.",
+            "B": "A larger single instance remains a single point of failure, and recreating the endpoint after failure takes minutes of downtime.",
+            "D": "It achieves AZ resilience but requires the team to build and operate the compute fleet, increasing overhead beyond the managed endpoint option."
+        },
+        "learningObjective": "Configure SageMaker real-time endpoints for Availability Zone resilience with multiple instances, multi-AZ subnets, and auto scaling.",
+        "topic": "Resilient SageMaker inference endpoints",
+        "tags": [
+            "sagemaker",
+            "multi-az",
+            "application-auto-scaling",
+            "high-availability"
+        ]
+    },
+    {
+        "id": "saa-1934",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A healthcare company trains models in SageMaker on sensitive patient data using a third-party algorithm container. The security team requires that training volumes and model artifacts be encrypted with a customer managed KMS key that the security team can revoke, and that the third-party container have NO ability to make any inbound or outbound network calls, including to resources inside the VPC. Training data is delivered to the job by SageMaker through input channels. Which TWO configuration actions meet these requirements?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Rely on the S3 bucket default SSE-S3 encryption for the output location and the default encryption of the training volume.",
+            "B": "Specify a customer managed KMS key for the training volume and for the output data configuration of the training job.",
+            "C": "Place the training job in private subnets with no NAT gateway or internet route.",
+            "D": "Attach an IAM policy to the execution role that denies all actions except S3 reads and writes.",
+            "E": "Enable network isolation on the training job."
+        },
+        "correctAnswers": [
+            "B",
+            "E"
+        ],
+        "explanation": "B: Supplying a customer managed key for the ML storage volume and the S3 output encryption places the data under a key the security team controls and can revoke. E: Network isolation prevents the training container from making any outbound or inbound network calls, including to VPC resources, while SageMaker handles data input and output outside the container. Private subnets alone still allow calls to resources inside the VPC.",
+        "whyOthersAreWrong": {
+            "A": "SSE-S3 and default volume encryption use AWS-managed keys that the security team cannot revoke.",
+            "C": "Removing internet routes blocks internet egress but the container could still reach other resources in the VPC.",
+            "D": "IAM policies govern AWS API calls, not arbitrary network connections made by container code."
+        },
+        "learningObjective": "Combine customer managed KMS keys and SageMaker network isolation to protect training data and artifacts from untrusted algorithm code.",
+        "topic": "Securing SageMaker training jobs",
+        "tags": [
+            "sagemaker",
+            "kms",
+            "network-isolation",
+            "encryption",
+            "vpc"
+        ]
+    },
+    {
+        "id": "saa-1935",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company keeps curated training data in an S3 bucket in a data account, encrypted with SSE-KMS using a customer managed key. A SageMaker training job in a separate ML account must read this data through its standard S3 input channel by using the job's execution role. The training code cannot be modified, the data must remain encrypted under the existing key, and access must follow least privilege. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure S3 replication to a bucket in the ML account that uses SSE-S3 encryption and point the training job at the replica.",
+            "B": "Create an IAM role in the data account, trust the ML account, and modify the training script to call sts:AssumeRole before reading the data.",
+            "C": "Add a bucket policy statement allowing s3:GetObject to any principal in the organization using aws:PrincipalOrgID, and grant kms:* on the key to the same condition.",
+            "D": "Add a bucket policy statement granting the execution role s3:GetObject and s3:ListBucket on the required prefixes, add a key policy statement allowing that role kms:Decrypt, and grant the same permissions in the role's identity policy."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Cross-account access with resource policies requires permission on both sides: the bucket and KMS key policies in the data account must allow the ML account's execution role, and the role's identity policy in the ML account must allow the same actions. This lets SageMaker read through the input channel using the execution role with no code changes, keeps the data under the existing CMK, and scopes access to one role and specific prefixes.",
+        "whyOthersAreWrong": {
+            "A": "Replication changes the encryption model, duplicates data, and introduces replication delay, violating the requirement to keep the existing key.",
+            "B": "It requires code changes, which are prohibited, and the input channel uses the execution role rather than script-assumed credentials.",
+            "C": "Granting every organization principal access and full KMS permissions violates least privilege."
+        },
+        "learningObjective": "Grant a cross-account SageMaker execution role access to SSE-KMS encrypted S3 data using bucket, key, and identity policies.",
+        "topic": "Cross-account data access for ML training",
+        "tags": [
+            "sagemaker",
+            "kms",
+            "s3",
+            "cross-account",
+            "least-privilege"
+        ]
+    },
+    {
+        "id": "saa-1936",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An insurer scores 40 million customer records nightly with a SageMaker model. The records are stored as 5,000 CSV files totaling about 2 TB in S3, and results must be written to S3 before 6 AM. There is no online or interactive requirement, and the company wants to avoid paying for compute outside the nightly window while keeping orchestration managed and retry-capable. Which THREE actions should the solutions architect include?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Keep a real-time endpoint running 24 hours a day with auto scaling and have a Lambda function call it once per record.",
+            "B": "Run a SageMaker Batch Transform job with more than one instance so that input files are distributed across instances.",
+            "C": "Fan out one Lambda invocation per record and load the model inside each function.",
+            "D": "Use EventBridge Scheduler to start an AWS Step Functions state machine that runs the transform job by using the synchronous service integration, with retry and failure handling.",
+            "E": "Configure the transform job to batch multiple records per request to the container by using a multi-record batch strategy with an appropriate maximum payload size."
+        },
+        "correctAnswers": [
+            "B",
+            "D",
+            "E"
+        ],
+        "explanation": "B: Batch Transform provisions instances only for the job, processes S3 input offline, and writes results to S3, so there is no idle cost outside the window; multiple instances parallelize across files. D: EventBridge Scheduler plus Step Functions gives managed scheduling, waiting for completion, retries, and failure handling. E: Sending multiple records per request reduces per-request overhead and increases throughput for large record counts.",
+        "whyOthersAreWrong": {
+            "A": "A 24/7 endpoint pays for idle capacity outside the nightly window and per-record calls add overhead.",
+            "C": "Per-record Lambda invocations for 40 million records are inefficient, and loading the model repeatedly adds latency and may exceed practical function limits."
+        },
+        "learningObjective": "Design a scheduled, cost-efficient batch inference pipeline using SageMaker Batch Transform and Step Functions.",
+        "topic": "Batch inference orchestration",
+        "tags": [
+            "sagemaker",
+            "batch-transform",
+            "step-functions",
+            "eventbridge",
+            "cost-optimization"
+        ]
+    },
+    {
+        "id": "saa-1937",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A compliance team uses a trained Amazon Comprehend custom classification model to label about 2 million archived documents stored in S3. The labeling runs once each night, must finish within a four-hour window, and results are consumed the next morning. There is no real-time requirement. The team currently keeps a real-time endpoint provisioned around the clock and wants to reduce cost significantly without adding much operational complexity. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Keep the real-time endpoint but reduce its inference units to the minimum and send documents from Lambda during the night.",
+            "B": "Delete the endpoint and have EventBridge Scheduler start a Comprehend asynchronous classification job that reads documents from S3 and writes results to S3.",
+            "C": "Use Lambda to create the real-time endpoint each night, run the documents through it, and delete the endpoint in the morning.",
+            "D": "Export the model to a SageMaker real-time endpoint with auto scaling and a minimum capacity of one instance."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Comprehend asynchronous classification jobs process documents from S3 in bulk and are billed by usage, while real-time endpoints incur charges for every hour they are provisioned. Since the workload is a nightly batch with no latency requirement, a scheduled asynchronous job removes the idle endpoint cost with minimal orchestration. Creating and deleting an endpoint nightly could also reduce cost but adds provisioning logic, wait time, and failure handling.",
+        "whyOthersAreWrong": {
+            "A": "Even a minimum-size endpoint is billed while provisioned, so idle cost remains for roughly 20 hours a day.",
+            "C": "It reduces idle cost but adds custom orchestration, endpoint provisioning delay inside the four-hour window, and cleanup failure risk.",
+            "D": "Comprehend custom models cannot be exported to SageMaker, and an always-on instance would add continuing cost."
+        },
+        "learningObjective": "Choose Comprehend asynchronous batch jobs over provisioned real-time endpoints for scheduled, latency-tolerant classification.",
+        "topic": "Cost-optimized NLP inference",
+        "tags": [
+            "comprehend",
+            "asynchronous-jobs",
+            "eventbridge",
+            "endpoint-cost"
+        ]
+    },
+    {
+        "id": "saa-1938",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A bank records stereo customer-service calls with the agent on the left audio channel and the customer on the right. Recordings are stored in S3 and transcribed in batch each night with Amazon Transcribe. Analysts need every transcript segment attributed exactly to the agent or the customer, and the attribution must be deterministic rather than inferred from voice characteristics. Compliance requires that no unredacted transcript text ever be persisted in S3. Which TWO configuration actions meet these requirements?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable channel identification on the batch transcription job.",
+            "B": "Enable speaker partitioning with a maximum of two speaker labels.",
+            "C": "Transcribe normally, then run Amazon Comprehend PII detection on the stored transcripts and write a redacted copy while keeping the raw transcripts in a restricted prefix.",
+            "D": "Transcribe normally and enable Amazon Macie on the output bucket to delete transcripts that contain PII.",
+            "E": "Enable content redaction for PII on the job and set the output to redacted transcripts only."
+        },
+        "correctAnswers": [
+            "A",
+            "E"
+        ],
+        "explanation": "A: With stereo audio where each speaker is on a separate channel, channel identification transcribes each channel separately and attributes text deterministically to the channel. E: Transcribe content redaction removes PII from the transcript, and choosing the redacted-only output means no unredacted transcript is ever written to S3. Together these satisfy the attribution and persistence requirements.",
+        "whyOthersAreWrong": {
+            "B": "Speaker partitioning estimates speakers from voice characteristics, so attribution is inferred rather than deterministic.",
+            "C": "The raw unredacted transcripts are still persisted in S3, violating the requirement.",
+            "D": "Macie detects after the fact, so unredacted text is already persisted, and it is not designed to redact transcripts."
+        },
+        "learningObjective": "Configure Transcribe channel identification and redacted-only PII output to meet attribution and data-handling requirements.",
+        "topic": "Speech-to-text pipelines with Transcribe",
+        "tags": [
+            "transcribe",
+            "channel-identification",
+            "pii-redaction",
+            "macie",
+            "comprehend"
+        ]
+    },
+    {
+        "id": "saa-1939",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company hosts a production SageMaker real-time endpoint that serves recommendations to a customer-facing app. The team is releasing a new model version and wants to shift 10% of traffic to it first, observe it for 15 minutes, and then complete the shift. If the p99 latency or 5XX error CloudWatch alarms fire at any point, traffic must automatically return to the previous version with no downtime. The team wants the LEAST custom automation. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Update the endpoint with a blue/green deployment configuration that uses canary traffic shifting with a 15-minute baking period and auto-rollback configured with the CloudWatch alarms.",
+            "B": "Add the new model as a second production variant, and use a Lambda function triggered by CloudWatch alarms to adjust variant weights and roll back.",
+            "C": "Update the endpoint in place with the default settings and monitor the dashboards manually for errors.",
+            "D": "Deploy a second endpoint and use Route 53 weighted records with a 10% weight, shifting weights manually through the console."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "SageMaker deployment guardrails support blue/green deployments with canary or linear traffic shifting, a baking period, and automatic rollback driven by CloudWatch alarms, all while the old fleet continues serving traffic. This delivers progressive rollout and automated rollback with no custom code. The variant-weights approach can approximate it but requires building and maintaining the alarm-driven automation.",
+        "whyOthersAreWrong": {
+            "B": "It requires writing and operating custom rollback automation, which the requirement says to avoid.",
+            "C": "A default update shifts all traffic at once without canary or alarm-based rollback, so there is no progressive rollout or automated protection.",
+            "D": "DNS-based weighting is subject to TTL and client caching, needs manual shifting, and has no alarm-driven rollback."
+        },
+        "learningObjective": "Use SageMaker endpoint deployment guardrails for canary traffic shifting with automatic CloudWatch alarm rollback.",
+        "topic": "Safe ML model deployment strategies",
+        "tags": [
+            "sagemaker",
+            "blue-green",
+            "canary",
+            "cloudwatch-alarms",
+            "deployment"
+        ]
+    },
+    {
+        "id": "saa-1940",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A support organization stores 3 million plain-text chat transcripts in S3. Analysts need copies in which names, email addresses, phone numbers, and payment card numbers are replaced with entity-type placeholders. The original transcripts must remain restricted to a small compliance group. The company does not have ML engineers, wants no model training, and wants the lowest operational effort for processing the existing archive. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Run an Amazon Macie sensitive data discovery job on the transcript bucket and use the findings to delete PII from the objects in place.",
+            "B": "Catalog the transcripts in AWS Lake Formation and apply column-level filters so analysts cannot see sensitive columns.",
+            "C": "Run an Amazon Comprehend asynchronous PII entities detection job in redaction mode on the archive and write the redacted output to a separate analyst bucket.",
+            "D": "Create an AWS Glue ETL job that applies regular expressions for names, emails, phone numbers, and card numbers and writes sanitized files to a separate bucket."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "Comprehend PII detection jobs can run asynchronously over documents in S3 and, in redaction mode, output copies in which detected entities are replaced with entity-type labels or masks. This works on unstructured text, needs no model training, and leaves originals untouched under restricted access. Regex-based Glue jobs may catch emails and card numbers but cannot reliably identify free-form names, and they require ongoing maintenance.",
+        "whyOthersAreWrong": {
+            "A": "Macie identifies and reports sensitive data but does not redact or modify objects.",
+            "B": "Lake Formation column filters apply to structured tabular data and cannot redact PII embedded in free-text transcripts.",
+            "D": "Regular expressions cannot reliably detect names in free text, and the pattern library needs continuing maintenance."
+        },
+        "learningObjective": "Use Comprehend asynchronous PII redaction jobs to produce sanitized copies of unstructured text at scale.",
+        "topic": "PII redaction with Comprehend",
+        "tags": [
+            "comprehend",
+            "pii-redaction",
+            "macie",
+            "lake-formation",
+            "glue"
+        ]
+    }
+]
