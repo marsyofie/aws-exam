@@ -1,0 +1,638 @@
+[
+    {
+        "id": "saa-1981",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company has 60 AWS accounts in AWS Organizations and 1,500 employees whose identities are managed in Microsoft Entra ID. Today, each account contains IAM users with long-term access keys, and offboarding is slow because administrators must remove users account by account. The company wants employees to sign in to the AWS console and CLI with their existing corporate credentials and receive only temporary credentials. Users and groups must be provisioned and deprovisioned automatically from Entra ID, and access must be assigned per account based on Entra ID group membership. The team wants the LEAST ongoing administrative effort. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create a SAML identity provider and federated IAM roles in each of the 60 accounts, and map Entra ID group claims to the roles in every account's trust policies.",
+            "B": "Enable IAM Identity Center with Entra ID as the external identity provider, turn on SCIM provisioning, and assign permission sets to groups for each account.",
+            "C": "Deploy AWS Managed Microsoft AD with a trust to the corporate directory, and create matching IAM users in each account linked to the directory accounts.",
+            "D": "Create an Amazon Cognito user pool federated with Entra ID, and use an identity pool to issue AWS credentials mapped to roles in each account."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "IAM Identity Center integrates with Organizations to provide single sign-on across all accounts. With Entra ID as the external identity provider, users authenticate with corporate credentials, and SCIM automatically provisions and deprovisions users and groups. Permission sets assigned to groups for each account create the roles automatically, and the console and CLI receive short-term credentials. Per-account SAML federation also issues temporary credentials, but it requires configuring and maintaining identity providers and roles in all 60 accounts and offers no automatic provisioning.",
+        "whyOthersAreWrong": {
+            "A": "Per-account SAML federation works, but it requires maintaining an identity provider and roles in every account and has no SCIM-based provisioning.",
+            "C": "IAM users are long-term identities that the company wants to eliminate, and Managed Microsoft AD does not synchronize with Entra ID groups for AWS account access.",
+            "D": "Cognito is designed for application end users, not workforce access to the AWS console across Organizations accounts, and it has no permission set management."
+        },
+        "learningObjective": "Use IAM Identity Center with an external IdP and SCIM for centralized workforce access across many accounts.",
+        "topic": "AWS IAM Identity Center",
+        "tags": [
+            "iam-identity-center",
+            "scim",
+            "permission-sets",
+            "federation",
+            "organizations"
+        ]
+    },
+    {
+        "id": "saa-1982",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company connects 25 workload VPCs in one Region through a Transit Gateway. A new security standard requires that all internet-bound traffic from every VPC be inspected statefully and allowed only to an approved list of domain names, such as package repositories and partner APIs. Some workloads connect to partner services by hard-coded IP addresses instead of DNS names. The inspection layer must be highly available across Availability Zones, managed by AWS, and operated centrally by the network team rather than by each workload team. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Associate a Route 53 Resolver DNS Firewall rule group with every VPC that allows only the approved domain names and blocks all other DNS queries.",
+            "B": "Add network ACL rules to every workload subnet that allow outbound traffic only to the IP ranges currently published for the approved domains.",
+            "C": "Deploy an Auto Scaling group of forward proxy instances in each workload VPC that permits only the approved domains, and route outbound traffic through it.",
+            "D": "Build a central inspection VPC with AWS Network Firewall endpoints in each AZ and a domain allow-list rule group, routing egress through it with Transit Gateway appliance mode."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "AWS Network Firewall is a managed, stateful firewall that can filter traffic by domain using the TLS SNI and HTTP Host header, and it inspects every packet routed through it, including connections to hard-coded IP addresses. Placing firewall endpoints in each AZ of a central inspection VPC, with Transit Gateway routes sending egress traffic there and appliance mode keeping flows symmetric, gives highly available, centrally operated inspection before traffic exits through NAT gateways. DNS Firewall is the closest distractor, but it filters only DNS queries, so connections made directly to IP addresses bypass it.",
+        "whyOthersAreWrong": {
+            "A": "DNS Firewall filters DNS resolution only; workloads that connect to hard-coded IP addresses never make a DNS query, so their traffic is not inspected.",
+            "B": "NACLs are stateless and IP-based; domain IP ranges change frequently, and NACLs cannot perform stateful inspection or domain filtering.",
+            "C": "Self-managed proxies in every VPC add patching, scaling, and per-VPC operations, and they are not centrally managed by AWS."
+        },
+        "learningObjective": "Design centralized, stateful egress inspection with AWS Network Firewall and Transit Gateway.",
+        "topic": "AWS Network Firewall",
+        "tags": [
+            "network-firewall",
+            "transit-gateway",
+            "centralized-egress",
+            "appliance-mode",
+            "domain-filtering"
+        ]
+    },
+    {
+        "id": "saa-1983",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A healthcare company has about 300 S3 buckets across 40 accounts in AWS Organizations. Auditors require the company to continuously identify buckets that contain personal data such as names, national ID numbers, and medical record numbers, including in newly created buckets. The buckets hold a mix of CSV exports, PDF documents, and JSON application data totaling about 2 PB. The security team must be notified within minutes when sensitive data is found, and scanning costs must stay predictable as the data estate grows. The team wants managed services and minimal custom code. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable Amazon GuardDuty S3 Protection in every account so that it classifies objects containing personal data and raises findings for them.",
+            "B": "Enable Amazon Macie with a delegated administrator account for the organization and turn on automated sensitive data discovery for all member accounts.",
+            "C": "Enable Amazon Inspector in every account with S3 scanning so that it evaluates objects for personal data and reports vulnerable buckets.",
+            "D": "Schedule Amazon Athena queries with regular expressions against every bucket each night and send matching results to the security team by email.",
+            "E": "Create an Amazon EventBridge rule that matches Macie sensitive data findings and sends them to an Amazon SNS topic subscribed by the security team."
+        },
+        "correctAnswers": [
+            "B",
+            "E"
+        ],
+        "explanation": "B: Amazon Macie uses managed data identifiers to detect personal data in S3. With a delegated administrator for the organization, it covers all member accounts, and automated sensitive data discovery continuously samples objects across the estate, including new buckets, keeping cost predictable compared with full scans. E: Macie publishes findings to EventBridge, so a rule that forwards sensitive data findings to an SNS topic notifies the security team within minutes without custom code.",
+        "whyOthersAreWrong": {
+            "A": "GuardDuty S3 Protection detects suspicious access and threats against S3 data, not the presence of personal data in objects.",
+            "C": "Amazon Inspector scans EC2 instances, container images, and Lambda functions for vulnerabilities; it does not classify S3 object contents.",
+            "D": "Custom Athena queries require table definitions for every bucket, cannot parse many document formats, and cost grows with full nightly scans."
+        },
+        "learningObjective": "Use Macie with organization-wide automated discovery and EventBridge notifications to find sensitive data in S3.",
+        "topic": "Amazon Macie",
+        "tags": [
+            "macie",
+            "sensitive-data-discovery",
+            "eventbridge",
+            "sns",
+            "organizations"
+        ]
+    },
+    {
+        "id": "saa-1984",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs a web application in eu-west-1 behind an Application Load Balancer that uses a public AWS Certificate Manager (ACM) certificate for app.example.com, validated through DNS. To improve global performance, the team is adding an Amazon CloudFront distribution in front of the ALB using the same domain name. When configuring the distribution's alternate domain name, the team finds that the existing certificate does not appear in the CloudFront certificate list. Requirements state that traffic must be encrypted from viewers to CloudFront and from CloudFront to the ALB, certificates must renew automatically, and no one should handle private keys. What should a solutions architect do?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Request a public ACM certificate for app.example.com in us-east-1 with DNS validation and attach it to the distribution, keeping the eu-west-1 certificate on the ALB.",
+            "B": "Obtain a certificate for app.example.com from a third-party certificate authority, import it into ACM in eu-west-1, and select it for the distribution.",
+            "C": "Use the default CloudFront certificate on the distribution and forward the Host header so that the ALB presents the app.example.com certificate to viewers.",
+            "D": "Configure the distribution to accept HTTP from viewers and use HTTPS only between CloudFront and the ALB, which already has a valid certificate."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "CloudFront can use only ACM certificates that are in the US East (N. Virginia) Region, us-east-1. Requesting a public ACM certificate there for the same domain, with DNS validation, gives CloudFront a viewer certificate that ACM renews automatically, and the existing eu-west-1 certificate continues to secure the CloudFront-to-ALB connection. No private keys are handled. Importing a third-party certificate is the closest distractor, but it is in the wrong Region for CloudFront and imported certificates do not renew automatically.",
+        "whyOthersAreWrong": {
+            "B": "CloudFront cannot use certificates from eu-west-1, and imported certificates require manual renewal and private key handling.",
+            "C": "TLS from viewers terminates at CloudFront, so viewers would receive the *.cloudfront.net certificate, which does not match app.example.com.",
+            "D": "Accepting HTTP from viewers leaves the viewer-to-CloudFront connection unencrypted, violating the end-to-end encryption requirement."
+        },
+        "learningObjective": "Provision ACM certificates in us-east-1 for CloudFront while keeping Regional certificates for origins.",
+        "topic": "AWS Certificate Manager",
+        "tags": [
+            "acm",
+            "cloudfront",
+            "alb",
+            "tls",
+            "encryption-in-transit"
+        ]
+    },
+    {
+        "id": "saa-1985",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A software company has 400 developers who work remotely from home and while traveling. They need access to private Amazon RDS databases and internal Application Load Balancers in a VPC from their laptops. Developers must authenticate with the corporate SAML 2.0 identity provider, which enforces MFA, and different developer groups may reach only specific subnets. To avoid bandwidth costs, only traffic destined for the VPC should use the connection, while other internet traffic stays local. The company wants a managed service that scales automatically, with no servers to operate. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create an AWS Site-to-Site VPN connection for each developer's home router to a virtual private gateway, with route propagation to the private subnets.",
+            "B": "Deploy hardened bastion hosts in a public subnet and give each developer an SSH key to tunnel database and HTTPS connections into the VPC.",
+            "C": "Create an AWS Client VPN endpoint with SAML federated authentication, group-based authorization rules for subnets, and split-tunnel enabled.",
+            "D": "Order an AWS Direct Connect hosted connection and have developers connect through it with routing filtered to the private subnets."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "AWS Client VPN is a managed, elastically scaling OpenVPN-based service for individual users. It supports SAML 2.0 federated authentication, so the corporate IdP enforces MFA, and authorization rules can restrict each IdP group to specific network ranges. With split-tunnel enabled, only routes for the VPC are pushed to clients, so other internet traffic stays local. Bastion hosts can provide access, but they are servers to operate, use SSH keys instead of SAML, and do not offer group-based network authorization.",
+        "whyOthersAreWrong": {
+            "A": "Site-to-Site VPN connects networks with fixed gateways, not traveling laptops, and per-home connections cannot scale to 400 users.",
+            "B": "Bastion hosts are servers to patch and scale, and SSH keys bypass the corporate SAML identity provider and its MFA policy.",
+            "D": "Direct Connect provides dedicated links between facilities and AWS; it cannot serve individual remote laptops."
+        },
+        "learningObjective": "Choose AWS Client VPN with SAML authentication, authorization rules, and split-tunnel for remote user access.",
+        "topic": "AWS Client VPN",
+        "tags": [
+            "client-vpn",
+            "saml",
+            "split-tunnel",
+            "remote-access",
+            "vpc-security"
+        ]
+    },
+    {
+        "id": "saa-1986",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company with 70 accounts in AWS Organizations must meet a new audit requirement for API activity logging. CloudTrail logs must capture management events from every account and every Region, including accounts created in the future. Administrators in member accounts must not be able to stop or delete the logging. Auditors must be able to prove that log files were not modified after delivery, and logs must be immutable for 1 year, even to administrators of the account that stores them. The company already has a dedicated log archive account that application teams cannot access. Which THREE actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Create an organization trail from the management account that applies to all Regions and all member accounts.",
+            "B": "Enable CloudTrail log file integrity validation on the trail so that delivered digest files can verify log integrity.",
+            "C": "Deploy a separate multi-Region trail in each member account with a CloudFormation StackSet and automatic deployment.",
+            "D": "Deliver logs to an S3 bucket in a dedicated log archive account with Object Lock in compliance mode for 1 year.",
+            "E": "Deliver logs only to Amazon CloudWatch Logs log groups in each member account with a 1-year retention setting."
+        },
+        "correctAnswers": [
+            "A",
+            "B",
+            "D"
+        ],
+        "explanation": "A: An organization trail created from the management account automatically logs all member accounts, including new ones, in all Regions, and member accounts can see but not modify or delete it. B: Log file integrity validation produces signed, hash-chained digest files that let auditors prove whether log files were modified or deleted after delivery. D: Delivering to a bucket in a separate log archive account with Object Lock in compliance mode makes the log objects immutable for 1 year, even to that account's administrators and root user.",
+        "whyOthersAreWrong": {
+            "C": "Trails created in member accounts can be stopped or deleted by those accounts' administrators, violating the tamper-resistance requirement.",
+            "E": "Log groups in member accounts can be deleted by local administrators, and retention settings do not make logs immutable or verifiable."
+        },
+        "learningObjective": "Build tamper-resistant, organization-wide CloudTrail logging with integrity validation and Object Lock.",
+        "topic": "AWS CloudTrail",
+        "tags": [
+            "cloudtrail",
+            "organization-trail",
+            "log-file-validation",
+            "object-lock",
+            "log-archive"
+        ]
+    },
+    {
+        "id": "saa-1987",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An e-commerce company routes order events through a custom Amazon EventBridge event bus to several targets, including a loyalty-points Lambda function. A recent bug in the loyalty function caused 6 hours of events to be processed with the wrong point values, although every invocation succeeded. The company wants a built-in capability that, for this and future incidents, lets it reprocess events from a specific time window and send them only to the affected consumer's rule, without asking producers to resend data. The team wants the LEAST custom code. What should a solutions architect do?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure an Amazon SQS dead-letter queue on the loyalty rule's target and redrive the messages from the queue to the function after deploying the fix.",
+            "B": "Query AWS CloudTrail for the PutEvents calls in the time window and use a script to republish each event to the bus for the loyalty consumer.",
+            "C": "Create an EventBridge archive on the event bus and, after fixing the function, start a replay of the time window that targets only the loyalty rule.",
+            "D": "Insert an Amazon Kinesis data stream between producers and the bus with 7-day retention, and reset the loyalty consumer's position to reprocess."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "EventBridge archives store events that match a pattern from an event bus for a chosen retention period. A replay re-sends archived events from a specified time window back to the bus, and it can be limited to specific rules, so only the loyalty consumer reprocesses them. This is a built-in, configuration-only capability that does not involve producers. The dead-letter queue is the closest distractor, but it captures only failed deliveries; these invocations succeeded, so nothing would be in the queue.",
+        "whyOthersAreWrong": {
+            "A": "Dead-letter queues capture only events that failed delivery; events that were processed successfully, even incorrectly, are never sent there.",
+            "B": "This requires custom republishing code and depends on CloudTrail data event logging capturing full event payloads, which adds cost and complexity.",
+            "D": "Adding a stream and changing consumers is a redesign with significant custom code and shard management, not a built-in replay capability."
+        },
+        "learningObjective": "Use EventBridge archive and replay to reprocess events for specific rules after a consumer bug.",
+        "topic": "Amazon EventBridge",
+        "tags": [
+            "eventbridge",
+            "archive-and-replay",
+            "event-driven",
+            "lambda",
+            "recovery"
+        ]
+    },
+    {
+        "id": "saa-1988",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A publishing company is containerizing its content management system on Amazon ECS with AWS Fargate. Tasks run across three Availability Zones and scale from 4 to 40 based on load. Editors upload images and documents that every task must be able to read and write immediately through a POSIX file system, and the files must persist when tasks are replaced or an AZ fails. The storage must grow and shrink automatically without capacity planning, and each application should be restricted to its own directory. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create an Amazon EFS file system with mount targets in each AZ, define an EFS volume in the task definition, and use an access point per application.",
+            "B": "Create an Amazon EBS io2 volume with Multi-Attach enabled and attach it to every task in the service through the task definition's volume configuration.",
+            "C": "Increase each task's Fargate ephemeral storage to 200 GiB and configure the application to write uploaded files to the ephemeral storage path.",
+            "D": "Add a sidecar container to each task that synchronizes the task's local upload directory with an Amazon S3 bucket every 60 seconds."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "Amazon EFS is a Regional, elastic NFS file system that stores data redundantly across multiple AZs and grows and shrinks automatically. Fargate tasks can mount EFS volumes declared in the task definition, so all tasks share the same files immediately, and data persists through task replacement and AZ failure. EFS access points enforce a root directory and POSIX identity per application. The S3 sidecar is the closest distractor, but periodic synchronization is not a POSIX file system and leads to stale reads and write conflicts.",
+        "whyOthersAreWrong": {
+            "B": "EBS volumes, including Multi-Attach, are confined to a single AZ, and Multi-Attach requires a cluster-aware file system; it cannot be shared across Fargate tasks in three AZs.",
+            "C": "Ephemeral storage is private to each task and deleted when the task stops, so files are neither shared nor persistent.",
+            "D": "Periodic synchronization creates up to 60 seconds of inconsistency and conflicting writes, and it does not provide POSIX semantics."
+        },
+        "learningObjective": "Use Amazon EFS with access points for shared, persistent, multi-AZ storage in ECS on Fargate.",
+        "topic": "Amazon EFS",
+        "tags": [
+            "efs",
+            "ecs",
+            "fargate",
+            "access-points",
+            "shared-storage"
+        ]
+    },
+    {
+        "id": "saa-1989",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media company collects audience poll submissions through Amazon API Gateway, which invokes a Lambda function that inserts each submission into an Amazon RDS for PostgreSQL database. During live TV broadcasts, traffic bursts to about 20,000 requests per second for a few minutes, the database becomes overloaded, and submissions are lost when Lambda returns errors. Submissions may be processed asynchronously within a few minutes, but clients must receive an immediate acknowledgment and no submission may be lost. The company wants to protect the database without resizing it. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Configure API Gateway with an AWS service integration that sends each submission to an Amazon SQS queue and immediately returns an accepted response.",
+            "B": "Enable API Gateway caching on the submission method so that repeated requests are answered from the cache instead of reaching the database.",
+            "C": "Process the queue with a Lambda event source mapping whose maximum concurrency is set to a level that the database can safely handle.",
+            "D": "Scale the database to the largest available instance class during broadcasts and return it to the smaller class after each broadcast ends.",
+            "E": "Configure provisioned concurrency on the existing Lambda function so that more invocations are ready to write during traffic bursts."
+        },
+        "correctAnswers": [
+            "A",
+            "C"
+        ],
+        "explanation": "A: A direct API Gateway service integration with SQS durably stores each submission and acknowledges the client immediately, absorbing bursts without depending on the database. C: An SQS event source mapping with a maximum concurrency setting limits how many Lambda invocations write to the database at once, so the queue drains at a safe rate within minutes, and failed messages are retried rather than lost. Together they implement queue-based load leveling.",
+        "whyOthersAreWrong": {
+            "B": "Each submission is a unique write; caching does not apply to writes and would not reduce database inserts.",
+            "D": "The requirement is to protect the database without resizing it, and scheduled resizing causes downtime or failovers during broadcasts.",
+            "E": "More ready Lambda capacity sends even more simultaneous writes to the database, making overload worse."
+        },
+        "learningObjective": "Apply queue-based load leveling with API Gateway to SQS and capped Lambda concurrency to protect a database.",
+        "topic": "Amazon SQS",
+        "tags": [
+            "sqs",
+            "api-gateway",
+            "lambda",
+            "load-leveling",
+            "rds"
+        ]
+    },
+    {
+        "id": "saa-1990",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A streaming service stores user profiles and watch-list data for customers in North America and Europe. Users must read and write their data with low latency from the nearest Region, us-east-1 or eu-west-1. If one Region becomes unavailable, users must be routed automatically to the other Region and continue reading and writing, with data loss limited to a few seconds. Concurrent updates to the same item are rare, and last-writer-wins conflict resolution is acceptable. The company wants managed services with the LEAST operational overhead. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Store the data in an Aurora global database with write forwarding enabled on the secondary cluster in eu-west-1.",
+            "B": "Store the data in DynamoDB tables in us-east-1 and copy backups to eu-west-1 every hour with AWS Backup.",
+            "C": "Store the data in DynamoDB global tables with replicas in both us-east-1 and eu-west-1.",
+            "D": "Use Route 53 latency-based routing records with health checks for each Region's API endpoint.",
+            "E": "Use a CloudFront distribution with an origin group that fails over from the us-east-1 API to the eu-west-1 API."
+        },
+        "correctAnswers": [
+            "C",
+            "D"
+        ],
+        "explanation": "C: DynamoDB global tables provide multi-active replication, so each Region accepts local reads and writes, replicating changes to the other Region typically within a second using last-writer-wins reconciliation. D: Route 53 latency-based routing sends each user to the lowest-latency Region, and associated health checks stop returning an unhealthy Region so users fail over automatically. Together they deliver active-active, low-latency access with second-level data loss.",
+        "whyOthersAreWrong": {
+            "A": "Write forwarding sends writes from eu-west-1 to the single primary in us-east-1, so European writes incur cross-Region latency, and a primary Region outage requires a failover operation.",
+            "B": "Hourly backup copies allow up to an hour of data loss and require a restore before the other Region can serve traffic.",
+            "E": "CloudFront origin failover applies only to GET, HEAD, and OPTIONS requests, so writes would not fail over, and it does not route users to the nearest Region."
+        },
+        "learningObjective": "Build multi-Region active-active applications with DynamoDB global tables and Route 53 latency routing.",
+        "topic": "Amazon DynamoDB",
+        "tags": [
+            "dynamodb-global-tables",
+            "route53",
+            "latency-routing",
+            "active-active",
+            "multi-region"
+        ]
+    },
+    {
+        "id": "saa-1991",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A logistics company exposes a B2B API through an internet-facing Application Load Balancer. The ALB uses host-based and path-based routing rules to send requests to several target groups, and it terminates TLS with an ACM certificate. Several large partners now require fixed public IP addresses, one per Availability Zone, so they can allow-list them in outbound firewalls, and they will not accept IP changes. Partners connect from many countries over the internet, and the API is deployed in a single Region across three Availability Zones. The company wants to keep the existing ALB routing rules and avoid application changes, with the LEAST operational overhead. What should a solutions architect do?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Allocate an Elastic IP address for each AZ and associate the addresses directly with the ALB's network interfaces in each subnet.",
+            "B": "Replace the ALB with a Network Load Balancer that has Elastic IP addresses, and move host and path routing logic into the application code.",
+            "C": "Look up the ALB's current IP addresses, publish them to partners, and add a Lambda function that notifies partners whenever the addresses change.",
+            "D": "Create a Network Load Balancer with an Elastic IP address in each AZ and an ALB-type target group that forwards traffic to the existing ALB."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Network Load Balancers support one Elastic IP address per enabled AZ, giving partners stable addresses. An NLB target group of type alb forwards TCP traffic to the existing ALB, which continues to terminate TLS and apply its host-based and path-based routing rules, so no application changes are needed. Replacing the ALB with an NLB also provides static IPs, but it loses Layer 7 routing and forces that logic into the application.",
+        "whyOthersAreWrong": {
+            "A": "ALBs do not support assigning Elastic IP addresses; their IP addresses are managed by AWS and can change.",
+            "B": "NLBs operate at Layer 4 and cannot perform host-based or path-based routing, so the application would need to be changed.",
+            "C": "ALB IP addresses change as the load balancer scales, and partners explicitly will not accept IP changes."
+        },
+        "learningObjective": "Front an ALB with an NLB using ALB-type target groups to provide static IP addresses while keeping Layer 7 routing.",
+        "topic": "Elastic Load Balancing",
+        "tags": [
+            "nlb",
+            "alb",
+            "elastic-ip",
+            "static-ip",
+            "alb-target-group"
+        ]
+    },
+    {
+        "id": "saa-1992",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs a Java 21 Spring Boot application on AWS Lambda behind Amazon API Gateway. Function initialization takes 6 to 8 seconds because of framework startup and dependency loading. Traffic is idle for most of the day but spikes unpredictably when partners run batch integrations, and cold starts during these spikes push p99 latency past the partners' 5-second timeout. The team cannot rewrite the application in another language and wants to reduce cold-start latency without paying for capacity that sits idle most of the day. What should a solutions architect recommend?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure provisioned concurrency on the function's alias sized for the largest observed spike, so that initialized execution environments are always ready.",
+            "B": "Enable Lambda SnapStart on the function, publish a version, and point the API Gateway integration at an alias for that published version.",
+            "C": "Increase the function's memory to the maximum of 10,240 MB so that initialization receives more CPU and completes faster during spikes.",
+            "D": "Move initialization code inside the handler so that framework components load only when a request actually needs them during each invocation."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Lambda SnapStart initializes the function when a version is published, takes a snapshot of the initialized execution environment, and resumes new environments from the cached snapshot, cutting Java cold starts from seconds to typically sub-second. It works for unpredictable spikes without paying for always-on capacity, and requires invoking a published version or alias. Provisioned concurrency also removes cold starts, but sizing it for unpredictable peaks means paying for idle environments most of the day.",
+        "whyOthersAreWrong": {
+            "A": "Provisioned concurrency is billed continuously, so sizing it for rare, unpredictable spikes pays for idle capacity most of the day.",
+            "C": "More memory adds CPU and can shorten initialization somewhat, but framework startup still takes seconds, and every invocation costs more.",
+            "D": "Loading framework components inside the handler moves the delay into each request, increasing latency for every invocation instead of only cold starts."
+        },
+        "learningObjective": "Use Lambda SnapStart to reduce Java cold-start latency for spiky workloads without always-on cost.",
+        "topic": "AWS Lambda",
+        "tags": [
+            "lambda",
+            "snapstart",
+            "cold-start",
+            "java",
+            "api-gateway"
+        ]
+    },
+    {
+        "id": "saa-1993",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A retailer runs an Amazon Redshift provisioned cluster for analytics. Every Monday morning, about 200 dashboard queries run at the same time and wait in queues for several minutes, while the cluster is lightly used for the rest of the week. In addition, 5 years of historical sales data, queried only a few times per quarter, occupies about 70% of the cluster's storage, and the team is being asked to add nodes only for storage. The company wants to reduce queue times and avoid paying for capacity that is idle most of the week. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable concurrency scaling for the workload management queue that the dashboards use so that Redshift adds transient capacity during bursts.",
+            "B": "Use elastic resize to double the number of nodes permanently so that the cluster has enough capacity for the Monday morning peak.",
+            "C": "Replicate the dashboard tables to an Amazon Aurora PostgreSQL cluster with read replicas and point the dashboards at the replicas.",
+            "D": "Unload the historical data to Amazon S3 in Parquet format and query it through Amazon Redshift Spectrum external tables when needed.",
+            "E": "Increase the number of query slots in the dashboard queue to 200 so that every Monday morning query can start running immediately."
+        },
+        "correctAnswers": [
+            "A",
+            "D"
+        ],
+        "explanation": "A: Concurrency scaling automatically adds transient cluster capacity when queries queue in an enabled WLM queue, then removes it. Clusters accrue free concurrency scaling credits, so short weekly bursts are often covered at little or no extra cost. D: Moving rarely queried historical data to S3 in Parquet and querying it with Redshift Spectrum frees cluster storage and avoids adding nodes, while keeping the data queryable with SQL.",
+        "whyOthersAreWrong": {
+            "B": "Permanently doubling nodes pays for peak capacity all week even though the cluster is lightly used outside Monday mornings.",
+            "C": "Running a parallel Aurora stack adds replication pipelines and cost, and a row-oriented OLTP database is poorly suited to analytic dashboard queries.",
+            "E": "More slots split the same memory across more queries, causing disk spills and slower queries without adding any compute capacity."
+        },
+        "learningObjective": "Use Redshift concurrency scaling for bursty concurrency and Redshift Spectrum for cold historical data.",
+        "topic": "Amazon Redshift",
+        "tags": [
+            "redshift",
+            "concurrency-scaling",
+            "redshift-spectrum",
+            "parquet",
+            "data-warehouse"
+        ]
+    },
+    {
+        "id": "saa-1994",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An industrial monitoring company ingests small JSON readings from thousands of sensors into Amazon S3. The ingestion service writes about 20,000 PUT requests per second to keys in the format raw/YYYY-MM-DD/sensor-id-timestamp.json, so all writes for a day share a single prefix. During peaks, the service receives HTTP 503 Slow Down errors and readings are delayed. Downstream jobs list and process data by day, and the company wants sustained ingestion throughput with minimal changes. The company understands that S3 supports at least 3,500 PUT requests per second per partitioned prefix. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable S3 Transfer Acceleration on the bucket and send all PUT requests to the accelerated endpoint to increase the per-prefix request rate.",
+            "B": "Add a high-cardinality shard component, such as a hash of the sensor ID, early in the key so that writes spread across multiple prefixes.",
+            "C": "Configure the ingestion service's SDK to retry 503 responses with exponential backoff and jitter while S3 scales to the request rate.",
+            "D": "Write the raw readings to the S3 One Zone-Infrequent Access storage class so that each PUT request is processed with lower overhead.",
+            "E": "Upload each reading with multipart upload so that S3 processes the parts of every object in parallel across multiple partitions."
+        },
+        "correctAnswers": [
+            "B",
+            "C"
+        ],
+        "explanation": "B: S3 request-rate limits apply per partitioned prefix, so spreading keys across many prefixes, for example raw/<shard>/YYYY-MM-DD/..., multiplies the available PUT throughput; at least six prefixes are needed for 20,000 PUTs per second. Downstream jobs can still process each day by listing each shard's date prefix. C: AWS recommends retrying 503 Slow Down responses with exponential backoff and jitter, which smooths bursts while S3 scales its partitions to the sustained request rate.",
+        "whyOthersAreWrong": {
+            "A": "Transfer Acceleration speeds long-distance transfers through edge locations; it does not raise per-prefix request-rate limits.",
+            "D": "Storage class has no effect on request-rate limits, and One Zone-IA adds retrieval fees and a minimum billable object size for small files.",
+            "E": "Multipart upload is intended for large objects; using it for small readings multiplies the number of requests and worsens throttling."
+        },
+        "learningObjective": "Scale S3 request throughput by distributing keys across prefixes and retrying throttled requests with backoff.",
+        "topic": "Amazon S3",
+        "tags": [
+            "s3",
+            "request-rate",
+            "prefixes",
+            "exponential-backoff",
+            "performance"
+        ]
+    },
+    {
+        "id": "saa-1995",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A research company is migrating 300 TB from an on-premises NFS file server to Amazon EFS. The data center has a 10 Gbps AWS Direct Connect connection that is mostly unused. Researchers will keep modifying files until a cutover weekend in 3 weeks, so changes must be synchronized repeatedly before a final short sync. The migration must automatically verify data integrity, preserve file metadata, and limit bandwidth during business hours so that other workloads are not affected. The team wants the LEAST operational effort. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Deploy an AWS DataSync agent on premises and create a task from the NFS share to EFS over Direct Connect with a bandwidth limit and scheduled incremental runs.",
+            "B": "Order AWS Snowball Edge devices to copy the 300 TB offline, ship them to AWS for import, and then copy the imported data into the EFS file system.",
+            "C": "Deploy an Amazon S3 File Gateway on premises, copy the NFS data to the gateway's file share, and mount the resulting S3 data as the EFS file system.",
+            "D": "Mount both the NFS share and EFS on several EC2 instances connected over Direct Connect and run parallel rsync jobs from cron every night."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "AWS DataSync transfers data from NFS to EFS over Direct Connect using a parallel, optimized protocol. Its tasks preserve file metadata, verify data integrity, support bandwidth limits, and can run on a schedule, copying only changed files after the initial transfer. A final incremental run during the cutover weekend completes the migration quickly. At 10 Gbps, 300 TB can transfer within days, well inside the 3-week window. Parallel rsync can also work, but it requires building, scheduling, monitoring, and verifying the jobs manually.",
+        "whyOthersAreWrong": {
+            "B": "Snowball Edge imports data into S3, not EFS, and an offline copy cannot capture the ongoing changes made during shipping.",
+            "C": "S3 File Gateway stores data as objects in S3; it does not populate an EFS file system, and S3 cannot be mounted as EFS.",
+            "D": "Self-managed rsync jobs require custom scheduling, monitoring, retries, and integrity checks, increasing operational effort."
+        },
+        "learningObjective": "Use AWS DataSync for online NFS-to-EFS migration with incremental sync, verification, and bandwidth control.",
+        "topic": "AWS DataSync",
+        "tags": [
+            "datasync",
+            "efs",
+            "direct-connect",
+            "migration",
+            "nfs"
+        ]
+    },
+    {
+        "id": "saa-1996",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A software vendor distributes installers and updates to customers worldwide directly from a public Amazon S3 bucket in us-east-1. Customers download about 1.5 PB per month, mostly the same few hundred files, and data transfer out from S3 is now the largest item on the AWS bill. Customers in Asia and South America also report slow downloads. Downloads are anonymous, and the vendor wants to keep the bucket private to the public internet. The vendor wants to reduce cost and improve download performance with minimal operational effort. What should a solutions architect do?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable S3 Transfer Acceleration on the bucket and publish the accelerated endpoint URLs as the official download links for all customers.",
+            "B": "Replicate the bucket to S3 buckets in three additional Regions and use Route 53 latency-based routing to direct customers to the nearest bucket.",
+            "C": "Enable Requester Pays on the bucket so that customers who download installers pay the data transfer charges for their own downloads.",
+            "D": "Create a CloudFront distribution with the bucket as an origin using origin access control, and cache the installer files with long TTLs."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "CloudFront caches the frequently downloaded files at edge locations close to customers, improving download speed globally. Data transfer from S3 to CloudFront is free, and CloudFront data transfer out is priced lower than S3 data transfer out at this volume, with further tiered discounts. Origin access control lets the bucket block public access while CloudFront serves the files. Multi-Region replication also improves latency, but it adds replication and storage costs while still paying S3 data transfer out prices.",
+        "whyOthersAreWrong": {
+            "A": "Transfer Acceleration adds a per-GB fee on top of data transfer charges and is optimized for long-distance transfers, not cached distribution of repeated downloads.",
+            "B": "Replication triples storage and adds replication transfer costs, and customers still download at S3 data transfer out rates.",
+            "C": "Requester Pays requires requesters to be authenticated AWS accounts, which is incompatible with anonymous public downloads."
+        },
+        "learningObjective": "Reduce S3 data transfer cost and improve global download performance with CloudFront and origin access control.",
+        "topic": "Amazon CloudFront",
+        "tags": [
+            "cloudfront",
+            "s3",
+            "origin-access-control",
+            "data-transfer-cost",
+            "content-delivery"
+        ]
+    },
+    {
+        "id": "saa-1997",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs its production database on an Amazon RDS for PostgreSQL Multi-AZ DB instance of a fixed instance class. Load has been steady 24/7 for 2 years, and the company expects no instance changes for at least 3 more years. Production must remain Multi-AZ. The company also runs 15 RDS for PostgreSQL development and test instances that are used only on weekdays between 08:00 and 18:00, and their data must persist between working days with unchanged endpoints. The company wants to maximize savings with minimal operational effort. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Convert the production DB instance to a Single-AZ deployment and rely on automated backups for recovery in the event of an instance failure.",
+            "B": "Take a snapshot of each development instance every evening, delete the instances, and restore them from the snapshots every morning.",
+            "C": "Migrate the production database to Aurora Serverless v2 so that the company pays only for the database capacity it actually consumes.",
+            "D": "Purchase a 3-year RDS reserved DB instance that matches the production instance class, engine, Region, and Multi-AZ deployment.",
+            "E": "Use Amazon EventBridge Scheduler to stop the development instances at 18:00 and start them at 08:00 on weekdays, leaving them stopped on weekends."
+        },
+        "correctAnswers": [
+            "D",
+            "E"
+        ],
+        "explanation": "D: For a steady, predictable 24/7 database that will not change for 3 years, a 3-year RDS reserved DB instance matching the Multi-AZ configuration provides the largest discount compared with On-Demand. E: Stopped RDS instances incur no instance-hour charges, only storage, and keep their data and endpoints. Scheduling stop and start with EventBridge Scheduler eliminates about 70% of instance hours for the development fleet. Because the weekday schedule starts the instances well within RDS's 7-day stop limit, they never restart automatically.",
+        "whyOthersAreWrong": {
+            "A": "Production must remain Multi-AZ, and restoring from backups would greatly increase recovery time.",
+            "B": "Deleting and restoring daily is slow, operationally heavy, and changes instance endpoints unless additional work is done.",
+            "C": "Serverless v2 is cost-effective for variable load; for a steady 24/7 workload, a reserved instance is usually cheaper."
+        },
+        "learningObjective": "Combine RDS reserved instances for steady production with scheduled stop/start for part-time development databases.",
+        "topic": "Amazon RDS",
+        "tags": [
+            "rds",
+            "reserved-instances",
+            "eventbridge-scheduler",
+            "database-cost",
+            "dev-test"
+        ]
+    },
+    {
+        "id": "saa-1998",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A mobile gaming company's backend uses an Amazon API Gateway REST API with Lambda proxy integrations and handles about 2 billion requests per month. Requests are authorized with JWTs issued by an Amazon Cognito user pool. The API does not use API keys, usage plans, request validation, response caching, or AWS WAF, and none are planned. API Gateway request charges are now one of the largest items on the bill. The company wants to significantly reduce API costs without changing the mobile clients or the Lambda function code. What should a solutions architect do?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable API caching on the REST API stage with a 300-second TTL so that repeated requests are answered without invoking the Lambda functions.",
+            "B": "Change the REST API endpoint type to edge-optimized so that requests are served through CloudFront edge locations at a lower request price.",
+            "C": "Migrate to an API Gateway HTTP API with a JWT authorizer for the Cognito user pool and Lambda proxy integrations, and move the custom domain.",
+            "D": "Replace the Cognito authorizer with a Lambda authorizer that caches authorization results, so that fewer authorization calls are made."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "API Gateway HTTP APIs cost significantly less per request than REST APIs and support native JWT authorizers that validate Cognito user pool tokens, as well as Lambda proxy integrations. Because the API uses none of the REST-only features, such as API keys, usage plans, request validation, caching, or AWS WAF, it can migrate to an HTTP API. Moving the custom domain mapping keeps the mobile clients unchanged. Enabling caching is the closest distractor, but API Gateway still bills every request and adds an hourly cache charge.",
+        "whyOthersAreWrong": {
+            "A": "Every request is still billed at REST API rates, and the cache adds an hourly charge; per-user game responses also cache poorly.",
+            "B": "Edge-optimized endpoints use CloudFront for routing but do not lower API Gateway request charges or cache responses.",
+            "D": "API Gateway request charges are unchanged, and a Lambda authorizer adds invocation costs compared with the built-in Cognito authorizer."
+        },
+        "learningObjective": "Reduce API Gateway cost by migrating eligible REST APIs to HTTP APIs with JWT authorizers.",
+        "topic": "Amazon API Gateway",
+        "tags": [
+            "api-gateway",
+            "http-api",
+            "jwt-authorizer",
+            "cognito",
+            "cost-optimization"
+        ]
+    },
+    {
+        "id": "saa-1999",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company runs 400 x86-based m5 EC2 instances for stateless Java microservices behind load balancers. CloudWatch shows average CPU utilization of 8% and, with the CloudWatch agent installed, memory utilization around 25%. The application teams have tested the services on arm64 and confirmed full compatibility. Cost Explorer also shows significant spend on EBS volumes that are not attached to any instance, left behind by terminated test environments. The company wants to reduce compute and storage costs without degrading performance before committing to any long-term pricing. Which THREE actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Purchase 3-year Standard Reserved Instances for all 400 current m5 instances first to lock in the largest discount before making other changes.",
+            "B": "Enable detailed monitoring at 1-minute granularity on all 400 instances so that Cost Explorer can generate more accurate rightsizing data.",
+            "C": "Use AWS Compute Optimizer recommendations, including memory metrics from the CloudWatch agent, to downsize overprovisioned instances.",
+            "D": "Migrate the microservices to AWS Graviton-based instance types, which offer better price performance for the arm64-compatible workloads.",
+            "E": "Identify unattached EBS volumes, take snapshots where retention is required, and delete the volumes that are no longer needed."
+        },
+        "correctAnswers": [
+            "C",
+            "D",
+            "E"
+        ],
+        "explanation": "C: Compute Optimizer analyzes utilization, including memory when the CloudWatch agent publishes it, and recommends smaller instance types for consistently underused instances, without performance risk. D: Graviton-based instances provide better price performance than comparable x86 instances, and the teams have confirmed arm64 compatibility. E: Unattached EBS volumes are billed for provisioned storage even though nothing uses them; snapshotting what must be retained and deleting the rest removes that waste.",
+        "whyOthersAreWrong": {
+            "A": "Committing to the current oversized m5 fleet locks in spending on capacity that rightsizing and Graviton migration would eliminate.",
+            "B": "Detailed monitoring adds cost, and Compute Optimizer already produces rightsizing recommendations from standard metrics."
+        },
+        "learningObjective": "Reduce EC2 and EBS costs with Compute Optimizer rightsizing, Graviton migration, and cleanup of unattached volumes.",
+        "topic": "AWS Compute Optimizer",
+        "tags": [
+            "compute-optimizer",
+            "graviton",
+            "rightsizing",
+            "ebs",
+            "compute-cost"
+        ]
+    },
+    {
+        "id": "saa-2000",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial company stores 500 TB of archived transaction records, about 40 million objects, in the S3 Glacier Flexible Retrieval storage class. A regulator has requested access to the full archive, and the company must make the data available for analysis within 3 days. After the review, the restored copies are needed for only 14 days, and the archive must remain in Glacier Flexible Retrieval afterward. An S3 Inventory report for the bucket is already generated daily. The company wants the LOWEST retrieval cost and minimal custom tooling. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Purchase provisioned retrieval capacity and run Expedited restore requests for all objects so that the archive is available within minutes.",
+            "B": "Create an S3 Batch Operations job from an S3 Inventory report that restores every object with the Bulk retrieval tier for 14 days.",
+            "C": "Write a script that lists the bucket and issues a Standard-tier restore request for each object, with restored copies kept for 14 days.",
+            "D": "Add an S3 Lifecycle rule that transitions the archived objects back to S3 Standard and transitions them to Glacier again after 14 days."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "The Bulk retrieval tier is the lowest-cost option for S3 Glacier Flexible Retrieval and typically completes within 5 to 12 hours, well inside the 3-day window. S3 Batch Operations can initiate restore requests for millions of objects from an S3 Inventory manifest, with a 14-day expiration for the temporary copies, and it provides tracking and completion reports without custom code. The objects themselves remain in Glacier Flexible Retrieval. A Standard-tier script also meets the deadline, but it costs more per request and per GB and requires custom tooling.",
+        "whyOthersAreWrong": {
+            "A": "Expedited retrievals and provisioned capacity are the most expensive options and are intended for small, urgent restores, not 500 TB on a 3-day deadline.",
+            "C": "Standard retrieval costs more than Bulk, and a custom script must handle 40 million requests, retries, and tracking.",
+            "D": "Lifecycle rules cannot transition objects from Glacier storage classes back to S3 Standard; objects must be restored instead."
+        },
+        "learningObjective": "Use S3 Batch Operations with the Bulk retrieval tier for low-cost, large-scale Glacier restores.",
+        "topic": "Amazon S3 Glacier",
+        "tags": [
+            "s3-glacier",
+            "bulk-retrieval",
+            "s3-batch-operations",
+            "s3-inventory",
+            "storage-cost"
+        ]
+    }
+]
