@@ -1,0 +1,638 @@
+[
+    {
+        "id": "saa-2021",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A multinational insurer stores 400 TB of customer policy tables as Apache Parquet files in an Amazon S3 data lake cataloged in the AWS Glue Data Catalog. Business analysts across 12 country offices query the tables using Amazon Athena and Amazon Redshift Spectrum. A new privacy regulation requires that marketing analysts be blocked from seeing the national_id and medical_score columns in the policy table, and that analysts in each country office see only rows where the country_code column matches their assigned country. The data engineering team must not duplicate the underlying S3 Parquet files or maintain dozens of separate S3 bucket policies. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Register the S3 data lake path with AWS Lake Formation, create Lake Formation data cell filters that restrict columns and rows, and grant Lake Formation permissions to the analyst IAM roles.",
+            "B": "Create S3 Object Lambda Access Points with custom Lambda functions that parse each Parquet file on read and strip restricted columns and rows before returning data to Athena.",
+            "C": "Attach IAM session policies with s3:ExistingObjectTag conditions to each analyst role to filter specific columns and rows inside the Parquet files.",
+            "D": "Enable S3 Server-Side Encryption with separate AWS KMS keys for each column and row inside the Parquet files and grant KMS decrypt permissions per country."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "AWS Lake Formation provides centralized, fine-grained access control for data lakes backed by Amazon S3 and the AWS Glue Data Catalog. By registering the S3 location with Lake Formation and creating data cell filters (which combine column-level inclusion/exclusion lists and row-level SQL filter expressions such as country_code = 'DE'), Lake Formation enforces column, row, and cell security natively across both Amazon Athena and Amazon Redshift Spectrum without duplicating Parquet files. S3 Object Lambda is a plausible distractor, but rewriting binary columnar Parquet files on the fly in Lambda breaks Parquet predicate pushdown, hits payload size limits, and adds high compute cost.",
+        "whyOthersAreWrong": {
+            "B": "S3 Object Lambda operates on whole S3 GET requests and cannot efficiently parse and rewrite multi-hundred-megabyte columnar Parquet byte-range reads for Athena and Redshift Spectrum.",
+            "C": "S3 object tags apply to an entire S3 object (file), not to individual columns or rows inside a Parquet file.",
+            "D": "Amazon S3 SSE-KMS encrypts entire S3 objects, not individual columns or rows within a single Parquet file."
+        },
+        "learningObjective": "Use AWS Lake Formation data cell filters to enforce column-level and row-level security across Athena and Redshift Spectrum without duplicating S3 files.",
+        "topic": "AWS Lake Formation",
+        "tags": [
+            "lake-formation",
+            "cell-level-security",
+            "athena",
+            "redshift-spectrum",
+            "data-lake"
+        ]
+    },
+    {
+        "id": "saa-2022",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An online learning company delivers paid video courses through an Amazon CloudFront distribution backed by a private Amazon S3 bucket configured with Origin Access Control (OAC). Each course is stored in HLS format under /courses/<course-id>/ and consists of a master .m3u8 manifest file and up to 800 individual .ts video segment files. Once a student logs in and their course entitlement is verified, the web player must stream all 800 segment files seamlessly for the next 2 hours without rewriting manifest URLs or making 800 signing requests to the backend. Additionally, if a student copies their credentials to another device on a different public IP address, requests from that second IP must be rejected. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Generate an S3 pre-signed URL for each .ts segment file with a 2-hour expiration and return the list of 800 URLs to the video player.",
+            "B": "Associate a CloudFront trusted key group with the /courses/* cache behavior to require signed viewer requests.",
+            "C": "Have the application issue CloudFront signed cookies using a custom policy that specifies the /courses/<course-id>/* wildcard resource, a 2-hour expiration, and the viewer's IPv4 address.",
+            "D": "Have the application issue a single CloudFront signed URL with a canned policy that covers all files in the /courses/<course-id>/* directory and restricts the viewer IP address.",
+            "E": "Configure an AWS WAF rate-based rule on the CloudFront distribution to block viewers who download more than 800 segments in 5 minutes."
+        },
+        "correctAnswers": [
+            "B",
+            "C"
+        ],
+        "explanation": "B: Associating a trusted key group with the /courses/* cache behavior instructs CloudFront to verify cryptographic signatures on viewer requests before serving cached or origin content. C: CloudFront signed cookies allow a single authorization header set to grant access to multiple files (such as an HLS manifest and all 800 .ts segments) without altering relative URLs inside the .m3u8 manifest, and a custom policy supports both wildcard resource paths (/courses/<course-id>/*) and an IpAddress condition to bind access to the student's client IP.",
+        "whyOthersAreWrong": {
+            "A": "S3 pre-signed URLs bypass CloudFront caching, cannot use wildcards for 800 segments without rewriting the HLS manifest, and do not natively enforce client IP restrictions.",
+            "D": "CloudFront canned policies do not support client IP address restrictions, and signed URLs normally apply to individual URLs unless every manifest reference is rewritten.",
+            "E": "An AWS WAF rate-based rule only throttles high request rates and does not authenticate course entitlements or bind access to a single subscriber IP."
+        },
+        "learningObjective": "Use CloudFront signed cookies with custom policies and trusted key groups to authorize multi-file streaming restricted by path wildcard and client IP.",
+        "topic": "Amazon CloudFront",
+        "tags": [
+            "cloudfront",
+            "signed-cookies",
+            "custom-policy",
+            "trusted-key-group",
+            "media-security"
+        ]
+    },
+    {
+        "id": "saa-2023",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial services company operates 45 AWS accounts in AWS Organizations and runs workloads on Amazon EC2, containerized microservices stored in Amazon ECR, and serverless APIs on AWS Lambda. A new regulatory control requires continuous, automated vulnerability management across all three compute models: EC2 instances must be assessed for OS and software package CVEs without deploying additional third-party agents; ECR container images must be re-evaluated automatically whenever a new CVE is added to vulnerability databases, not only when an image is first pushed; and Lambda functions must be scanned for vulnerable code dependencies. All findings must feed centrally into AWS Security Hub. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable Amazon GuardDuty across the organization with Runtime Monitoring for EC2, ECS, and Lambda and export findings to Security Hub.",
+            "B": "Enable basic scanning on each Amazon ECR repository, schedule nightly AWS Systems Manager Patch Manager scans on EC2, and enable AWS X-Ray on Lambda.",
+            "C": "Deploy AWS Config conformance packs across all accounts to evaluate EC2 packages, ECR image layers, and Lambda deployment packages for CVEs.",
+            "D": "Designate an Amazon Inspector delegated administrator account for the organization and enable EC2 scanning, ECR enhanced scanning, and Lambda standard and code scanning."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Amazon Inspector provides automated, continual vulnerability management across EC2 (using the existing AWS Systems Manager Agent with no separate third-party agent), ECR container repositories (enhanced scanning continuously re-evaluates images when new CVEs are published), and AWS Lambda functions (scanning both package dependencies and custom code). With AWS Organizations delegated administration, Inspector is managed centrally and publishes all findings natively to AWS Security Hub. GuardDuty is a common distractor, but GuardDuty performs threat detection on suspicious behavior and logs rather than CVE vulnerability scanning of packages and dependencies.",
+        "whyOthersAreWrong": {
+            "A": "Amazon GuardDuty detects runtime threats and malicious activity, not software package CVEs in EC2, ECR image layers, or Lambda dependencies.",
+            "B": "ECR basic scanning only scans on push or manual trigger rather than continuously when new CVEs emerge, and AWS X-Ray is for distributed tracing, not vulnerability scanning.",
+            "C": "AWS Config evaluates resource configuration compliance, not operating system CVEs, container image vulnerabilities, or Lambda library vulnerabilities."
+        },
+        "learningObjective": "Use Amazon Inspector with AWS Organizations to continuously scan EC2 instances, ECR images, and Lambda functions for software vulnerabilities.",
+        "topic": "Amazon Inspector",
+        "tags": [
+            "inspector",
+            "vulnerability-management",
+            "ecr",
+            "lambda",
+            "security-hub"
+        ]
+    },
+    {
+        "id": "saa-2024",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A healthcare startup is preparing its production Amazon RDS for PostgreSQL DB instance for a HIPAA security audit. The auditor identified three gaps: first, the existing DB instance was launched without storage encryption and must now be encrypted at rest using a customer managed AWS KMS key; second, the database currently accepts both encrypted and unencrypted client connections, and the server must be configured to reject any non-TLS connection; third, AWS Lambda functions currently authenticate to PostgreSQL using a long-lived password stored in environment variables and must switch to short-lived, temporary IAM credentials. Which THREE actions should a solutions architect take to remediate all three findings?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Take a DB snapshot of the unencrypted RDS instance, copy the snapshot while enabling encryption with the customer managed KMS key, and restore a new DB instance from the encrypted snapshot.",
+            "B": "Set the rds.force_ssl parameter to 1 in a custom DB parameter group attached to the PostgreSQL DB instance.",
+            "C": "Modify the existing RDS DB instance in place through the console to enable KMS encryption during the next maintenance window.",
+            "D": "Enable IAM database authentication on the RDS instance, grant the rds_iam role to the PostgreSQL database user, and allow rds-db:connect in the Lambda execution role.",
+            "E": "Configure an inbound rule on the RDS security group that inspects packets and drops any PostgreSQL connection not using TLS 1.3."
+        },
+        "correctAnswers": [
+            "A",
+            "B",
+            "D"
+        ],
+        "explanation": "A: An unencrypted RDS DB instance cannot be encrypted in place; the supported path is to take a snapshot, copy that snapshot with encryption enabled using the target KMS key, and restore a new encrypted DB instance. B: Setting rds.force_ssl = 1 in the PostgreSQL DB parameter group forces the database engine to require SSL/TLS for every incoming client connection and reject unencrypted connections. D: Enabling RDS IAM database authentication, granting the rds_iam internal role to the PostgreSQL user, and permitting rds-db:connect on the Lambda IAM role lets functions authenticate with 15-minute STS-backed tokens instead of static passwords.",
+        "whyOthersAreWrong": {
+            "C": "Amazon RDS does not support enabling encryption at rest in place on an already running unencrypted DB instance.",
+            "E": "VPC security groups filter only by IP address, protocol, and port number at Layer 4 and cannot inspect or enforce TLS handshakes inside TCP port 5432."
+        },
+        "learningObjective": "Remediate RDS PostgreSQL security gaps by encrypting via snapshot copy/restore, enforcing TLS with rds.force_ssl, and enabling IAM database authentication.",
+        "topic": "Amazon RDS",
+        "tags": [
+            "rds-postgresql",
+            "encryption-at-rest",
+            "rds-force-ssl",
+            "iam-database-authentication",
+            "kms"
+        ]
+    },
+    {
+        "id": "saa-2025",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A global bank is migrating to AWS and must inspect all ingress and egress traffic across 20 workload VPCs using its existing certified third-party virtual intrusion prevention system (IPS) appliances running on Amazon EC2. The security team requires the appliances to run in a dedicated central inspection VPC, scale horizontally based on load, preserve the original source and destination IP addresses in inspected packets, and guarantee symmetric routing so both directions of a network flow traverse the same healthy appliance instance. Which networking architecture BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Place the third-party appliances behind an Application Load Balancer in the inspection VPC and route traffic from the workload VPCs through VPC peering.",
+            "B": "Deploy the third-party appliances behind a Gateway Load Balancer in the inspection VPC and route traffic through Gateway Load Balancer endpoints with Transit Gateway appliance mode enabled.",
+            "C": "Deploy the third-party appliances behind a Network Load Balancer with source IP preservation disabled and route traffic through AWS PrivateLink interface endpoints.",
+            "D": "Attach multiple Elastic Network Interfaces from each workload VPC directly to every third-party appliance EC2 instance in the inspection VPC."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Gateway Load Balancer (GWLB) is purpose-built for deploying, scaling, and managing third-party virtual network appliances such as firewalls and IPS systems. GWLB uses GENEVE encapsulation on port 6081 to transparently pass Layer 3 packets with their original source and destination IP headers intact, maintains flow stickiness to the same healthy appliance, and integrates withVPC and Transit Gateway route tables through Gateway Load Balancer endpoints (GWLBe). Enabling appliance mode on the Transit Gateway inspection VPC attachment ensures cross-AZ traffic stays symmetric through the same AZ's appliance. Network Load Balancer is a plausible distractor, but NLB acts as a TCP/UDP proxy or target endpoint for destined traffic rather than a transparent bump-in-the-wire Layer 3 gateway.",
+        "whyOthersAreWrong": {
+            "A": "Application Load Balancers terminate HTTP/HTTPS at Layer 7 and cannot transparently forward arbitrary Layer 3 packets through IPS appliances.",
+            "C": "Network Load Balancers and PrivateLink only accept traffic addressed to the endpoint's own IP and ports, not transparent bump-in-the-wire routing for arbitrary destinations.",
+            "D": "ENIs cannot span across different VPCs, and manually attaching interfaces to individual instances cannot scale horizontally or fail over cleanly."
+        },
+        "learningObjective": "Use Gateway Load Balancer, Gateway Load Balancer endpoints, and Transit Gateway appliance mode for centralized third-party network appliance inspection.",
+        "topic": "Elastic Load Balancing",
+        "tags": [
+            "gateway-load-balancer",
+            "gwlbe",
+            "transit-gateway",
+            "appliance-mode",
+            "network-inspection"
+        ]
+    },
+    {
+        "id": "saa-2026",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A cloud governance team manages 50 AWS accounts in AWS Organizations. Developers have permissions to modify Amazon EC2 security groups in their accounts to test application connectivity. However, corporate security policy strictly prohibits any security group from allowing inbound SSH (TCP port 22) from 0.0.0.0/0, while still allowing inbound SSH from an internal jump-host CIDR (10.100.0.0/24). Because IAM policies cannot easily inspect every CIDR element inside a complex AuthorizeSecurityGroupIngress request across legacy tools, the team wants a centrally managed detective control across all 50 accounts that detects any security group rule allowing 0.0.0.0/0 on port 22 and automatically revokes the offending rule within seconds. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Attach an AWS Organizations Service Control Policy (SCP) that denies the ec2:AuthorizeSecurityGroupIngress action across all member accounts.",
+            "B": "Enable AWS Trusted Advisor in each account and configure weekly email digests so administrators can manually remove open SSH rules.",
+            "C": "Deploy an AWS Config organization managed rule (restricted-ssh) with automatic remediation configured to invoke an AWS Systems Manager Automation runbook that revokes the noncompliant rule.",
+            "D": "Enable Amazon GuardDuty in the management account and configure it to automatically delete any EC2 security group that receives an SSH connection."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "AWS Config supports organization-wide rules deployed from the management account or a delegated administrator account. The managed rule incoming-ssh-disabled (restricted-ssh) evaluates security groups whenever configuration changes occur and flags any rule allowing inbound port 22 from 0.0.0.0/0 while permitting restricted CIDRs like 10.100.0.0/24. Pairing it with automatic remediation via an AWS Systems Manager Automation runbook (such as AWS-DisableIncomingSSHOnPort22 or RevokeSecurityGroupIngress) revokes the offending rule within seconds without blocking legitimate security group edits. An SCP denying AuthorizeSecurityGroupIngress is a common distractor, but it would block developers from adding legitimate rules for application ports and internal CIDRs.",
+        "whyOthersAreWrong": {
+            "A": "Denying ec2:AuthorizeSecurityGroupIngress via an SCP blocks all security group inbound rule additions, breaking legitimate application and internal SSH configuration.",
+            "B": "Weekly email digests and manual cleanup leave open SSH rules exposed for days rather than remediating them automatically within seconds.",
+            "D": "GuardDuty detects suspicious SSH brute-force attacks after traffic arrives, not configuration changes on idle security groups, and does not automatically revoke rules."
+        },
+        "learningObjective": "Enforce near-real-time automated security group remediation across AWS Organizations using AWS Config organization rules and Systems Manager Automation.",
+        "topic": "AWS Config",
+        "tags": [
+            "aws-config",
+            "automated-remediation",
+            "systems-manager-automation",
+            "security-groups",
+            "organizations"
+        ]
+    },
+    {
+        "id": "saa-2027",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A payment processing company runs a containerized service on Amazon ECS using the EC2 launch type with an Auto Scaling group spanning three Availability Zones. During a recent operational review, engineers identified two resilience issues: first, after several deployments, all 9 running tasks of a critical microservice had been scheduled onto EC2 instances in a single Availability Zone; second, when cluster utilization dropped at night and the ECS capacity provider scaled in the Auto Scaling group, EC2 terminated an instance that was still running an active batch settlement task. Which configuration change will resolve BOTH issues?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure a task placement strategy that spreads tasks across attribute:ecs.availability-zone and enable managed termination protection with managed scaling on the ECS capacity provider.",
+            "B": "Change the task placement strategy to binpack on memory and enable instance scale-in protection permanently on every instance in the Auto Scaling group.",
+            "C": "Configure a distinctInstance placement constraint on the service and set the Auto Scaling group termination policy to OldestInstance.",
+            "D": "Enable cross-zone load balancing on the Application Load Balancer and increase the ECS container agent stopTimeout parameter to 120 seconds."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "A task placement strategy of type spread using attribute:ecs.availability-zone (often chained with instanceId) distributes running tasks evenly across Availability Zones so an AZ outage cannot take down all 9 tasks. Enabling managed termination protection (alongside managed scaling) on the ECS Auto Scaling group capacity provider ensures that Amazon ECS automatically protects any EC2 instance that contains non-daemon running tasks from being terminated during a scale-in event until its tasks have finished or been drained. Using distinctInstance is a plausible distractor, but 9 distinct instances can still all reside in the same Availability Zone, and OldestInstance does not check whether tasks are still running.",
+        "whyOthersAreWrong": {
+            "B": "Binpack concentrates tasks onto as few instances as possible (increasing single-AZ risk), and permanent scale-in protection on all instances prevents the cluster from ever scaling in.",
+            "C": "A distinctInstance constraint only puts tasks on separate instances without guaranteeing spread across Availability Zones, and OldestInstance still terminates instances with active tasks.",
+            "D": "Cross-zone load balancing only routes traffic across existing targets and does not control where ECS schedules tasks or prevent EC2 scale-in from terminating instances running long batch tasks."
+        },
+        "learningObjective": "Use ECS spread task placement across Availability Zones and capacity provider managed termination protection for resilient EC2-backed ECS clusters.",
+        "topic": "Amazon ECS",
+        "tags": [
+            "ecs",
+            "task-placement-strategy",
+            "capacity-providers",
+            "managed-termination-protection",
+            "high-availability"
+        ]
+    },
+    {
+        "id": "saa-2028",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A logistics company connects its primary on-premises data center to four VPCs in us-east-1 through a single 10 Gbps AWS Direct Connect connection terminated on an AWS Direct Connect gateway and associated with an AWS Transit Gateway. Last month, a construction crew severed the fiber line outside the Direct Connect colocation facility, causing a 9-hour outage for warehouse systems. The company wants to add a cost-effective, encrypted backup connection over its existing redundant internet circuits that will automatically take over routing within seconds if the Direct Connect link fails, while automatically returning traffic to Direct Connect once the fiber is restored. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Create an AWS Site-to-Site VPN attachment on the existing AWS Transit Gateway connected to the on-premises customer gateway device.",
+            "B": "Create a separate Site-to-Site VPN connection directly to a Virtual Private Gateway on each of the four VPCs and manually update VPC route tables during an outage.",
+            "C": "Configure static routes for all on-premises prefixes on the Transit Gateway route table pointing to the Site-to-Site VPN attachment.",
+            "D": "Configure dynamic BGP routing on both the Direct Connect transit virtual interface and the Site-to-Site VPN attachment, and enable Bidirectional Forwarding Detection (BFD) on the Direct Connect BGP session.",
+            "E": "Deploy an AWS Client VPN endpoint in each of the four VPCs so warehouse servers can establish OpenVPN tunnels when Direct Connect fails."
+        },
+        "correctAnswers": [
+            "A",
+            "D"
+        ],
+        "explanation": "A: Attaching an AWS Site-to-Site VPN connection to the same AWS Transit Gateway provides an encrypted IPsec backup path over the public internet that serves all four VPCs from a single hub. D: Using dynamic BGP on both connections allows AWS Transit Gateway route tables to automatically prefer the Direct Connect transit VIF routes over the Site-to-Site VPN routes during normal operation, while enabling BFD on the Direct Connect BGP session detects link failures in sub-second intervals so traffic fails over to the VPN and fails back automatically.",
+        "whyOthersAreWrong": {
+            "B": "Per-VPC Virtual Private Gateways with manual route table edits add operational overhead and fail the requirement for automatic failover within seconds.",
+            "C": "In Transit Gateway route evaluation, static routes take precedence over dynamic BGP routes, so a static VPN route would hijack traffic away from Direct Connect even when Direct Connect is healthy.",
+            "E": "AWS Client VPN is designed for interactive end-user laptops, not automated site-to-site BGP failover for data center networks."
+        },
+        "learningObjective": "Design automated Direct Connect failover using a Transit Gateway Site-to-Site VPN attachment, dynamic BGP route preference, and BFD.",
+        "topic": "AWS Direct Connect",
+        "tags": [
+            "direct-connect",
+            "site-to-site-vpn",
+            "transit-gateway",
+            "bgp",
+            "bfd"
+        ]
+    },
+    {
+        "id": "saa-2029",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A mortgage lender configures an Amazon S3 bucket to invoke an AWS Lambda function asynchronously whenever a loan officer uploads a scanned application package. Most invocations succeed and return a JSON summary object that needs to be routed to an Amazon EventBridge custom event bus for downstream workflows. However, about 1% of uploads are corrupted files that cause the Lambda function to fail even after Lambda's built-in asynchronous retries. Currently, failed invocation context is lost, and developers want to avoid writing, maintaining, and testing AWS SDK error-handling and EventBridge publishing code inside the Lambda function itself. Which configuration BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Attach an Amazon SQS dead-letter queue directly to the S3 bucket notification configuration and poll the Lambda CloudWatch Logs group with a second Lambda function.",
+            "B": "Convert the S3 event notification to invoke the Lambda function synchronously so the S3 service retries failed uploads and forwards the output to EventBridge.",
+            "C": "Wrap the Lambda function in an AWS Step Functions Express workflow triggered directly by the S3 bucket notification without EventBridge.",
+            "D": "Configure AWS Lambda Destinations on the function's asynchronous invocation settings with an OnSuccess destination targeting the EventBridge event bus and an OnFailure destination targeting an Amazon SQS queue."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "AWS Lambda Destinations for asynchronous invocations route execution results automatically without any SDK code inside the function handler. An OnSuccess destination forwards the request payload and the function's JSON response directly to an Amazon EventBridge event bus, while an OnFailure destination sends the full invocation record—including the input payload, stack trace, error message, and request context—to an Amazon SQS queue (or SNS/Lambda/EventBridge) after retries are exhausted. A traditional Lambda dead-letter queue (DLQ) is a common distractor, but DLQs only support SQS/SNS for failures (not OnSuccess routing to EventBridge) and omit the response/error stack trace metadata included by Destinations.",
+        "whyOthersAreWrong": {
+            "A": "Amazon S3 event notifications do not have a built-in dead-letter queue setting, and parsing CloudWatch Logs with another function adds unnecessary custom code.",
+            "B": "Amazon S3 event notifications always invoke Lambda asynchronously and cannot be configured for synchronous invocation.",
+            "C": "S3 event notifications cannot directly invoke Step Functions without first routing through EventBridge or a Lambda function."
+        },
+        "learningObjective": "Use AWS Lambda Destinations to declaratively route asynchronous invocation successes to EventBridge and failures with full context to SQS.",
+        "topic": "AWS Lambda",
+        "tags": [
+            "lambda-destinations",
+            "asynchronous-invocation",
+            "eventbridge",
+            "sqs",
+            "error-handling"
+        ]
+    },
+    {
+        "id": "saa-2030",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A travel booking platform runs stateless web servers in an Amazon EC2 Auto Scaling group behind an Application Load Balancer across three Availability Zones: us-east-1a, us-east-1b, and us-east-1c. The operations team recently disabled cross-zone load balancing on the ALB target group in an attempt to optimize traffic locality and lowered the target group deregistration delay to 15 seconds to speed up deployments. Since that change, two problems have occurred: first, checkout requests that call external airline APIs and take up to 45 seconds are dropped with HTTP 502 errors whenever Auto Scaling terminates an instance during a deployment; second, when capacity imbalances leave 2 instances in us-east-1a and 6 instances each in us-east-1b and us-east-1c, the 2 instances in us-east-1a become overloaded at 95% CPU while the others sit at 30% CPU. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable sticky sessions (session affinity) with duration-based cookies set to 60 seconds on the ALB target group.",
+            "B": "Increase the ALB idle timeout to 300 seconds while keeping the target group deregistration delay at 15 seconds.",
+            "C": "Increase the target group deregistration delay (connection draining timeout) to at least 60 seconds so in-flight checkout requests complete before an instance is terminated.",
+            "D": "Replace the Application Load Balancer with a Network Load Balancer and disable cross-zone load balancing.",
+            "E": "Re-enable cross-zone load balancing on the ALB target group so each ALB node distributes requests evenly across all 14 healthy instances regardless of Availability Zone."
+        },
+        "correctAnswers": [
+            "C",
+            "E"
+        ],
+        "explanation": "C: When an instance is deregistering, the target group deregistration delay determines how long the ALB waits for in-flight requests to finish before forcibly closing connections; setting it to at least 60 seconds accommodates the 45-second airline checkout calls without HTTP 502 errors. E: When cross-zone load balancing is disabled on an ALB target group, each AZ's load balancer node sends one-third of total traffic only to instances in its own AZ (so the 2 instances in us-east-1a each get 16.7% of traffic while the other 12 instances get 5.5% each). Re-enabling cross-zone load balancing spreads traffic evenly across all healthy instances at no inter-AZ data transfer charge on an ALB.",
+        "whyOthersAreWrong": {
+            "A": "Sticky sessions bind users to specific instances, which worsens load imbalance across unevenly populated AZs and does not stop connections from terminating after the 15-second deregistration delay.",
+            "B": "The ALB idle timeout applies to idle keep-alive connections, whereas deregistering instances are still cut off once the 15-second deregistration delay expires.",
+            "D": "Replacing the ALB with an NLB with cross-zone load balancing disabled keeps the exact same AZ load imbalance and loses Layer 7 routing."
+        },
+        "learningObjective": "Tune ALB target group deregistration delay for long-running requests and enable cross-zone load balancing to prevent per-AZ instance overload.",
+        "topic": "Elastic Load Balancing",
+        "tags": [
+            "alb",
+            "deregistration-delay",
+            "cross-zone-load-balancing",
+            "resilience",
+            "auto-scaling"
+        ]
+    },
+    {
+        "id": "saa-2031",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A smart-meter utility company ingests voltage readings from 1 million homes into an Amazon Kinesis Data Stream with 50 shards. An AWS Lambda function processes the stream in batches of 500 records using a standard event source mapping. Yesterday, a firmware glitch on a single meter produced a malformed JSON record that caused the Lambda function to throw an unhandled exception. Because the function failed on the batch, Lambda repeatedly retried the exact same batch of 500 records until the stream retention expired 24 hours later, blocking all subsequent valid meter readings on that shard. The company needs to automatically isolate any malformed record to an Amazon SQS queue within a few retries while allowing the other 499 valid records in the batch and the rest of the shard to process normally, without changing the producer firmware. What should a solutions architect do?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Increase the Kinesis stream shard count from 50 to 200 and reduce the Lambda batch size from 500 to 1 record.",
+            "B": "Configure the Lambda Kinesis event source mapping with BisectBatchOnFunctionError enabled, MaximumRetryAttempts set to a low number such as 3, and an OnFailure destination pointing to the SQS queue.",
+            "C": "Replace the Kinesis Data Stream with Amazon Data Firehose delivering directly to the Lambda function with a 60-second buffer interval.",
+            "D": "Configure an Amazon SQS dead-letter queue on the Lambda function itself under the asynchronous invocation settings."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "For stream-based event source mappings (Kinesis and DynamoDB Streams), enabling BisectBatchOnFunctionError splits a failed batch in half and retries each half recursively whenever the function returns an error, isolating the single poison-pill record while allowing the remaining 499 valid records to succeed. Combining this with MaximumRetryAttempts (e.g., 3) and an OnFailure destination on the event source mapping sends the isolated failed record's metadata to an SQS queue so the shard advances immediately. Configuring a dead-letter queue on the Lambda function itself is a classic trap: function-level DLQs apply only to asynchronous invocations (like S3 or SNS), not to poll-based stream event source mappings.",
+        "whyOthersAreWrong": {
+            "A": "Setting batch size to 1 record multiplies Lambda invocations by 500x (drastically raising cost and throttling risk) and still blocks the shard on a poison pill unless retry limits are set.",
+            "C": "Data Firehose is designed for buffered delivery to storage destinations like S3/Redshift/OpenSearch, not real-time shard-ordered stream processing with per-record poison-pill isolation.",
+            "D": "A function-level asynchronous dead-letter queue is ignored by poll-based Kinesis event source mappings; stream error handling must be configured on the event source mapping itself."
+        },
+        "learningObjective": "Prevent poison-pill records from blocking Kinesis shards by configuring BisectBatchOnFunctionError, MaximumRetryAttempts, and an OnFailure destination on the Lambda event source mapping.",
+        "topic": "Amazon Kinesis",
+        "tags": [
+            "kinesis-data-streams",
+            "lambda-event-source-mapping",
+            "bisect-batch-on-error",
+            "poison-pill",
+            "resilience"
+        ]
+    },
+    {
+        "id": "saa-2032",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A B2B marketplace stores 45 million industrial part listings in an Amazon DynamoDB table that serves single-item lookups by part ID with single-digit millisecond latency. Now, buyers want a search bar that supports free-text keyword search across long descriptions, typo tolerance (fuzzy matching), relevance scoring, and multi-attribute faceted counts by manufacturer, category, and specification range in under 200 milliseconds. New and updated listings in DynamoDB must appear in search results within a few seconds. The engineering team wants a managed AWS solution that synchronizes data from DynamoDB without writing or maintaining custom AWS Lambda replication code. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create five Global Secondary Indexes (GSIs) on the DynamoDB table and use DynamoDB Query operations with the contains() filter expression for fuzzy text matching.",
+            "B": "Deploy an Amazon DynamoDB Accelerator (DAX) cluster in front of the DynamoDB table and run parallel Scan operations against the DAX endpoint.",
+            "C": "Configure the Amazon DynamoDB zero-ETL integration with Amazon OpenSearch Service (using OpenSearch Ingestion, PITR, and DynamoDB Streams) and point the search API at the OpenSearch domain.",
+            "D": "Export the DynamoDB table to Amazon S3 every night and run Amazon Athena SQL queries with LIKE clauses whenever a buyer uses the search bar."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "Amazon OpenSearch Service is purpose-built for sub-second full-text search, fuzzy typo matching, relevance ranking, and faceted aggregations across millions of documents. The managed DynamoDB zero-ETL integration with Amazon OpenSearch Service (powered by Amazon OpenSearch Ingestion using Point-in-Time Recovery for initial backfill and DynamoDB Streams for ongoing change data capture) continuously replicates items into OpenSearch within seconds with zero custom Lambda code. DynamoDB GSIs and DAX are common distractors, but DynamoDB does not support inverted-index full-text search, relevance scoring, fuzzy matching, or multi-facet counts without expensive scans.",
+        "whyOthersAreWrong": {
+            "A": "DynamoDB GSIs require an exact partition key match, and contains() filter expressions perform substring scans after reading items—without fuzzy matching, relevance ranking, or facet aggregations.",
+            "B": "DAX caches exact key/query lookups and scans in memory, but it does not add full-text search, typo tolerance, or faceted aggregation capabilities to DynamoDB.",
+            "D": "Nightly exports to S3 have 24-hour staleness instead of seconds, and Athena batch queries take seconds rather than under 200 ms for interactive user search."
+        },
+        "learningObjective": "Use the DynamoDB zero-ETL integration with Amazon OpenSearch Service for near-real-time full-text, fuzzy, and faceted search without custom sync code.",
+        "topic": "Amazon OpenSearch Service",
+        "tags": [
+            "opensearch",
+            "dynamodb",
+            "zero-etl",
+            "opensearch-ingestion",
+            "full-text-search"
+        ]
+    },
+    {
+        "id": "saa-2033",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A climate research institute runs daily transient Apache Spark jobs on Amazon EMR that process 60 TB of satellite imagery stored in Amazon S3 and write 15 TB of aggregated Apache Parquet files back to S3. Monitoring shows two major performance bottlenecks: first, during multi-stage Spark joins and aggregations, intermediate shuffle data spills heavily to disk and throttles on the core nodes' standard gp2 EBS volumes; second, at the end of the job, Spark spends 35 minutes copying and renaming thousands of temporary output files in S3 from a staging prefix to the final output prefix. Which TWO changes should a solutions architect make to minimize total job runtime?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Select storage-optimized EC2 instance types with local NVMe instance store SSDs (such as i4i or i3en) for the EMR core and task nodes so Spark shuffle data uses high-throughput local NVMe disks.",
+            "B": "Mount an Amazon EFS file system in Max I/O mode across all EMR nodes and configure Spark to write all local shuffle spill files to EFS.",
+            "C": "Switch the EMR output format from Apache Parquet to uncompressed JSON so Spark skips columnar compression CPU overhead before uploading to S3.",
+            "D": "Enable S3 Versioning and Cross-Region Replication on the output S3 bucket so object renames execute in parallel across Regions.",
+            "E": "Confirm and use the EMRFS S3-optimized committer for Spark Parquet writes so tasks write directly to final S3 locations using multipart upload staging without object renames."
+        },
+        "correctAnswers": [
+            "A",
+            "E"
+        ],
+        "explanation": "A: Because the EMR cluster is transient and reads/writes persistent data in S3, intermediate Spark shuffle data is temporary; placing core and task nodes on instance types with local NVMe instance store SSDs (like i4i/i3en) provides hundreds of thousands of local random IOPS and gigabytes per second of throughput with zero EBS network bottleneck. E: Because S3 is an object store where 'renaming' a file requires a full server-side copy and delete, the EMRFS S3-optimized committer uses S3 multipart uploads and commits them only at job completion, eliminating the 35-minute staging copy/rename phase.",
+        "whyOthersAreWrong": {
+            "B": "Writing heavy local Spark shuffle spills over the network to a shared EFS file system introduces higher latency and network contention compared to local NVMe SSDs.",
+            "C": "Uncompressed JSON increases output volume several-fold, slowing down S3 uploads and downstream analytics queries.",
+            "D": "S3 Versioning and Cross-Region Replication add storage and replication costs and do not speed up S3 copy-and-delete rename operations."
+        },
+        "learningObjective": "Accelerate transient EMR Spark workloads by using local NVMe instance store nodes for shuffle I/O and the EMRFS S3-optimized committer for Parquet output.",
+        "topic": "Amazon EMR",
+        "tags": [
+            "emr",
+            "apache-spark",
+            "instance-store",
+            "nvme",
+            "s3-optimized-committer"
+        ]
+    },
+    {
+        "id": "saa-2034",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A global media portal serves static and cached dynamic pages through Amazon CloudFront to 200 million daily requests. For every incoming viewer request, edge code must inspect the CloudFront-Viewer-Country header and a lightweight user_tier cookie, normalize the URL query string parameters into alphabetical order to improve cache hit ratio, and rewrite the request URI path to point to the appropriate regional folder before CloudFront checks its cache. The logic requires no external network calls, runs in under 0.5 milliseconds, and touches only request headers, cookies, and URLs. Currently, this logic runs in Lambda@Edge on the viewer-request trigger, and the company wants to cut edge compute costs and invocation latency as much as possible. What should a solutions architect recommend?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Move the Lambda@Edge function from the viewer-request trigger to the origin-request trigger and increase its allocated memory to 1,024 MB.",
+            "B": "Migrate the header inspection, query string normalization, and URL rewrite logic to a CloudFront Function on the viewer-request event.",
+            "C": "Deploy an Application Load Balancer in front of the CloudFront distribution and use ALB host and path routing rules to rewrite the URLs.",
+            "D": "Replace the edge code with Amazon Route 53 geolocation routing records pointing to separate S3 buckets for each country."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "CloudFront Functions run directly at all CloudFront edge locations (rather than regional edge caches) in a lightweight JavaScript runtime designed specifically for sub-millisecond viewer-request and viewer-response manipulations such as URL rewrites, header/cookie inspection, and query string normalization before cache lookup. They scale to millions of requests per second at a fraction of the cost and latency of Lambda@Edge. Moving Lambda@Edge to origin-request is a plausible distractor, but query-string normalization and URL rewriting that determine the cache key must run on viewer-request before CloudFront checks the cache.",
+        "whyOthersAreWrong": {
+            "A": "Moving query string normalization to origin-request occurs after the CloudFront cache lookup, defeating cache hit ratio optimization.",
+            "C": "An Application Load Balancer cannot be placed in front of CloudFront, and routing everything to a single Regional ALB loses global edge performance.",
+            "D": "Route 53 DNS routing cannot inspect HTTP cookies or normalize URL query strings."
+        },
+        "learningObjective": "Choose CloudFront Functions over Lambda@Edge for sub-millisecond, high-volume viewer-request header, cookie, and URL manipulations.",
+        "topic": "Amazon CloudFront",
+        "tags": [
+            "cloudfront-functions",
+            "lambda-at-edge",
+            "cache-hit-ratio",
+            "edge-computing",
+            "performance"
+        ]
+    },
+    {
+        "id": "saa-2035",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A telecom billing company runs a monolithic database on Amazon RDS for Oracle using a db.r6i.16xlarge instance with a single 8 TB General Purpose SSD (gp3) storage volume configured at the gp3 maximum of 16,000 IOPS and 1,000 MB/s throughput. During monthly billing cycle runs, database write and read activity surges to 110,000 random IOPS and 2,400 MB/s of disk throughput for 18 hours, causing severe I/O queue depth spikes and application timeouts. Because of third-party vendor licensing and proprietary stored procedures, the database cannot be migrated to another database engine or sharded across multiple instances. Which storage change will resolve the I/O bottleneck?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Increase the gp3 storage volume size from 8 TB to 64 TB so that the baseline IOPS scales automatically to 192,000 IOPS.",
+            "B": "Create five RDS read replicas in the same Availability Zone to offload the write-heavy monthly billing batch transactions.",
+            "C": "Convert the storage volume from gp3 to Throughput Optimized HDD (st1) to support the 2,400 MB/s throughput requirement.",
+            "D": "Modify the RDS DB instance to use Provisioned IOPS SSD (io2 Block Express) storage provisioned with at least 110,000 IOPS."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "On Nitro-based RDS DB instances such as db.r6i.16xlarge, Provisioned IOPS SSD (io2 Block Express) volumes support up to 256,000 IOPS and up to 4,000 MB/s of storage throughput with sub-millisecond latency and 99.999% durability. Modifying the RDS instance storage type to io2 with 110,000+ provisioned IOPS satisfies both the 110,000 random IOPS and 2,400 MB/s throughput demands without changing the Oracle engine or sharding. Increasing gp3 volume size is a common distractor based on legacy gp2 behavior, but a single gp3 volume in RDS is capped at 16,000 IOPS and 1,000 MB/s (or up to 64,000 IOPS with storage striping on specific configurations, still well below 110,000 IOPS).",
+        "whyOthersAreWrong": {
+            "A": "Unlike gp2, gp3 IOPS are provisioned independently of volume size and remain below the 110,000 IOPS and 2,400 MB/s requirement.",
+            "B": "Read replicas handle only read queries and cannot offload write-heavy monthly billing transactions on the primary instance.",
+            "C": "Throughput Optimized HDD (st1) is not a supported storage type for Amazon RDS and is unsuitable for random IOPS database workloads."
+        },
+        "learningObjective": "Use Provisioned IOPS SSD (io2 Block Express) on Nitro-based RDS instances for extreme IOPS and throughput workloads that exceed gp3 limits.",
+        "topic": "Amazon RDS",
+        "tags": [
+            "rds",
+            "io2-block-express",
+            "provisioned-iops",
+            "gp3",
+            "database-performance"
+        ]
+    },
+    {
+        "id": "saa-2036",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A cybersecurity provider ingests 50 TB per month of firewall logs into an Amazon S3 bucket partitioned using the deterministic path s3://sec-logs/year=YYYY/month=MM/day=DD/hour=HH/region=REG/. Security analysts query the data continuously using Amazon Athena, almost always filtering on 3 of the 45 columns along with a recent date/hour range and region. Two problems are slowing down investigations and inflating costs: first, newly arrived hourly folders are invisible to Athena until an AWS Glue crawler or MSCK REPAIR TABLE runs, and with over 400,000 partitions in the Glue Data Catalog, partition metadata lookup alone adds 25 seconds to every query; second, the files are stored as GZIP-compressed CSV, forcing Athena to scan all 45 columns. Which TWO actions should a solutions architect take?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Remove all S3 prefix partitioning and place all log files in the root of the S3 bucket so Athena skips partition metadata lookups.",
+            "B": "Enable Partition Projection on the Athena table in the AWS Glue Data Catalog with date and enum projection rules matching the S3 prefix structure, and stop running the Glue crawler.",
+            "C": "Provision a dedicated 16-node Amazon EMR cluster running 24/7 to execute the ad-hoc SQL queries against the GZIP CSV files.",
+            "D": "Convert the incoming log files into a columnar format such as Apache Parquet compressed with Snappy or Zstandard.",
+            "E": "Replicate the 50 TB per month of GZIP CSV files into an Amazon RDS for MySQL database and create B-tree indexes on the 3 queried columns."
+        },
+        "correctAnswers": [
+            "B",
+            "D"
+        ],
+        "explanation": "B: Athena Partition Projection calculates partition locations in memory using configured patterns (such as date ranges for year/month/day/hour and enum lists for region) instead of querying hundreds of thousands of partitions in the AWS Glue Data Catalog or waiting for Glue crawlers/MSCK REPAIR TABLE, making new hourly folders queryable immediately with near-zero metadata overhead. D: Storing the logs in a compressed columnar format like Apache Parquet allows Athena to read only the 3 requested columns rather than scanning all 45 columns in GZIP CSV, cutting both query latency and per-TB scan cost by over 90%.",
+        "whyOthersAreWrong": {
+            "A": "Removing partitioning forces Athena to scan the entire multi-petabyte bucket on every time-range query, massively increasing cost and runtime.",
+            "C": "A 24/7 16-node EMR cluster adds high continuous compute cost and still reads all 45 columns if the data remains in GZIP CSV.",
+            "E": "Loading 50 TB per month of append-only log data into an OLTP relational database like RDS for MySQL is prohibitively expensive and scales poorly."
+        },
+        "learningObjective": "Accelerate high-partition Athena log queries and lower scan costs by combining Partition Projection with columnar Apache Parquet storage.",
+        "topic": "Amazon Athena",
+        "tags": [
+            "athena",
+            "partition-projection",
+            "parquet",
+            "glue-data-catalog",
+            "query-optimization"
+        ]
+    },
+    {
+        "id": "saa-2037",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A threat-intelligence company runs 150 Linux EC2 instances in private subnets across three Availability Zones. The instances continuously download 250 TB per month of public threat feeds, OS repository mirrors, and certificate transparency logs over HTTPS from external internet endpoints that all support dual-stack IPv4 and IPv6. Currently, all outbound traffic routes over IPv4 through three NAT gateways, resulting in thousands of dollars per month in NAT gateway per-GB data processing charges. Security policy requires that external hosts on the internet never be able to initiate inbound connections to the EC2 instances. Which networking change will eliminate the NAT gateway processing charges for this dual-stack internet traffic MOST cost-effectively?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Attach an internet gateway to the private subnets, assign public IPv4 addresses to all 150 instances, and rely solely on host-level iptables rules to block inbound connections.",
+            "B": "Deploy an AWS Network Firewall endpoint in each Availability Zone in front of the three NAT gateways to compress outbound HTTPS traffic.",
+            "C": "Associate an IPv6 CIDR block with the VPC and private subnets, assign IPv6 addresses to the instances, attach an egress-only internet gateway to the VPC, and route ::/0 to it.",
+            "D": "Create interface VPC endpoints (AWS PrivateLink) for each external public internet threat-feed domain name."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "An egress-only internet gateway is a horizontally scaled, redundant, and stateful VPC component for IPv6 traffic that allows instances in private subnets to initiate outbound connections to the internet over IPv6 while blocking any unsolicited inbound IPv6 connections from the internet. Unlike a NAT gateway, an egress-only internet gateway has no hourly charge and no per-GB data processing charge, eliminating the NAT gateway fees on the 250 TB per month of dual-stack downloads while preserving private-subnet outbound-only security. Assigning public IPv4 addresses in public subnets is a distractor that incurs public IPv4 hourly charges for 150 instances and exposes instances on a two-way internet gateway.",
+        "whyOthersAreWrong": {
+            "A": "Public IPv4 addresses incur hourly per-IP charges, and attaching private subnets directly to an internet gateway turns them into public subnets.",
+            "B": "AWS Network Firewall does not compress HTTPS traffic and adds its own hourly endpoint and per-GB data processing charges on top of the NAT gateway fees.",
+            "D": "AWS PrivateLink interface endpoints only connect to AWS services or VPC endpoint services hosted in AWS, not arbitrary public internet servers."
+        },
+        "learningObjective": "Eliminate NAT gateway data processing charges for outbound dual-stack internet traffic by routing IPv6 through a free egress-only internet gateway.",
+        "topic": "Amazon VPC",
+        "tags": [
+            "egress-only-internet-gateway",
+            "ipv6",
+            "nat-gateway",
+            "network-cost",
+            "vpc"
+        ]
+    },
+    {
+        "id": "saa-2038",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media rendering platform runs stateless video encoding workers in an Amazon EC2 Auto Scaling group across three Availability Zones. Business SLAs require a steady baseline of 15 instances running 24/7 to process priority jobs immediately, while daily peaks scale the group up to 110 instances for queued jobs that checkpoint progress to Amazon S3 every minute and can tolerate instance interruptions. Previously, the team configured a Spot-only Auto Scaling group using a single c6i.4xlarge instance type, which suffered frequent capacity interruptions during peak hours and occasionally dropped below the 15-instance baseline. Which TWO actions should a solutions architect take to minimize compute cost while protecting the baseline and maximizing Spot availability?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Switch the entire Auto Scaling group to 100% On-Demand instances and set the minimum capacity to 110 instances.",
+            "B": "Configure the Spot allocation strategy as lowest-price restricted to a single Availability Zone and a single instance type.",
+            "C": "Purchase EC2 Dedicated Hosts for all 110 instances so no other AWS customers can interrupt the capacity.",
+            "D": "Configure a mixed instances policy on the Auto Scaling group with an On-Demand base capacity of 15 (covered by a Compute Savings Plan) and 100% Spot instances for capacity above the base.",
+            "E": "Define multiple compatible instance families, sizes, and generations across all three Availability Zones using the price-capacity-optimized Spot allocation strategy and enable Capacity Rebalancing."
+        },
+        "correctAnswers": [
+            "D",
+            "E"
+        ],
+        "explanation": "D: A mixed instances policy with an On-Demand base capacity of 15 guarantees that the 24/7 SLA baseline is never subject to Spot interruptions (and a Compute Savings Plan discounts that steady baseline), while setting the percentage above base to 100% Spot captures up to 90% savings on the 95 burst instances. E: Specifying a diversified list of compatible instance types across all three AZs with the price-capacity-optimized allocation strategy selects from the deepest, least-interrupted Spot pools at low prices, and Capacity Rebalancing proactively launches a replacement Spot instance when an instance receives a rebalance recommendation before termination.",
+        "whyOthersAreWrong": {
+            "A": "Running 110 On-Demand instances 24/7 eliminates both elasticity savings and Spot discounts for fault-tolerant burst jobs.",
+            "B": "Using lowest-price in a single AZ and single instance type concentrates all workers in one Spot pool, maximizing the risk of simultaneous interruptions.",
+            "C": "Dedicated Hosts are the most expensive physical server option and are meant for bring-your-own-license (BYOL) or compliance needs, not elastic Spot bursts."
+        },
+        "learningObjective": "Optimize EC2 Auto Scaling cost and resilience by combining an On-Demand base with diversified price-capacity-optimized Spot instances and Capacity Rebalancing.",
+        "topic": "Amazon EC2 Auto Scaling",
+        "tags": [
+            "auto-scaling",
+            "mixed-instances-policy",
+            "spot-instances",
+            "price-capacity-optimized",
+            "compute-cost"
+        ]
+    },
+    {
+        "id": "saa-2039",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A SaaS enterprise operates 30 AWS accounts in AWS Organizations and runs multi-tenant microservices on shared Amazon ECS and Amazon EKS clusters. The FinOps team needs to build an automated chargeback pipeline that exports hourly line-item usage data—including individual resource IDs, user-defined cost allocation tags, amortized Savings Plans and Reserved Instance rates, and container-level split cost allocation data—into an Amazon S3 bucket so the team can run SQL queries with Amazon Athena and visualize per-tenant unit costs in Amazon QuickSight. The solution must require the LEAST custom code. Which AWS feature BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure AWS Billing and Cost Management Data Exports (Cost and Usage Report) in the management account with hourly granularity, resource IDs, split cost allocation data, and Parquet delivery to Amazon S3.",
+            "B": "Write a custom AWS Lambda function that calls the AWS Cost Explorer GetCostAndUsage API every hour for every resource ID and writes the JSON responses to Amazon S3.",
+            "C": "Configure AWS Budgets in each of the 30 member accounts to email daily CSV summary reports to the FinOps team.",
+            "D": "Enable AWS Trusted Advisor Cost Optimization checks and export the weekly check summaries to Amazon S3 for Athena queries."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "AWS Cost and Usage Reports (CUR) via AWS Billing and Cost Management Data Exports provide the most comprehensive, line-item billing dataset available in AWS. When created in the Organizations management account, CUR can include hourly granularity, individual resource IDs, cost allocation tags, amortized commitment discounts, and split cost allocation data for shared ECS and EKS container workloads, delivered directly to Amazon S3 in Apache Parquet format with native AWS Glue and Amazon Athena integration. Calling the Cost Explorer API via Lambda is a plausible distractor, but the Cost Explorer API charges per request, caps resource-level retention/granularity, and requires custom pagination and ETL code.",
+        "whyOthersAreWrong": {
+            "B": "The Cost Explorer API incurs per-request charges, limits resource-level lookback and granularity, and requires custom ETL code to convert into Parquet for Athena.",
+            "C": "AWS Budgets provides high-level threshold alerts and summary emails, not hourly resource-ID and container split cost line items in S3.",
+            "D": "Trusted Advisor provides optimization recommendations (such as idle load balancers), not granular hourly billing and tag chargeback line items."
+        },
+        "learningObjective": "Use AWS Cost and Usage Reports (Data Exports) in Parquet format with split cost allocation data for granular Athena and QuickSight FinOps chargeback.",
+        "topic": "AWS Cost and Usage Report",
+        "tags": [
+            "cur",
+            "cost-allocation-tags",
+            "split-cost-allocation",
+            "athena",
+            "finops"
+        ]
+    },
+    {
+        "id": "saa-2040",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A software company's monthly Amazon CloudWatch bill has grown to $38,000. An architecture review uncovered three distinct logging patterns driving the cost: first, 60 workload VPCs publish high-volume VPC Flow Logs to CloudWatch Logs even though the security team only runs SQL queries on them once a month for compliance reporting and never uses CloudWatch metric filters or real-time alarms on them; second, hundreds of development Lambda functions write verbose DEBUG logs to CloudWatch Logs log groups whose retention is set to Never expire; third, high-volume production microservice debug logs must still be queryable on demand with CloudWatch Logs Insights during incidents, but they do not use Live Tail, metric filters, or subscription filters. Which THREE actions will reduce logging costs the MOST while preserving all required functionality?",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Reconfigure VPC Flow Logs across the 60 VPCs to publish directly to an Amazon S3 bucket in Apache Parquet format with Hive-compatible prefixes, and query them with Amazon Athena.",
+            "B": "Stream all CloudWatch Logs log groups through Amazon Data Firehose into an Amazon Aurora PostgreSQL database for long-term SQL querying.",
+            "C": "Set a short retention policy (such as 7 or 14 days) on the development Lambda log groups and change the development functions' log level from DEBUG to INFO or WARN.",
+            "D": "Disable VPC Flow Logs across all 60 VPCs and rely on AWS CloudTrail management events to audit network packet flows.",
+            "E": "Configure the high-volume production microservice debug log groups to use the CloudWatch Logs Infrequent Access log class."
+        },
+        "correctAnswers": [
+            "A",
+            "C",
+            "E"
+        ],
+        "explanation": "A: Publishing VPC Flow Logs directly to Amazon S3 (especially in Parquet format with Hive-compatible prefixes) eliminates the higher CloudWatch Logs ingestion and storage charges while allowing fast, low-cost monthly SQL queries via Amazon Athena. C: Setting an expiration retention policy (e.g., 7–14 days) on development log groups and reducing DEBUG verbosity immediately cuts both log ingestion volume and indefinite storage accumulation. E: The CloudWatch Logs Infrequent Access (IA) log class provides a 50% lower per-GB ingestion price than the Standard log class for logs that only need ad-hoc CloudWatch Logs Insights queries and do not require Live Tail, metric filters, or subscription filters.",
+        "whyOthersAreWrong": {
+            "B": "Ingesting logs into CloudWatch Logs first still incurs the full CloudWatch ingestion fee, and storing terabytes of logs in Aurora PostgreSQL is far more expensive than S3.",
+            "D": "AWS CloudTrail records AWS API calls, not VPC network packet traffic, so disabling VPC Flow Logs violates the network compliance requirement."
+        },
+        "learningObjective": "Optimize AWS logging costs by routing flow logs directly to S3 in Parquet, setting log group retention and verbosity, and using CloudWatch Logs Infrequent Access.",
+        "topic": "Amazon CloudWatch",
+        "tags": [
+            "cloudwatch-logs",
+            "logs-infrequent-access",
+            "vpc-flow-logs",
+            "athena",
+            "cost-optimization"
+        ]
+    }
+]
