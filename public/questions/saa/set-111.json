@@ -1,0 +1,639 @@
+[
+  {
+    "id": "saa-2201",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A health analytics company stores patient medical survey responses as JSON documents in a private Amazon S3 bucket. Customer support agents use an internal portal to read survey submissions. Under regional data privacy laws, sensitive Personally Identifiable Information (PII)—including social security numbers, email addresses, and phone numbers—must be masked before being displayed to customer support agents. However, authorized data science teams require access to the original, unmasked survey documents for statistical modeling. Creating and maintaining two separate S3 buckets with duplicated data has previously resulted in data synchronization discrepancies and doubled storage costs. Which solution BEST meets these requirements with LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an Amazon S3 Object Lambda Access Point backed by an AWS Lambda function that parses JSON objects and masks sensitive PII fields, and configure the customer support portal to request objects through this access point.",
+      "B": "Create an Amazon Athena table pointing to the S3 bucket, configure a SQL view that masks the PII columns, and direct the customer support portal to query the view using Athena JDBC.",
+      "C": "Enable S3 Server-Side Encryption with Customer-Provided Keys (SSE-C) and issue customer support agents a separate cryptographic key that decrypts only the non-sensitive fields.",
+      "D": "Deploy an Amazon CloudFront distribution in front of the S3 bucket with a CloudFront Function on the viewer response event that modifies the HTTP response body to redact sensitive strings."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon S3 Object Lambda allows adding custom code to standard S3 GET requests to modify data as it is returned to an application. By creating an S3 Object Lambda Access Point, an AWS Lambda function dynamically masks the sensitive PII fields in the JSON payload on the fly. The underlying S3 bucket retains the single source of truth containing original, unmasked data for data science teams, eliminating data duplication and synchronization pipelines.",
+    "whyOthersAreWrong": {
+      "B": "Requiring the portal to use Athena adds database query latency, increases query execution costs per gigabyte scanned, and changes the retrieval mechanism from simple S3 object reads to SQL queries.",
+      "C": "SSE-C encrypts and decrypts whole objects at the storage block layer; it cannot selectively encrypt or decrypt individual attributes or fields inside a JSON file.",
+      "D": "CloudFront Functions operate strictly on HTTP headers and URLs at low execution limits; they cannot access or modify the HTTP response body. While Lambda@Edge can modify response bodies, S3 Object Lambda is the native, purpose-built S3 capability for data transformation without web caching complexities."
+    },
+    "learningObjective": "Use Amazon S3 Object Lambda to dynamically transform and redact sensitive data for specific client access points without duplicating S3 objects.",
+    "topic": "Amazon S3 Object Lambda",
+    "tags": [
+      "s3-object-lambda",
+      "pii-masking",
+      "security",
+      "data-protection"
+    ]
+  },
+  {
+    "id": "saa-2202",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An online ticketing platform hosts its web application on Amazon EC2 instances behind an Application Load Balancer (ALB), with an Amazon CloudFront distribution serving global web traffic. During high-profile concert ticket releases, malicious botnets launch distributed Layer 7 HTTP flood attacks that overwhelm origin application servers and increase cloud hosting bills. The security team subscribes to AWS Shield Advanced and wants automatic, real-time mitigation of application-layer DDoS attacks without manual rule crafting. Furthermore, the mitigation mechanism must evaluate the health of the backend application to prevent legitimate ticket buyers from being blocked during traffic surges. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Associate AWS Network Firewall with the public subnets containing the ALB, enable stateful intrusion prevention rules, and configure Amazon CloudWatch alarms on ALB target response times.",
+      "B": "Enable automatic Layer 7 DDoS mitigation in AWS Shield Advanced on the CloudFront distribution, associate an AWS WAF web ACL, and attach an Amazon Route 53 health check to the protected resource.",
+      "C": "Deploy an AWS Lambda function triggered by Amazon CloudWatch Logs to inspect ALB access logs every 2 minutes and dynamically add offending IP addresses to an AWS WAF IP set.",
+      "D": "Configure an AWS WAF rate-based rule with a 1-minute evaluation period and configure CloudFront origin request policies to drop requests lacking an Authorization header."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "AWS Shield Advanced includes Automatic Application Layer (Layer 7) DDoS Mitigation. When enabled on a protected CloudFront distribution or ALB with an associated AWS WAF web ACL, Shield Advanced automatically creates, tests, and deploys custom AWS WAF mitigation rules to block Layer 7 attacks. Attaching a Route 53 health check provides application health context, ensuring that Shield Advanced only activates proactive Layer 7 mitigations when the application is actually experiencing degradation, thereby minimizing false positives for legitimate users.",
+    "whyOthersAreWrong": {
+      "A": "AWS Network Firewall operates primarily at Layers 3 and 4 (network/transport) and does not provide Shield Advanced automatic Layer 7 rule synthesis or Route 53 health-aware mitigation.",
+      "C": "Custom Lambda log analysis introduces several minutes of detection lag, high operational complexity, and cannot match the real-time, automated mitigation provided natively by Shield Advanced.",
+      "D": "A static rate-based rule does not use machine learning to distinguish sophisticated distributed Layer 7 floods from flash crowds, and dropping requests without Authorization headers breaks public ticket browsing."
+    },
+    "learningObjective": "Configure AWS Shield Advanced automatic Layer 7 DDoS mitigation with Route 53 health checks to proactively defend web applications against HTTP floods.",
+    "topic": "AWS Shield Advanced",
+    "tags": [
+      "shield-advanced",
+      "aws-waf",
+      "ddos-mitigation",
+      "layer-7",
+      "route-53-health-checks"
+    ]
+  },
+  {
+    "id": "saa-2203",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A multinational financial institution must adhere to stringent national banking regulations for cryptographic key governance. The bank generates encryption keys in its on-premises Hardware Security Module (HSM) and imports the key material into an AWS Key Management Service (AWS KMS) customer managed key (CMK). The regulator mandates two compliance rules: first, the imported key material must expire automatically after 90 days; second, if a security compromise or legal freeze occurs, security officers must have the ability to immediately and irrevocably prevent the key from being used for any decryption operations without waiting for a mandatory multi-day deletion window. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Schedule the KMS key for deletion with the minimum permitted waiting period of 7 days, and attach a key policy denying all actions to all IAM principals.",
+      "B": "Create an AWS KMS multi-Region key with automatic key rotation enabled, and use AWS CloudTrail to detect and disable compromised keys.",
+      "C": "Import the key material with an expiration model set to expire in 90 days, and call the DeleteImportedKeyMaterial API to immediately erase the key material upon suspicion of compromise.",
+      "D": "Store the imported key material in an AWS Secrets Manager secret configured to expire in 90 days, and invoke the DeleteSecret API with ForceDeleteWithoutRecovery set to true."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "When importing key material into an AWS KMS key, administrators can specify an expiration date/time (expiration model), after which AWS KMS automatically deletes the imported key material and renders the key unusable. Furthermore, administrators can immediately erase the key material at any time by calling the DeleteImportedKeyMaterial API. Erasing imported key material takes effect instantly without any waiting period, immediately disabling all cryptographic operations. The KMS key metadata remains intact, allowing the key material to be re-imported later if needed.",
+    "whyOthersAreWrong": {
+      "A": "The minimum waiting period for KMS key deletion is 7 days; it cannot delete a key immediately. While modifying the key policy blocks access, it is not the standard KMS mechanism for immediately and irrevocably revoking imported key material.",
+      "B": "Automatic key rotation is not supported for KMS keys with imported key material, and disabling a key does not satisfy the irrevocable key material eradication requirement.",
+      "D": "Secrets Manager is designed for storing database credentials and API tokens, not for managing cryptographic key material used directly by AWS KMS cryptographic algorithms."
+    },
+    "learningObjective": "Manage the lifecycle of imported key material in AWS KMS, including setting expiration periods and using DeleteImportedKeyMaterial for immediate revocation.",
+    "topic": "AWS Key Management Service",
+    "tags": [
+      "kms",
+      "imported-key-material",
+      "key-lifecycle",
+      "compliance",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2204",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A DevOps team uses AWS Systems Manager Run Command to perform operational maintenance across hundreds of Amazon EC2 instances residing in private subnets. Several custom maintenance shell scripts print sensitive system diagnostics and database configuration parameters to standard output during execution. Corporate security standards mandate that all Run Command execution logs must be encrypted at rest using an AWS KMS customer managed key (CMK). Additionally, the operations team must receive automated near-real-time notifications if any command execution fails on one or more target instances. Which TWO actions should a solutions architect take to satisfy these requirements?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure Run Command to deliver command output to an Amazon S3 bucket configured with Server-Side Encryption using an AWS KMS customer managed key (SSE-KMS).",
+      "B": "Attach an IAM role to the EC2 instances granting kms:Encrypt permissions on an AWS managed key (aws/ssm) to encrypt local terminal buffers.",
+      "C": "Create an Amazon CloudWatch metric filter that monitors EC2 instance CPU utilization spikes to detect script termination errors.",
+      "D": "Create an Amazon EventBridge rule that matches Systems Manager Command status change events with a status of Failed and routes alerts to an Amazon SNS topic.",
+      "E": "Enable AWS CloudTrail data events for Systems Manager Run Command and route API invocation logs to an Amazon SQS dead-letter queue."
+    },
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "A: AWS Systems Manager Run Command allows specifying an Amazon S3 bucket (or CloudWatch Logs log group) to store standard output and standard error execution streams. When configured with an S3 bucket encrypted with an AWS KMS customer managed key (SSE-KMS), all command output logs are securely encrypted at rest. D: Systems Manager emits state change events to Amazon EventBridge whenever a command's status changes (such as Failed, TimedOut, or Cancelled). An EventBridge rule filtering for Systems Manager Command status change events with status Failed targeting Amazon SNS provides immediate, near-real-time alerting.",
+    "whyOthersAreWrong": {
+      "B": "Encrypting local terminal buffers does not encrypt the centralized Run Command execution output delivered to AWS services, and the requirement specifically mandates an AWS KMS customer managed key, not the AWS managed key aws/ssm.",
+      "C": "Script failures inside an OS do not produce predictable CPU utilization metric patterns; monitoring CPU utilization is ineffective for detecting shell script errors.",
+      "E": "CloudTrail records management API calls such as SendCommand, but does not capture the asynchronous runtime exit status of scripts executing on target instances."
+    },
+    "learningObjective": "Secure AWS Systems Manager Run Command output using S3 SSE-KMS encryption and monitor command failures using Amazon EventBridge and SNS.",
+    "topic": "AWS Systems Manager",
+    "tags": [
+      "systems-manager",
+      "run-command",
+      "kms",
+      "eventbridge",
+      "sns",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2205",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A healthcare company manages multi-account AWS infrastructure using AWS Organizations. The security team has enabled Amazon Macie across all member accounts with a delegated administrator account to detect sensitive data, such as national identity numbers and credit card information, stored in Amazon S3 buckets. A newly onboarded medical research team generates synthetic clinical trial data containing artificial patient identifiers that trigger thousands of false-positive Macie findings daily. Additionally, regulatory auditors require that all sensitive data discovery results across the entire organization be exported to a central S3 bucket in the security account and encrypted with an AWS KMS key for multi-year audit compliance. Which TWO actions should a solutions architect take?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Disable Amazon Macie automated sensitive data discovery on all S3 buckets located in the research department's AWS account.",
+      "B": "Create a Macie finding suppression rule in the delegated administrator account matching the S3 bucket tags or prefix paths of the synthetic test datasets.",
+      "C": "Configure Amazon S3 cross-account replication to copy all objects from member account research buckets to the central security S3 bucket.",
+      "D": "Write a custom AWS Lambda function in each member account that queries the Macie API every hour and uploads raw JSON findings to the central S3 bucket.",
+      "E": "Configure Amazon Macie in the delegated administrator account to publish sensitive data discovery results to an Amazon S3 bucket in the security account using an AWS KMS key."
+    },
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "B: Amazon Macie suppression rules allow administrators to automatically archive findings that match specific criteria (such as S3 bucket names, object tags, or prefix paths). Creating suppression rules in the delegated administrator account automatically applies them across member accounts, suppressing false-positive findings from synthetic test data without turning off security scanning. E: Macie supports exporting comprehensive sensitive data discovery results to an Amazon S3 bucket. In an AWS Organizations setup, configuring this in the delegated administrator account centralizes all sensitive data results across all member accounts into a single S3 bucket in the security account, encrypted with an AWS KMS customer managed key.",
+    "whyOthersAreWrong": {
+      "A": "Disabling automated discovery on the research account stops all sensitive data scanning, creating a major security blind spot if real patient data is accidentally uploaded.",
+      "C": "Replicating underlying S3 objects copies the research datasets themselves rather than exporting the Macie classification findings and discovery results.",
+      "D": "Creating custom Lambda polling scripts across dozens of accounts adds significant operational burden and API throttling risks compared to Macie's native findings export configuration."
+    },
+    "learningObjective": "Manage false-positive sensitive data findings using Amazon Macie suppression rules and centralize discovery results using native S3 and KMS export.",
+    "topic": "Amazon Macie",
+    "tags": [
+      "macie",
+      "suppression-rules",
+      "s3",
+      "kms",
+      "compliance",
+      "aws-organizations"
+    ]
+  },
+  {
+    "id": "saa-2206",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise uses AWS IAM Identity Center (AWS Single Sign-On) across an AWS Organizations deployment containing 40 AWS accounts. Database administrators (DBAs) require administrative permissions to manage Amazon RDS and Amazon Aurora clusters in production accounts. The Chief Information Security Officer (CISO) enforces three strict security controls:\n1. DBAs must only be permitted to perform administrative actions in the us-east-1 and us-west-2 Regions.\n2. DBAs must only be able to perform these administrative actions during an authorized weekend maintenance window (Saturday 00:00 UTC to Sunday 23:59 UTC).\n3. The DBA permission set must enforce a guardrail ensuring that even if an account administrator inadvertently grants AdministratorAccess to the DBA role in a local account, the effective permissions can never exceed RDS and Aurora management.\nWhich THREE actions should the solutions architect implement?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Create an IAM Identity Center permission set with an inline policy granting RDS actions that includes an aws:RequestedRegion condition restricting calls to us-east-1 and us-west-2.",
+      "B": "Attach a Service Control Policy (SCP) to the organization root with an aws:CurrentTime condition restricting all database actions to weekends.",
+      "C": "Attach an IAM permissions boundary to the IAM Identity Center permission set that specifies the maximum permissible actions as Amazon RDS and Aurora operations.",
+      "D": "Create IAM users directly in each production account and configure SAML federation with custom condition keys for each individual DBA.",
+      "E": "Add an aws:CurrentTime condition with DateGreaterThan and DateLessThan operators to the permission set inline policy restricting authorization to the weekend window."
+    },
+    "correctAnswers": [
+      "A",
+      "C",
+      "E"
+    ],
+    "explanation": "A: IAM condition key aws:RequestedRegion restricts API calls to specified AWS Regions within IAM policies, satisfying requirement 1. C: Permissions boundaries define the maximum permissions that an identity-based policy can grant. Attaching a permissions boundary to an IAM Identity Center permission set ensures that effective permissions can never exceed RDS/Aurora management even if broader policies are attached, satisfying requirement 3. E: The aws:CurrentTime condition key allows enforcing time-based access control inside IAM policies using date condition operators, restricting access to the weekend maintenance window, satisfying requirement 2.",
+    "whyOthersAreWrong": {
+      "B": "Attaching a time-restricted SCP at the organization root blocks all principals (including automated maintenance jobs, Lambda functions, and backup scripts) from managing databases outside weekends, which disrupts automated operations.",
+      "D": "Creating IAM users in 40 individual accounts violates the architecture requirement of using centralized IAM Identity Center workforce access and introduces massive administrative overhead."
+    },
+    "learningObjective": "Implement fine-grained access control in IAM Identity Center using region conditions, time-based conditions, and permissions boundaries.",
+    "topic": "AWS IAM Identity Center",
+    "tags": [
+      "iam-identity-center",
+      "permissions-boundary",
+      "session-policy",
+      "least-privilege",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2207",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A fintech enterprise processes two distinct payment workloads using serverless architectures. The first workload is a high-throughput, low-latency mobile point-of-sale payment authorization service that peaks at 12,000 transactions per second (TPS) with an execution duration under 1.5 seconds. It requires at-least-once execution and immediate synchronous response delivery to the merchant. The second workload is an end-of-day interbank multi-currency clearing and settlement process that executes complex ledger balance adjustments across financial institutions, runs for up to 3 hours, and strictly requires at-most-once execution guarantees to prevent duplicate money transfers. Which architecture BEST balances performance, execution guarantees, and cost?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use AWS Step Functions Standard Workflows for both the point-of-sale authorization service and the end-of-day settlement process.",
+      "B": "Use AWS Step Functions Express Workflows for both workloads, configuring synchronous Express for authorization and asynchronous Express for settlement.",
+      "C": "Use AWS Step Functions Standard Workflows for the point-of-sale authorization service and AWS Step Functions Express Workflows for the end-of-day settlement process.",
+      "D": "Use AWS Step Functions Synchronous Express Workflows for the point-of-sale authorization service and AWS Step Functions Standard Workflows for the end-of-day settlement process."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "AWS Step Functions provides two workflow types. Express Workflows are designed for high-throughput, short-duration workloads (up to 5 minutes duration, supporting over 100,000 executions per second). Synchronous Express Workflows return the execution result immediately to the calling client, provide at-least-once execution semantics, and are billed on execution time and memory rather than state transitions, making them ideal and cost-effective for 12,000 TPS POS authorizations. In contrast, Standard Workflows support long-running processes (up to 1 year duration), provide exactly-once (at-most-once) execution semantics, and maintain complete execution history, making them required for the 3-hour settlement process.",
+    "whyOthersAreWrong": {
+      "A": "Standard Workflows are billed per state transition ($0.025 per 1,000 transitions); at 12,000 TPS, Standard Workflows would incur astronomical costs and face execution start rate limits.",
+      "B": "Express Workflows have a maximum execution duration of 5 minutes; the 3-hour settlement process would time out and fail. Express Workflows also provide at-least-once execution, which risks duplicate financial transfers.",
+      "C": "This reverses the appropriate workflow types: Standard Workflows cannot handle 12,000 TPS economically, and Express Workflows cannot run for 3 hours."
+    },
+    "learningObjective": "Select between AWS Step Functions Standard and Express Workflows based on execution duration, throughput requirements, and execution semantics.",
+    "topic": "AWS Step Functions",
+    "tags": [
+      "step-functions",
+      "express-workflows",
+      "standard-workflows",
+      "resilience",
+      "serverless"
+    ]
+  },
+  {
+    "id": "saa-2208",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A multinational streaming service uses an Amazon Aurora PostgreSQL DB cluster in us-east-1 for user profiles and subscription data. To support global expansion into the Asia-Pacific region, the company must provide users in ap-southeast-1 with sub-10 millisecond database read latencies. Additionally, the company's disaster recovery plan mandates that if us-east-1 experiences a regional disaster, the ap-southeast-1 environment must be capable of taking over full read/write operations with a Recovery Point Objective (RPO) of less than 1 second and a Recovery Time Objective (RTO) of less than 1 minute, with zero impact on primary database write performance during normal operations. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an Amazon Aurora Global Database by adding a secondary DB cluster in ap-southeast-1 that uses dedicated storage-level replication.",
+      "B": "Configure an Amazon Aurora Multi-Master cluster spanning us-east-1 and ap-southeast-1 with active-active synchronous replication.",
+      "C": "Deploy an independent Aurora PostgreSQL cluster in ap-southeast-1 and configure AWS Database Migration Service (AWS DMS) for continuous CDC replication.",
+      "D": "Set up an Aurora PostgreSQL cross-Region read replica in ap-southeast-1 using PostgreSQL native logical replication and an Amazon Kinesis Data Streams pipeline."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon Aurora Global Database uses dedicated infrastructure at the storage layer to replicate data across AWS Regions with typical latency of under 1 second (well within the <1 sec RPO). It supports up to 16 secondary read instances per Region providing low-latency local reads (sub-10 ms). During a regional disaster, an Aurora Global Database secondary cluster can be promoted to standalone read/write status in under 1 minute (RTO < 1 min). Crucially, replication occurs at the storage layer without consuming compute resources on the primary database, ensuring no performance degradation on primary writes.",
+    "whyOthersAreWrong": {
+      "B": "Aurora Multi-Master is only available for Aurora MySQL (not PostgreSQL), only operates within a single AWS Region across Availability Zones, and does not support cross-Region replication.",
+      "C": "AWS DMS introduces compute overhead, higher replication lag (often several seconds to minutes, failing the <1 sec RPO), and manual failover procedures that exceed the 1-minute RTO target.",
+      "D": "Native logical replication with Kinesis adds heavy custom architecture, requires ongoing maintenance, and cannot provide Aurora's sub-minute managed cluster promotion."
+    },
+    "learningObjective": "Design cross-region disaster recovery and low-latency global read architectures using Amazon Aurora Global Database.",
+    "topic": "Amazon Aurora Global Database",
+    "tags": [
+      "aurora-global-database",
+      "disaster-recovery",
+      "rpo-rto",
+      "postgresql",
+      "high-availability"
+    ]
+  },
+  {
+    "id": "saa-2209",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A logistics tracking platform uses Amazon Simple Queue Service (Amazon SQS) to decouple package scan event ingestion from backend processing workers running on Amazon ECS. A regression in a newly deployed worker container caused message deserialization errors, resulting in 40,000 valid package scan messages being transferred to an SQS dead-letter queue (DLQ). The software engineering team has patched and deployed the ECS container image to resolve the bug. The operations team now needs to reprocess the 40,000 messages from the DLQ. The solution must require NO custom code or Lambda functions, must avoid exposing message payloads outside AWS, and must allow controlling the redrive rate to avoid overwhelming backend databases. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an AWS Lambda function triggered by Amazon CloudWatch Alarms to read messages from the DLQ and invoke ECS tasks via the RunTask API.",
+      "B": "Start an SQS dead-letter queue redrive task using the Amazon SQS console or AWS CLI to redrive messages back to the source queue with a specified redrive rate.",
+      "C": "Configure AWS DataSync to transfer messages from the DLQ to an Amazon S3 bucket, then configure S3 Event Notifications to invoke the ECS workers.",
+      "D": "Update the ECS task definition environment variables to read messages directly from both the primary SQS queue and the DLQ concurrently."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Amazon SQS includes a native Dead-Letter Queue (DLQ) Redrive capability that allows moving messages from a DLQ back to their original source queue (or a specified alternative queue) directly from the SQS console or using the StartMessageMoveTask API. It requires zero custom code or infrastructure, executes securely within SQS without exposing message contents, and allows configuring a custom redrive velocity (messages per second) to prevent downstream database throttling.",
+    "whyOthersAreWrong": {
+      "A": "Writing and maintaining a custom Lambda script requires development effort, error handling, IAM permissions, and custom concurrency throttling logic.",
+      "C": "AWS DataSync is an agent-based file and object transfer service for filesystems and object stores; it does not connect to or read messages from Amazon SQS queues.",
+      "D": "Having worker containers read from both queues simultaneously complicates consumer logic, lacks visibility into redrive progress, and cannot control redrive velocity."
+    },
+    "learningObjective": "Reprocess failed messages from an Amazon SQS dead-letter queue back to the source queue using native SQS DLQ Redrive.",
+    "topic": "Amazon SQS",
+    "tags": [
+      "sqs",
+      "dead-letter-queue",
+      "dlq-redrive",
+      "ecs",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2210",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A proprietary trading firm executes ultra-sensitive arbitrage strategies on a cluster of Amazon EC2 instances located within a single Availability Zone. The proprietary trading software requires low-latency networking within the datacenter, but the risk management committee mandates that the system must be completely resilient against single points of hardware failure. Specifically, no two trade engine instances may share the same underlying server rack, network switch, or power distribution unit. Furthermore, the infrastructure team must ensure that instance capacity requests succeed without hitting AWS placement constraints. Which TWO configurations should a solutions architect recommend?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Launch the EC2 instances into a cluster placement group configured with dedicated hosts.",
+      "B": "Launch the EC2 instances into a partition placement group with 15 partitions across multiple Availability Zones.",
+      "C": "Launch the EC2 instances into a spread placement group within the specified Availability Zone.",
+      "D": "Attach an Elastic Fabric Adapter (EFA) to each instance and deploy them into a cluster placement group.",
+      "E": "Limit the deployment to a maximum of seven running EC2 instances per Availability Zone within the placement group."
+    },
+    "correctAnswers": [
+      "C",
+      "E"
+    ],
+    "explanation": "C: A spread placement group strictly places each individual EC2 instance on distinct underlying hardware racks, ensuring that instances have independent power supplies and network switches to isolate physical hardware failures. E: Amazon EC2 enforces a hard architectural limit of a maximum of 7 running instances per Availability Zone in a spread placement group. Designing the deployment within this 7-instance limit ensures capacity placement requests succeed without failure.",
+    "whyOthersAreWrong": {
+      "A": "A cluster placement group packs instances close together inside the same rack or cluster of racks to achieve high network throughput and low latency; this intentionally concentrates hardware failure risk.",
+      "B": "The scenario specifies that the instances must reside within a single Availability Zone, and partition placement groups are intended for large distributed workloads (like Hadoop or Cassandra) rather than strictly separating individual critical instances.",
+      "D": "While EFAs provide high-performance networking, deploying them in a cluster placement group co-locates instances on shared physical hardware, violating the requirement to prevent shared rack and power failures."
+    },
+    "learningObjective": "Apply EC2 spread placement groups to eliminate shared hardware rack failures and observe the 7 instances per AZ placement limit.",
+    "topic": "Amazon EC2 Placement Groups",
+    "tags": [
+      "ec2",
+      "placement-groups",
+      "spread-placement",
+      "high-availability",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2211",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A technology company provides a public REST API accessed by IoT devices worldwide. The API backend consists of independent web servers hosted across multiple IP addresses without a centralized load balancer. The company wants to use Amazon Route 53 to achieve DNS-based load distribution and high availability. The solution must meet the following criteria:\n1. Route 53 must respond to DNS queries with up to eight randomly selected healthy IP records to facilitate client-side DNS round-robin load distribution.\n2. Route 53 must continuously probe the operational health of each backend server using HTTP status checks.\n3. If a backend server fails its health check, Route 53 must stop returning that server's IP address in DNS responses until it recovers.\nWhich THREE steps should a solutions architect take?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Create a Route 53 Latency routing policy associating each server IP address with its geographic location.",
+      "B": "Create Amazon Route 53 health checks configured to monitor the HTTP endpoint of each server IP address.",
+      "C": "Create Route 53 DNS records for the API domain name configured with the Multivalue Answer routing policy.",
+      "D": "Associate each server IP record in the Multivalue Answer configuration with its corresponding Route 53 health check.",
+      "E": "Configure a Route 53 Failover routing policy designating one server as primary and the remaining servers as secondary."
+    },
+    "correctAnswers": [
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "B: Route 53 health checks monitor the health and reachability of endpoints by periodically sending HTTP/HTTPS requests to the specified IP addresses. C: Route 53 Multivalue Answer routing allows configuring multiple DNS records for the same domain name. Unlike standard simple routing, Multivalue Answer allows associating health checks with each record and responds to DNS queries with up to 8 healthy records selected at random, enabling client-side load balancing. D: Associating each record with its corresponding health check ensures that Route 53 automatically filters out any failed or unreachable endpoints from DNS query answers.",
+    "whyOthersAreWrong": {
+      "A": "Latency routing returns only the single record that provides the lowest latency for the client, rather than multiple healthy IPs for client-side distribution.",
+      "E": "Failover routing is an active-passive routing policy returning only the primary record (unless unhealthy, in which case it returns the secondary); it does not distribute requests across multiple healthy endpoints simultaneously."
+    },
+    "learningObjective": "Configure Amazon Route 53 Multivalue Answer routing with health checks to achieve client-side DNS load balancing and automatic unhealthy endpoint removal.",
+    "topic": "Amazon Route 53",
+    "tags": [
+      "route-53",
+      "multivalue-routing",
+      "health-checks",
+      "dns-load-balancing",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2212",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An autonomous vehicle engineering firm runs compute-intensive deep learning simulation workloads on an Amazon EC2 GPU cluster. The raw training datasets (consisting of millions of camera image frames and LiDAR point clouds) are stored in an Amazon S3 bucket. The GPU cluster requires a shared POSIX-compliant file system capable of delivering hundreds of gigabytes per second of throughput and sub-millisecond latencies. The simulation jobs run continuously for several weeks, generate processed neural network weights directly to the file system, and require that any new or updated files written to the file system automatically synchronize back to the Amazon S3 bucket. Additionally, the storage must be resilient against disk failures during long-running training. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an Amazon FSx for Lustre scratch file system linked to the S3 bucket with S3 File Gateway managing synchronization.",
+      "B": "Provision an Amazon EFS file system configured with Max I/O mode and Provisioned Throughput set to 1,024 MB/s.",
+      "C": "Deploy an Amazon FSx for Lustre persistent file system linked to the S3 bucket with data repository integration and auto-export enabled.",
+      "D": "Deploy an Amazon FSx for OpenZFS file system with automatic snapshot replication to an Amazon S3 Glacier bucket."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "Amazon FSx for Lustre persistent file systems are designed for long-term storage and multi-week workloads, replicating data within the same Availability Zone to ensure high availability and durability against disk failures. With FSx for Lustre data repository integration linked to an Amazon S3 bucket, enabling auto-export automatically exports new, modified, and deleted files from the Lustre file system back to the linked S3 bucket as changes occur, without requiring manual data repository export tasks. FSx for Lustre delivers hundreds of GB/s of throughput and sub-millisecond latencies required for HPC and ML workloads.",
+    "whyOthersAreWrong": {
+      "A": "Scratch file systems are designed for temporary, short-term data processing and do not replicate data across disks; if a storage server fails, data is lost. Furthermore, S3 File Gateway is an on-premises hybrid storage appliance, not used for Lustre S3 synchronization.",
+      "B": "Amazon EFS provides general-purpose NFS storage with millisecond latencies, which cannot provide the hundreds of GB/s throughput or sub-millisecond latencies required for GPU deep learning simulations.",
+      "D": "FSx for OpenZFS does not have native bidirectional S3 data repository integration or auto-export, and replicating snapshots to Glacier does not provide POSIX dataset synchronization."
+    },
+    "learningObjective": "Configure an Amazon FSx for Lustre persistent file system with S3 data repository integration and auto-export for high-performance machine learning workloads.",
+    "topic": "Amazon FSx for Lustre",
+    "tags": [
+      "fsx-lustre",
+      "persistent-storage",
+      "s3-auto-export",
+      "high-performance-computing",
+      "machine-learning"
+    ]
+  },
+  {
+    "id": "saa-2213",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial institution operates an account verification microservice using AWS Lambda with a Java 17 runtime behind an Amazon API Gateway REST API. During peak business hours, sudden surges of incoming client verification requests trigger hundreds of concurrent Lambda executions. The application experiences significant cold start latency, with initial requests taking up to 7 seconds due to JVM initialization and framework dependency loading. The business requires that 99th percentile (p99) response latency remain under 500 milliseconds even during sudden concurrency bursts, while minimizing ongoing compute costs and avoiding modifications to the application's Java codebase. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the Lambda function execution timeout to 15 minutes and assign the maximum memory size of 10,240 MB.",
+      "B": "Configure an Amazon EventBridge scheduled rule to invoke the Lambda function every minute with a dummy payload to keep execution environments warm.",
+      "C": "Rewrite the microservice in Python and deploy it with a custom container image on AWS Fargate behind a Network Load Balancer.",
+      "D": "Enable AWS Lambda SnapStart for the Java function and deploy the microservice using published function versions."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "AWS Lambda SnapStart for Java improves startup performance by up to 10x at no additional cost. When enabled, Lambda initializes the function ahead of time, takes a Firecracker microVM snapshot of the initialized memory and disk state, encrypts the snapshot, and caches it. When subsequent concurrent execution environments are created to handle traffic bursts, Lambda resumes the execution environment from the snapshot, reducing cold start times from several seconds to sub-second (typically under 200 ms). SnapStart requires publishing versions and aliases, and requires no code changes.",
+    "whyOthersAreWrong": {
+      "A": "Increasing memory can reduce initialization time slightly, but JVM and classloading cold starts still take several seconds and do not achieve the sub-500 ms SLA; increasing timeout does not reduce cold starts.",
+      "B": "Scheduled ping invocations keep only a single execution environment warm. During sudden traffic bursts requiring hundreds of concurrent environments, all newly spawned environments still suffer full cold starts.",
+      "C": "Rewriting an enterprise Java application in Python requires significant engineering time and costs, violating the requirement to avoid codebase modifications."
+    },
+    "learningObjective": "Mitigate Java cold start latency in AWS Lambda using AWS Lambda SnapStart.",
+    "topic": "AWS Lambda",
+    "tags": [
+      "lambda",
+      "snapstart",
+      "java",
+      "cold-starts",
+      "performance-optimization"
+    ]
+  },
+  {
+    "id": "saa-2214",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise security operations center (SOC) ingests 3 TB of VPC Flow Logs and authentication records daily into an Amazon OpenSearch Service cluster. Analysts actively query data from the most recent 7 days for real-time incident triage and threat hunting, requiring millisecond query performance. Data between 8 and 60 days old is queried infrequently (a few times per month) during compliance audits, where query response times of several seconds are acceptable. Data older than 60 days must be retained for 1 year for legal compliance and is rarely accessed. Storing a full year of logs in Hot SSD storage is cost-prohibitive. Which architectural strategy BEST optimizes storage cost while preserving search capabilities?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use OpenSearch Index State Management (ISM) to keep indices in Hot storage for 7 days, transition indices to UltraWarm storage at 8 days, and migrate them to Cold storage after 60 days.",
+      "B": "Configure Amazon Kinesis Data Firehose to write logs older than 7 days to an Amazon S3 Glacier Flexible Retrieval bucket and delete old indices from OpenSearch.",
+      "C": "Create an AWS Lambda function running on an EventBridge schedule that takes OpenSearch cluster snapshots daily and uploads them to an Amazon S3 Standard bucket.",
+      "D": "Deploy larger storage-optimized Amazon EC2 instances as Hot data nodes and configure 3 replica shards for indices older than 7 days."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon OpenSearch Service provides tiered storage: Hot (fast NVMe/EBS for indexing and rapid search), UltraWarm (backed by Amazon S3 with warm nodes caching data for cost-effective read-only queries with low overhead), and Cold storage (retained in S3 without dedicated compute, detached from the cluster until needed). Using OpenSearch Index State Management (ISM) automates the lifecycle: keeping recent data (1-7 days) in Hot, moving 8-60 day data to UltraWarm for affordable ad-hoc search, and moving data >60 days to Cold storage. All data remains queryable within OpenSearch Dashboards without data migration or re-indexing pipelines.",
+    "whyOthersAreWrong": {
+      "B": "Deleting indices and writing raw files to S3 Glacier prevents analysts from searching data through OpenSearch Dashboards without extensive, slow manual restoration and Athena schema maintenance.",
+      "C": "Snapshots cannot be queried directly in OpenSearch Dashboards; restoring an entire snapshot back into active cluster storage takes hours and requires provisioning massive Hot storage.",
+      "D": "Adding more Hot storage and increasing replica shards for older data significantly inflates infrastructure costs, directly contradicting the cost optimization goal."
+    },
+    "learningObjective": "Manage log lifecycle in Amazon OpenSearch Service using Index State Management (ISM) across Hot, UltraWarm, and Cold storage tiers.",
+    "topic": "Amazon OpenSearch Service",
+    "tags": [
+      "opensearch",
+      "ultrawarm",
+      "cold-storage",
+      "ism",
+      "log-analytics"
+    ]
+  },
+  {
+    "id": "saa-2215",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A global media company serves dynamic web content and video articles through an Amazon CloudFront distribution backed by an Application Load Balancer (ALB). The web application generates localized content variants based on the query string parameters `country` and `language`. Furthermore, the backend origin requires access to viewer HTTP request headers (`User-Agent`, `X-Device-Type`, and `Authorization`) to perform telemetry logging and user entitlement verification. However, the engineering team observes that previous attempts to forward these headers caused the CloudFront cache hit ratio to plummet near zero. Which TWO actions should a solutions architect recommend to maintain high cache hit ratios while supplying necessary headers to the origin?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Create a custom CloudFront Cache Policy that includes `User-Agent` and `Authorization` headers in the cache key.",
+      "B": "Create a custom CloudFront Cache Policy that includes the query string parameters `country` and `language` in the cache key.",
+      "C": "Revert to legacy CloudFront cache behavior settings and configure header forwarding to Whitelist with `All` headers selected.",
+      "D": "Create a custom CloudFront Origin Request Policy that forwards `User-Agent`, `X-Device-Type`, and `Authorization` headers to the origin without adding them to the cache key.",
+      "E": "Configure a CloudFront Functions viewer request handler to strip the `Authorization` header before inspecting the cache."
+    },
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "CloudFront separates caching rules (Cache Policies) from origin communication rules (Origin Request Policies). B: The Cache Policy defines the cache key. Including only the necessary query strings (country and language) ensures CloudFront caches content variants appropriately without fragmenting the cache on unique user headers. D: An Origin Request Policy specifies which headers, cookies, and query strings CloudFront forwards to the origin with viewer requests without including them in the cache key. By forwarding User-Agent, X-Device-Type, and Authorization in an Origin Request Policy, the backend origin receives all required context while CloudFront maintains high cache hit ratios.",
+    "whyOthersAreWrong": {
+      "A": "Including high-cardinality headers like User-Agent and Authorization in the cache key means nearly every user gets a unique cache entry, destroying the cache hit ratio.",
+      "C": "Legacy forwarding of all headers bypasses CloudFront caching completely for dynamic requests, resulting in a zero percent cache hit ratio.",
+      "E": "Stripping the Authorization header prevents the backend origin from authenticating users and verifying entitlements."
+    },
+    "learningObjective": "Decouple CloudFront cache keys and origin forwarding using modern Cache Policies and Origin Request Policies to optimize cache hit ratio.",
+    "topic": "Amazon CloudFront",
+    "tags": [
+      "cloudfront",
+      "cache-policy",
+      "origin-request-policy",
+      "performance-optimization",
+      "caching"
+    ]
+  },
+  {
+    "id": "saa-2216",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A connected fleet telematics company processes real-time GPS coordinates and engine diagnostics from 500,000 commercial vehicles using an Apache Kafka cluster. The company is migrating to Amazon Managed Streaming for Apache Kafka (Amazon MSK). The architecture must satisfy two requirements:\n1. Fleet telemetry topics must be retained for 120 days to support offline machine learning model training, but retaining 120 days of data on high-performance broker EBS storage is cost-prohibitive.\n2. Producer microservices running on Amazon ECS tasks within the VPC must authenticate to MSK brokers securely without managing static SASL/SCRAM passwords, private certificates, or credential rotation infrastructure.\nWhich TWO features should the solutions architect configure on Amazon MSK?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Enable Amazon MSK Tiered Storage on the cluster to automatically offload older log segments to Amazon S3 storage.",
+      "B": "Configure an Amazon S3 Lifecycle rule to transition broker Amazon EBS storage volumes to S3 Glacier Deep Archive.",
+      "C": "Enable AWS IAM client authentication on the Amazon MSK cluster and grant ECS task roles appropriate Kafka action permissions.",
+      "D": "Configure mutual TLS (mTLS) authentication with AWS Certificate Manager Private CA and store keys in AWS Secrets Manager.",
+      "E": "Provision an Amazon ElastiCache for Redis cluster as a buffer layer in front of the MSK brokers."
+    },
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "A: Amazon MSK Tiered Storage provides a cost-effective storage tier by automatically moving older data from local broker EBS storage to Amazon S3. Clients can produce and consume historical data seamlessly through standard Kafka APIs without code changes, allowing retention for 120 days at S3 storage costs. C: Amazon MSK supports AWS IAM client authentication (using IAM roles and policies). ECS tasks can assume an IAM task execution role with permissions for MSK actions (kafka-cluster:*), eliminating the need to provision, store, or rotate static passwords or SSL/TLS certificates.",
+    "whyOthersAreWrong": {
+      "B": "Amazon EBS volumes cannot be transitioned to S3 Glacier using S3 Lifecycle rules; S3 Lifecycle applies only to S3 bucket objects.",
+      "D": "mTLS with ACM Private CA requires configuring and maintaining private certificate authorities, issuing certificates to each client, and implementing rotation mechanisms, which adds high operational overhead.",
+      "E": "ElastiCache does not replace Kafka retention and introduces an unnecessary caching layer that increases operational complexity and cost."
+    },
+    "learningObjective": "Configure Amazon MSK Tiered Storage for cost-effective log retention and implement AWS IAM client authentication for secure, credential-free access.",
+    "topic": "Amazon Managed Streaming for Apache Kafka",
+    "tags": [
+      "msk",
+      "tiered-storage",
+      "iam-auth",
+      "apache-kafka",
+      "streaming"
+    ]
+  },
+  {
+    "id": "saa-2217",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A digital marketing firm runs automated report generation batches using AWS Lambda functions. The batch processing runs for 20 minutes every 6 hours. During the 20-minute execution window, 300 concurrent Lambda functions process analytics datasets stored on an Amazon Elastic File System (Amazon EFS) file system, generating peak read and write throughput of 350 MB/s. During the remaining 5 hours and 40 minutes of each cycle, the file system is completely idle (0 MB/s throughput). The total size of the data stored on the file system is 40 GB. Which throughput mode provides the MOST cost-effective configuration for this workload?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Amazon EFS configured with Provisioned Throughput set to 350 MB/s.",
+      "B": "Amazon EFS configured with Elastic Throughput mode.",
+      "C": "Amazon EFS configured with Bursting Throughput mode backed by 40 GB of storage.",
+      "D": "Amazon FSx for Lustre configured with a persistent storage capacity of 1.2 TB."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Amazon EFS Elastic Throughput is designed for spiky, unpredictable, or low-duty-cycle workloads. With Elastic Throughput, customers pay only for the data read and written (e.g., $0.03/GB read and $0.06/GB written) with no minimum commitment or hourly baseline provisioning fee. In contrast, Provisioned Throughput charges an hourly rate for 350 MB/s 24 hours a day ($6.00 per MB/s-month = $2,100/month), which is heavily wasted when the system is idle for ~94% of the day.",
+    "whyOthersAreWrong": {
+      "A": "Provisioned Throughput incurs continuous 24/7 charges regardless of usage, resulting in thousands of dollars in wasted spend for an intermittent batch process.",
+      "C": "Bursting Throughput baseline is determined by the amount of stored data (50 KB/s per GB). With only 40 GB stored, baseline throughput is only 2 MB/s with burst capacity up to 100 MB/s for short periods; it cannot sustain 350 MB/s and would exhaust burst credits immediately, causing execution throttling and timeouts.",
+      "D": "FSx for Lustre requires minimum provisioning sizes and fixed hourly fees that are far more expensive than serverless EFS with Elastic Throughput for 40 GB of intermittent data."
+    },
+    "learningObjective": "Choose Amazon EFS Elastic Throughput for spiky or low-duty-cycle workloads to minimize file system costs.",
+    "topic": "Amazon Elastic File System",
+    "tags": [
+      "efs",
+      "elastic-throughput",
+      "provisioned-throughput",
+      "cost-optimization",
+      "serverless"
+    ]
+  },
+  {
+    "id": "saa-2218",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An insurance enterprise maintains 150 TB of historical claim documents consisting of 6 million PDF files in the Amazon S3 Glacier Flexible Retrieval storage class. A regulatory inquiry mandates that the enterprise extract and make all 150 TB of documents available for compliance review within 30 hours. Once restored, the temporary copies must remain accessible in S3 for 10 days before expiring, while the underlying archived objects must remain in Glacier Flexible Retrieval. The company has a daily S3 Inventory report configured. A solutions architect must deliver the restored objects within the required time window at the LOWEST possible cost with minimal custom operational code. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Purchase S3 Glacier Provisioned Capacity units and issue Expedited restore requests for all objects.",
+      "B": "Create an AWS Lambda function that reads the S3 Inventory report and issues Standard retrieval requests for each object.",
+      "C": "Initiate an Amazon S3 Batch Operations job from the S3 Inventory report to restore the objects using the Bulk retrieval tier with a 10-day expiration.",
+      "D": "Configure an S3 Lifecycle rule that transitions objects from Glacier Flexible Retrieval to S3 Standard and sets expiration to 10 days."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "S3 Glacier Flexible Retrieval provides three retrieval tiers: Expedited (1-5 minutes, highest cost), Standard (3-5 hours, moderate cost), and Bulk (5-12 hours, lowest cost). At 5-12 hours, the Bulk retrieval tier easily meets the 30-hour compliance deadline at a fraction of the cost of Standard or Expedited retrievals. Furthermore, Amazon S3 Batch Operations natively accepts an S3 Inventory manifest report as input to execute a bulk restore job across millions of objects, managing retries, tracking progress, and specifying the 10-day retention period without writing any custom code.",
+    "whyOthersAreWrong": {
+      "A": "Expedited retrievals and Provisioned Capacity are extremely expensive and designed for urgent access to small numbers of objects, not bulk petabyte-scale extraction.",
+      "B": "Standard retrieval costs substantially more than Bulk retrieval ($0.01/GB vs $0.0025/GB and higher request fees), and writing a custom Lambda script requires complex rate limiting and error handling for 6 million API calls.",
+      "D": "S3 Lifecycle rules cannot transition archived objects out of Glacier back to S3 Standard; objects in Glacier storage classes must be restored using restore requests."
+    },
+    "learningObjective": "Execute large-scale, cost-effective archives retrieval using Amazon S3 Batch Operations with the S3 Glacier Bulk retrieval tier.",
+    "topic": "Amazon S3 Glacier",
+    "tags": [
+      "s3-glacier",
+      "bulk-retrieval",
+      "s3-batch-operations",
+      "s3-inventory",
+      "storage-cost"
+    ]
+  },
+  {
+    "id": "saa-2219",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A growing software company operates multiple AWS accounts managed under an AWS Organizations organization. Recently, a misconfigured data ingestion script created thousands of unattached Amazon EBS Provisioned IOPS (io2) volumes, resulting in a sudden $12,000 cost spike that was not discovered until the monthly invoice arrived. The Chief Technology Officer (CTO) requires an automated solution that detects abnormal spending surges across all member accounts within hours of occurrence. The solution must use machine learning to identify unexpected spending spikes, eliminate the need to manually calibrate static budget thresholds for each service, and notify the DevOps on-call team in their corporate Slack channel when an unexpected cost surge exceeds $500. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure an AWS Budgets cost budget in each member account with an alert set at 80% of forecasted monthly spend, routing alerts to an Amazon SNS topic.",
+      "B": "Create a CloudWatch billing alarm on the EstimatedCharges metric in the management account and trigger an AWS Lambda function that posts to Slack.",
+      "C": "Write a scheduled AWS Lambda function that queries the AWS Cost Explorer API hourly, computes daily moving averages, and sends alerts via Amazon SES.",
+      "D": "Configure an AWS Cost Anomaly Detection monitor in the management account for all AWS services, create an alert subscription with an absolute threshold of $500, and deliver notifications to Slack via Amazon SNS and AWS Chatbot."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "AWS Cost Anomaly Detection uses advanced machine learning models to continuously analyze cost and usage data, detect unusual spend spikes, and identify the root cause (account, service, region, or usage type) without requiring manual threshold calibration. By creating a monitor for all AWS services across the organization in the management account, setting an alert subscription with an absolute threshold of $500, and integrating the Amazon SNS topic with AWS Chatbot, alerts are delivered directly to the team's Slack channel in near-real time with minimal operational effort.",
+    "whyOthersAreWrong": {
+      "A": "AWS Budgets relies on static targets or fixed monthly forecasts; it does not use machine learning to detect intra-month service-specific anomalies and would not detect a $500 spike if total monthly spend is still under the 80% threshold.",
+      "B": "EstimatedCharges is a total aggregate metric updated only a few times per day without granular service-level machine learning analysis or root cause attribution.",
+      "C": "Building a custom polling Lambda function with Cost Explorer introduces custom code maintenance, Cost Explorer API request costs ($0.01 per request), and reinventing ML anomaly detection algorithms."
+    },
+    "learningObjective": "Detect unexpected cloud spending spikes using AWS Cost Anomaly Detection with automated Slack notifications via AWS Chatbot.",
+    "topic": "AWS Cost Anomaly Detection",
+    "tags": [
+      "cost-anomaly-detection",
+      "aws-chatbot",
+      "sns",
+      "aws-organizations",
+      "cost-optimization"
+    ]
+  },
+  {
+    "id": "saa-2220",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise consists of 25 subsidiary companies, each operating independently within separate AWS accounts. Currently, each subsidiary pays its AWS bill separately using individual corporate credit cards, missing out on volume discounts. The corporate Chief Financial Officer (CFO) initiates a project to consolidate cloud finances. The objectives are:\n1. Aggregate usage across all accounts to achieve tier-based volume discounts for Amazon S3 storage and data transfer.\n2. Allow unused Compute Savings Plans and Reserved Instances purchased by any subsidiary to automatically apply to eligible compute usage across all other accounts.\n3. Maintain financial governance while ensuring member accounts cannot view other accounts' detailed cost allocation tags or confidential resource identifiers.\nWhich TWO actions should a solutions architect recommend?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Create an organization in AWS Organizations from a central management account and invite all 25 subsidiary accounts to join under consolidated billing.",
+      "B": "Consolidate all infrastructure by migrating all 25 accounts' workloads into a single shared AWS account and separate workloads using IAM resource tags.",
+      "C": "Establish a full mesh of VPC peering connections between all 25 accounts and enable Amazon S3 Cross-Region Replication for billing reports.",
+      "D": "Disable Savings Plans and Reserved Instance discount sharing in the management account preferences.",
+      "E": "Enable Savings Plans and Reserved Instance discount sharing in the AWS Organizations management account preferences."
+    },
+    "correctAnswers": [
+      "A",
+      "E"
+    ],
+    "explanation": "A: AWS Organizations Consolidated Billing aggregates the usage of all member accounts under a single paying management account. This allows the enterprise to combine usage across accounts to qualify for tier-based volume discounts on services such as Amazon S3 and data transfer out. E: In AWS Organizations, discount sharing for Savings Plans and Reserved Instances is enabled by default in the management account (and can be managed under billing preferences). When enabled, any unused capacity or commitment in one account is automatically applied to eligible usage in other member accounts, maximizing financial savings.",
+    "whyOthersAreWrong": {
+      "B": "Consolidating 25 distinct corporate subsidiaries into a single AWS account destroys account-level security boundaries, increases blast radius, and hits service limits.",
+      "C": "VPC peering is a network connectivity mechanism and S3 replication is for object copies; neither has any impact on AWS billing or volume tiering.",
+      "D": "Disabling discount sharing prevents member accounts from benefiting from other accounts' unused commitments, directly violating objective 2."
+    },
+    "learningObjective": "Leverage AWS Organizations consolidated billing to achieve volume pricing discounts and share Savings Plans across member accounts.",
+    "topic": "AWS Organizations",
+    "tags": [
+      "aws-organizations",
+      "consolidated-billing",
+      "savings-plans",
+      "volume-discounts",
+      "cost-optimization"
+    ]
+  }
+]

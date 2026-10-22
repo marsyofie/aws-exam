@@ -1,0 +1,639 @@
+[
+  {
+    "id": "saa-2321",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company operates a multi-account AWS architecture. A backend AWS Lambda function deployed in Account A needs to retrieve database credentials stored in an AWS Secrets Manager secret located in Account B. The secret is encrypted with a customer managed AWS KMS key in Account B. The Lambda execution role in Account A currently has IAM permissions for secretsmanager:GetSecretValue and kms:Decrypt, but execution attempts fail with an AccessDeniedException. Corporate security policy prohibits assuming IAM roles across accounts during function execution to avoid cold-start latency and STS overhead. Which solution allows the Lambda function to retrieve the secret while adhering to the security policy?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Attach a resource-based policy to the Secrets Manager secret in Account B granting secretsmanager:GetSecretValue permissions to the Lambda execution role ARN in Account A, and update the KMS key policy in Account B to allow kms:Decrypt permissions for the Lambda execution role ARN.",
+      "B": "Create an IAM role in Account B with read access to the secret, configure the role trust policy to allow Account A, and update the Lambda code to call sts:AssumeRole prior to fetching the secret.",
+      "C": "Share the Secrets Manager secret with Account A using AWS Resource Access Manager (RAM), and grant the Lambda execution role permission to decrypt using the AWS managed KMS key for Secrets Manager.",
+      "D": "Recreate the secret in Account B using an AWS managed KMS key, and attach an S3 bucket policy in Account B that permits cross-account reads from the Lambda execution role."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "AWS Secrets Manager supports resource-based policies attached directly to secrets. For cross-account secret access without role assumption (sts:AssumeRole), two conditions must be satisfied: (1) the secret in Account B must have a resource-based secret policy that explicitly grants secretsmanager:GetSecretValue to the IAM principal in Account A (the Lambda execution role ARN), and (2) because the secret is encrypted with a customer managed KMS key, the KMS key policy in Account B must also explicitly grant kms:Decrypt to the Lambda execution role. This provides direct cross-account access without the overhead of assuming an IAM role.",
+    "whyOthersAreWrong": {
+      "B": "Assuming an IAM role via STS requires additional API calls on execution, increasing Lambda cold-start latency, and directly violates the corporate policy against cross-account role assumption during runtime.",
+      "C": "AWS Resource Access Manager (RAM) does not support AWS Secrets Manager secrets as a shareable resource type.",
+      "D": "Secrets Manager secrets cannot be shared cross-account using AWS managed KMS keys (such as aws/secretsmanager) because AWS managed key policies cannot be modified to grant cross-account permissions; furthermore, S3 bucket policies have no effect on Secrets Manager."
+    },
+    "learningObjective": "Configure cross-account AWS Secrets Manager access using secret resource policies and customer managed KMS key policies without assuming IAM roles.",
+    "topic": "AWS Secrets Manager",
+    "tags": [
+      "secrets-manager",
+      "kms",
+      "cross-account",
+      "lambda",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2322",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A multi-tenant software-as-a-service (SaaS) vendor allows enterprise clients to integrate their AWS accounts with the vendor's platform. Clients configure an Amazon SNS topic in their accounts to send events to an AWS Lambda function in the vendor's account. In addition, the vendor's analytics engine assumes an IAM role in each client account to gather resource telemetry. During an architecture review, the security team flags the risk of the 'confused deputy' problem, where a malicious third-party client could trick the vendor's service into accessing another client's resources or invoking the shared Lambda function unauthorized. Which TWO actions should the solutions architect implement to prevent the confused deputy problem?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Add the aws:SourceIp condition key to the client IAM role trust policies to restrict role assumption to the public IP addresses of the vendor's corporate office.",
+      "B": "Add the aws:SourceArn condition key to the Lambda function's resource-based policy, restricting invocations to the specific Amazon SNS topic ARNs belonging to authorized clients.",
+      "C": "Configure an AWS WAF Web ACL on the Lambda function with custom rate-limiting rules to drop unexpected cross-account requests.",
+      "D": "Configure Amazon Inspector to continuously scan the vendor's IAM roles for cross-account trust policy anomalies and revoke unauthorized sessions.",
+      "E": "Require clients to include a unique, secret sts:ExternalId in their IAM role trust policies and pass this external ID whenever the vendor assumes the role."
+    },
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "The confused deputy problem occurs when a service (the deputy) is coerced by a malicious actor into performing an action on a target resource that the actor lacks permission to access directly. To prevent this: (1) B: In resource-based policies (such as the Lambda function policy invoked by SNS), the aws:SourceArn condition key ensures that only requests originating from the specific expected source resource ARN can trigger the service. (2) E: When assuming third-party cross-account roles, using an sts:ExternalId condition in the trust policy ensures that the vendor's automated system only assumes the role on behalf of the customer who provided that external ID, preventing other customers from supplying victim account ARNs.",
+    "whyOthersAreWrong": {
+      "A": "AWS services communicating internally across accounts do not originate from corporate office public IP addresses, so restricting aws:SourceIp will cause valid AWS service invocations to fail and does not protect against service-level confused deputy attacks.",
+      "C": "AWS WAF cannot be attached directly to an AWS Lambda function (it requires an Application Load Balancer, API Gateway, or CloudFront) and inspects HTTP traffic, not IAM authorization or service-to-service invocation context.",
+      "D": "Amazon Inspector is a vulnerability management service for EC2, ECR, and Lambda code; it cannot modify IAM trust policies in real time or prevent confused deputy attacks."
+    },
+    "learningObjective": "Prevent the confused deputy security problem using aws:SourceArn conditions in resource-based policies and sts:ExternalId in cross-account IAM role trust policies.",
+    "topic": "AWS Identity and Access Management (IAM)",
+    "tags": [
+      "iam",
+      "confused-deputy",
+      "external-id",
+      "source-arn",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2323",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial services enterprise operates hundreds of microservices deployed across Amazon Elastic Container Service (ECS) tasks on AWS Fargate in 12 different VPCs. Regulators require strict mutual TLS (mTLS) for all inter-service communications, requiring each microservice to possess an X.509 certificate signed by an internal corporate Certificate Authority (CA). The operations team cannot manage self-hosted CA servers or manually rotate certificates across thousands of ephemeral containers. The security team also prohibits exposing CA endpoints to the public internet. Which solution BEST meets these requirements with minimal operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy OpenSSL on an Amazon EC2 Auto Scaling group behind an internal Network Load Balancer, issue self-signed wildcard certificates, and build the private keys directly into the Docker container base images.",
+      "B": "Create an AWS Private Certificate Authority (AWS Private CA) hierarchy, issue private certificates using AWS Certificate Manager (ACM), and deploy an AWS App Mesh service mesh with Envoy proxies configured to retrieve and automatically rotate certificates from ACM.",
+      "C": "Provision public SSL/TLS certificates via AWS Certificate Manager (ACM) using DNS validation, and assign public Route 53 domain names to each private ECS container task.",
+      "D": "Set up AWS CloudHSM to store CA root keys, write a custom Python daemon running inside each container to generate CSRs, and establish a cross-VPC peering mesh to a centralized signing instance."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "AWS Private CA allows organizations to build a secure, managed private CA hierarchy without managing hardware or software infrastructure. Integrating AWS Private CA with AWS Certificate Manager (ACM) allows managed private certificates to be issued and automatically renewed. When paired with a service mesh like AWS App Mesh (using Envoy proxies) or native ECS service connect, certificates can be distributed to container sidecars and rotated automatically without container rebuilds or manual secret distribution.",
+    "whyOthersAreWrong": {
+      "A": "Hardcoding private keys and certificates inside container images is a severe security vulnerability, prevents automated certificate renewal, and requires redeploying images whenever certificates expire.",
+      "C": "Public ACM certificates cannot be validated or used for internal private domains without public DNS resolution, and internal microservice traffic should not rely on public certificates.",
+      "D": "Managing custom CSR generation daemons and peering 12 VPCs to a central signing EC2 instance incurs significant operational overhead and complex custom code maintenance compared to AWS Private CA with ACM."
+    },
+    "learningObjective": "Implement end-to-end internal mutual TLS (mTLS) for containerized workloads using AWS Private CA and AWS Certificate Manager.",
+    "topic": "AWS Private CA",
+    "tags": [
+      "private-ca",
+      "acm",
+      "ecs",
+      "mtls",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2324",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A healthcare analytics company maintains a central data lake bucket in Amazon S3 containing 150 TB of patient encounter records, medical imaging files, and billing data. An internal machine learning team requires read-only access to only the imaging/processed/ prefix from their dedicated private Amazon VPC. Corporate security mandates that: (1) access from the machine learning VPC must never leave the AWS private network, (2) the machine learning team must not be granted permissions to any other prefixes in the bucket, and (3) future access policies for new analytics teams must not result in a single monolithic S3 bucket policy that exceeds IAM policy size limits. Which solution meets these requirements MOST effectively?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an S3 Gateway Endpoint in the machine learning VPC, and attach an S3 Object Lambda Access Point that uses a custom Python script to filter unauthorized prefix keys from S3 GET requests.",
+      "B": "Create an Amazon S3 VPC endpoint, and attach an IAM policy to the ML instances granting s3:GetObject on * while using AWS WAF to block requests not matching the /imaging/processed/* path pattern.",
+      "C": "Create an Amazon S3 Access Point configured for the machine learning VPC with an access point policy granting s3:GetObject on imaging/processed/*, and update the S3 VPC endpoint policy to restrict access to that access point ARN.",
+      "D": "Replicate the imaging/processed/ prefix into an Amazon EFS file system using AWS DataSync, mount the file system across instances in the private VPC, and configure Linux file permissions."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "Amazon S3 Access Points simplify data access management for shared datasets by creating unique hostnames with dedicated access policies tailored to specific applications or VPCs. Creating a VPC-restricted S3 Access Point allows the solutions architect to enforce network isolation (traffic must originate from the designated VPC) and define fine-grained permissions on specific prefixes (imaging/processed/*) without bloating the primary bucket policy. Restricting the S3 VPC endpoint policy to only allow access to this specific Access Point ARN prevents unauthorized bucket access from that VPC.",
+    "whyOthersAreWrong": {
+      "A": "S3 Object Lambda Access Points are designed for transforming object data on the fly (e.g., redacting text or resizing images), not for basic prefix-level authorization; running Lambda compute for every read adds unnecessary latency and cost.",
+      "B": "AWS WAF inspects HTTP/HTTPS traffic at Application Load Balancers, API Gateway, or CloudFront; it cannot attach directly to S3 Gateway VPC endpoints or S3 buckets.",
+      "D": "Copying 150 TB of data to Amazon EFS duplicates storage costs substantially, requires ongoing synchronization, and does not leverage S3's native access control capabilities."
+    },
+    "learningObjective": "Enforce fine-grained, network-isolated access to shared S3 datasets using S3 Access Points restricted to VPC endpoints.",
+    "topic": "Amazon S3 Access Points",
+    "tags": [
+      "s3",
+      "access-points",
+      "vpc-endpoint",
+      "security",
+      "least-privilege"
+    ]
+  },
+  {
+    "id": "saa-2325",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise manages 60 AWS accounts within an organization in AWS Organizations. The Chief Information Security Officer (CISO) requires a centralized security governance architecture that continuously audits all member accounts and AWS Regions against the AWS Foundational Security Best Practices (FSBP) standard. The security operations team in the designated Security-Admin account needs a single pane of glass showing unified security scores and findings. Furthermore, when any finding with a severity of 'CRITICAL' is identified, the team must receive an automated email notification within minutes. Which TWO actions should the solutions architect combine to implement this architecture?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Designate the Security-Admin account as the delegated administrator for AWS Security Hub in AWS Organizations, enable Security Hub across all member accounts, and configure cross-Region finding aggregation.",
+      "B": "Create an Amazon EventBridge rule in the management account matching all Security Hub events, and deploy an EC2 t3.medium instance running a log parsing cron script that polls the API every hour.",
+      "C": "In the Security-Admin account's aggregation Region, create an Amazon EventBridge rule that filters for Security Hub findings with a severity label of 'CRITICAL' and routes them to an Amazon SNS topic subscribed to the security team's email.",
+      "D": "Deploy an AWS Lambda function in every member account that executes hourly to describe findings from Amazon Inspector and write them to an Amazon DynamoDB table in the Security-Admin account.",
+      "E": "Configure AWS Systems Manager Compliance in the management account with a custom script that replaces Security Hub by querying IAM credentials reports across all accounts."
+    },
+    "correctAnswers": [
+      "A",
+      "C"
+    ],
+    "explanation": "A: In an AWS Organizations environment, designating a member account (such as Security-Admin) as the delegated administrator for AWS Security Hub allows the administrator to enable and centrally configure Security Hub across all member accounts. Configuring cross-Region finding aggregation consolidates findings from all enabled Regions into a single aggregation Region in the administrator account. C: When cross-Region aggregation is enabled, all findings (including updates and severity changes) flow to the aggregation Region. An Amazon EventBridge rule in that Region filtering on detail.findings.Severity.Label = 'CRITICAL' can immediately route alerts to an Amazon SNS topic for instant email dispatch, providing a fully serverless, real-time alerting pipeline.",
+    "whyOthersAreWrong": {
+      "B": "Polling the API hourly on an EC2 instance introduces polling latency, incurs server maintenance overhead, and fails the requirement for notification within minutes; EventBridge provides native, push-based delivery without EC2 instances.",
+      "D": "Running hourly Lambda functions to query Inspector findings does not provide centralized Security Hub FSBP standard auditing or cross-account aggregation.",
+      "E": "AWS Systems Manager Compliance evaluates patch and association compliance on managed instances; it cannot audit cloud infrastructure configurations against the FSBP standard across accounts."
+    },
+    "learningObjective": "Centrally manage multi-account security compliance and automate critical alerts using AWS Security Hub delegated administration, cross-Region aggregation, and Amazon EventBridge.",
+    "topic": "AWS Security Hub",
+    "tags": [
+      "security-hub",
+      "organizations",
+      "eventbridge",
+      "sns",
+      "compliance"
+    ]
+  },
+  {
+    "id": "saa-2326",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise public retail application is deployed behind an Application Load Balancer (ALB) with an AWS WAF Web ACL. During high-traffic marketing events, an influx of malicious bots sends HTTP POST requests containing forged header parameters to the /checkout endpoint. The security team wants AWS WAF to drop these malicious requests before they reach the ALB. In addition, the frontend mobile application requires that blocked requests receive an HTTP 403 status code with a customized JSON response body ({\"status\":\"DENIED\",\"message\":\"Request blocked by security policy\"}) and a custom HTTP response header X-Action-Taken: Blocked-By-WAF. Which solution implements this requirement with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Set the AWS WAF rule action to Count, configure an ALB listener rule to match the suspicious headers, and forward traffic to a secondary target group of AWS Lambda functions that generate the custom JSON response and HTTP header.",
+      "B": "Configure the AWS WAF rule to Block, route the 403 errors to an Amazon CloudFront distribution, and use a Lambda@Edge viewer-response function to intercept the error and rewrite the body and header.",
+      "C": "Configure Amazon API Gateway in front of the Application Load Balancer and write a custom Gateway Response mapping template that transforms 403 error codes.",
+      "D": "In AWS WAF, define a custom response body with the JSON payload, and configure the WAF rule's Block action to return a custom response code of 403, linking the custom response body and adding the custom header."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "AWS WAF natively supports custom responses for blocked requests. When configuring a rule action to Block, administrators can specify a custom HTTP status code (such as 403), add custom HTTP response headers (such as X-Action-Taken: Blocked-By-WAF), and select a custom response body (formatted in JSON, HTML, or plain text). This native edge-level feature drops the traffic immediately at the WAF inspection point, preventing load on backend ALBs or compute instances without requiring additional infrastructure such as Lambda functions, API Gateway, or CloudFront functions.",
+    "whyOthersAreWrong": {
+      "A": "Setting the rule to Count forwards malicious requests through the ALB to backend Lambda functions, consuming compute capacity, incurring execution costs, and increasing operational complexity.",
+      "B": "Introducing CloudFront and Lambda@Edge solely to modify an error response adds latency, architectural overhead, and compute costs when AWS WAF natively supports custom response bodies and headers.",
+      "C": "Placing API Gateway in front of the ALB introduces unnecessary proxy layers, architectural redesign, and extra service costs for functionality natively supported by WAF."
+    },
+    "learningObjective": "Configure AWS WAF custom response bodies and headers on Block actions to terminate malicious requests at the edge with structured client feedback.",
+    "topic": "AWS WAF",
+    "tags": [
+      "waf",
+      "alb",
+      "custom-response",
+      "security",
+      "ddos"
+    ]
+  },
+  {
+    "id": "saa-2327",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A multinational software company hosts a critical customer onboarding portal in us-east-1 (Primary). The architecture consists of an Application Load Balancer, an Amazon EC2 Auto Scaling group, and an Amazon S3 bucket containing dynamic onboarding documents. The business requires an Active-Passive Disaster Recovery strategy in us-west-2 (Secondary) with a Recovery Point Objective (RPO) of 15 minutes and a Recovery Time Objective (RTO) of 5 minutes. If us-east-1 experiences a regional degradation, DNS must automatically divert incoming client traffic to us-west-2. In addition, documents created in us-east-1 must be backed by an SLA ensuring replication within 15 minutes. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure Amazon Route 53 latency-based routing records for both Regions; use AWS DataSync scheduled every 15 minutes to synchronize S3 documents between us-east-1 and us-west-2.",
+      "B": "Configure Amazon Route 53 failover routing with a health check monitoring the primary ALB endpoint; enable Amazon S3 Cross-Region Replication (CRR) with S3 Replication Time Control (RTC) enabled between the buckets.",
+      "C": "Set up an AWS Global Accelerator with two endpoint groups, configure traffic dials to 50/50, and use Amazon S3 Same-Region Replication combined with an hourly AWS Backup copy job.",
+      "D": "Configure Amazon Route 53 weighted routing with equal weights of 100; write an AWS Lambda function triggered every 10 minutes to verify ALB health and update DNS records via Route 53 API calls."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Amazon Route 53 failover routing is designed specifically for active-passive disaster recovery configurations. An associated Route 53 health check continuously assesses the primary endpoint; if the primary endpoint fails, Route 53 automatically routes all queries to the secondary failover record, fulfilling the 5-minute RTO without manual intervention. For the storage tier, Amazon S3 Cross-Region Replication (CRR) with S3 Replication Time Control (RTC) provides a 99.99% SLA to replicate 99.99% of objects within 15 minutes, directly satisfying the 15-minute RPO requirement.",
+    "whyOthersAreWrong": {
+      "A": "Latency-based routing sends traffic to the region with lowest latency rather than an active-passive setup, and AWS DataSync scheduled every 15 minutes does not provide a replication completion SLA or continuous sync.",
+      "C": "A 50/50 traffic dial in Global Accelerator represents an active-active architecture rather than active-passive, and S3 Same-Region Replication cannot replicate across different AWS Regions.",
+      "D": "Weighted routing does not provide automatic failover out of the box, and a Lambda function polling every 10 minutes cannot guarantee a 5-minute RTO."
+    },
+    "learningObjective": "Design an active-passive multi-Region disaster recovery architecture using Route 53 failover routing and S3 Cross-Region Replication with Replication Time Control (RTC).",
+    "topic": "Disaster Recovery",
+    "tags": [
+      "route53",
+      "failover-routing",
+      "s3",
+      "crr",
+      "rtc",
+      "disaster-recovery"
+    ]
+  },
+  {
+    "id": "saa-2328",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A fintech startup processes digital wallet transfers using Amazon DynamoDB. A payment processing API receives requests to transfer funds from a sender's account to a recipient's account. Both accounts are represented as distinct items in a DynamoDB table. The transfer logic requires deducting the transfer amount from the sender's account balance and adding it to the recipient's account balance. If the sender has insufficient funds, or if either update fails due to a network glitch, neither balance must change. Additionally, if the mobile app client loses connectivity and retries the exact same transfer request 30 seconds later, the system must not execute a duplicate deduction. Which TWO mechanisms should the solutions architect combine to satisfy these requirements?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Execute the balance updates using the BatchWriteItem API operation, which guarantees all-or-nothing atomicity across multiple item writes in a single call.",
+      "B": "Execute the balance updates using the TransactWriteItems API operation, grouping the two Update statements into a single atomic transaction.",
+      "C": "Implement client-side optimistic locking by incrementing a version_number attribute and using DynamoDB Streams to undo failed partial writes.",
+      "D": "Include a unique ClientRequestToken parameter with the TransactWriteItems call to ensure idempotency during client network retries.",
+      "E": "Enable DynamoDB Global Tables with strong consistency enabled across all secondary Regions to prevent race conditions during retries."
+    },
+    "correctAnswers": [
+      "B",
+      "D"
+    ],
+    "explanation": "B: The TransactWriteItems API operation provides atomicity, consistency, isolation, and durability (ACID) guarantees across multiple items within one or more tables in a single AWS account and Region. All write operations in the transaction succeed or fail together, ensuring funds are never deducted without being credited. D: To ensure idempotency and prevent duplicate executions during network retries or transient connection errors, TransactWriteItems accepts a ClientRequestToken. If a transaction request is submitted with a token that matches a transaction completed within the last 10 minutes, DynamoDB returns the previous result without re-executing the transaction.",
+    "whyOthersAreWrong": {
+      "A": "BatchWriteItem performs individual put and delete requests in a batch, but does NOT provide atomic transaction guarantees; individual writes within a batch can succeed while others fail, leaving accounts in an inconsistent state.",
+      "C": "Optimistic locking with version numbers helps prevent concurrent updates to a single item, but cannot provide multi-item atomicity across two separate accounts; DynamoDB Streams compensation logic is complex and prone to distributed race conditions.",
+      "E": "DynamoDB Global Tables use asynchronous cross-Region replication with last-writer-wins conflict resolution and do not provide synchronous multi-item transaction idempotency for local transfers."
+    },
+    "learningObjective": "Implement atomic multi-item operations and idempotent retries in Amazon DynamoDB using TransactWriteItems and ClientRequestToken.",
+    "topic": "Amazon DynamoDB",
+    "tags": [
+      "dynamodb",
+      "transactions",
+      "transact-write-items",
+      "idempotency",
+      "acid"
+    ]
+  },
+  {
+    "id": "saa-2329",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An automated media processing workflow runs on worker nodes in an Amazon EC2 Auto Scaling group. Incoming video transcoding jobs are enqueued as messages in an Amazon SQS standard queue. Individual jobs take anywhere from 45 seconds to 4 minutes of heavy CPU processing. The Auto Scaling group is currently configured with a Target Tracking scaling policy that maintains Average CPU Utilization at 70%. During sudden traffic spikes, hundreds of new jobs are deposited into the SQS queue in seconds, but because existing instances are already processing their current jobs at steady CPU utilization, the Auto Scaling group fails to scale out quickly enough, resulting in job processing delays exceeding 30 minutes. Which scaling strategy resolves this issue MOST effectively?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Change the target tracking policy metric to track the raw SQS metric ApproximateNumberOfMessagesVisible directly with a target value of 50 messages.",
+      "B": "Switch the Auto Scaling group to a Simple Scaling policy that triggers an alarm to add 1 instance whenever the SQS metric ApproximateNumberOfMessagesNotVisible exceeds 10.",
+      "C": "Convert the standard SQS queue to an SQS FIFO queue with high throughput mode enabled, and attach a step scaling policy based on the SentMessageSize metric.",
+      "D": "Create a custom Amazon CloudWatch metric that calculates the backlog per instance by dividing ApproximateNumberOfMessagesVisible by the number of running instances in the Auto Scaling group, and configure a Target Tracking scaling policy to maintain this metric."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "Scaling an EC2 Auto Scaling group based on raw SQS queue depth (ApproximateNumberOfMessagesVisible) using target tracking does not work because the raw metric does not scale down proportionally as the fleet expands (e.g., 100 messages for 1 instance is a heavy backlog, but 100 messages for 50 instances is light), which causes unstable oscillations. The AWS Well-Architected recommendation for SQS worker fleets is to publish a custom CloudWatch metric representing 'backlog per instance' (calculated as queue depth divided by the number of healthy running instances). A Target Tracking policy configured on this metric allows the fleet to scale out proportionally and aggressively when the per-instance backlog spikes, and scale in smoothly when the backlog clears.",
+    "whyOthersAreWrong": {
+      "A": "Target tracking scaling policies cannot use raw queue depth directly because raw message count increases proportionally with fleet size, resulting in runaway scaling or violent oscillating behaviors.",
+      "B": "ApproximateNumberOfMessagesNotVisible measures messages currently being processed by workers, not waiting backlog; scaling by adding 1 instance on a simple scaling policy is far too slow for spikes of hundreds of jobs.",
+      "C": "SQS FIFO queues enforce strict ordering and deduplication, but changing queue types does not fix Auto Scaling latency; SentMessageSize measures payload bytes rather than backlog count."
+    },
+    "learningObjective": "Scale EC2 worker fleets proportionally to SQS queue depth by tracking a custom CloudWatch backlog-per-instance metric with target tracking.",
+    "topic": "Amazon EC2 Auto Scaling",
+    "tags": [
+      "auto-scaling",
+      "ec2",
+      "sqs",
+      "cloudwatch",
+      "target-tracking"
+    ]
+  },
+  {
+    "id": "saa-2330",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A high-demand concert ticket booking platform runs microservices on Amazon Elastic Container Service (ECS) tasks using AWS Fargate. The database tier is an Amazon Aurora PostgreSQL Multi-AZ cluster. During flash ticket releases, thousands of concurrent Fargate container tasks launch simultaneously to handle user requests. This massive concurrency causes database CPU spikes due to connection overhead, exhausting PostgreSQL's max_connections limit. Furthermore, during an unexpected primary database instance failover, application transactions fail for up to 3 minutes while DNS propagates the new writer instance endpoint. Which THREE actions should the solutions architect combine to make the database tier resilient to connection surges and reduce failover downtime?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Deploy an Amazon RDS Proxy instance between the ECS Fargate tasks and the Aurora PostgreSQL cluster.",
+      "B": "Migrate the database tier to an Amazon DynamoDB table using DynamoDB Accelerator (DAX) to handle relational SQL joins and foreign keys.",
+      "C": "Update the ECS Fargate task application configuration to connect to the RDS Proxy endpoint instead of the Aurora cluster writer endpoint.",
+      "D": "Deploy an Amazon ElastiCache for Memcached cluster as a write-ahead log buffer between the ECS containers and the database writer.",
+      "E": "Store database master credentials in AWS Secrets Manager and configure the RDS Proxy with an IAM role that allows reading the secret."
+    },
+    "correctAnswers": [
+      "A",
+      "C",
+      "E"
+    ],
+    "explanation": "A: Amazon RDS Proxy is a fully managed, highly available database proxy that pools and shares database connections, protecting Aurora PostgreSQL from connection starvation and memory exhaustion caused by thousands of ephemeral Fargate tasks. C: Pointing the application to the RDS Proxy endpoint allows the proxy to multiplex connections and automatically handle Aurora failovers; RDS Proxy bypasses DNS caching delays by detecting the new primary writer at the internal infrastructure level, reducing failover recovery times by up to 66%. E: RDS Proxy requires database authentication credentials to be stored securely in AWS Secrets Manager. The proxy uses an IAM execution role to retrieve these credentials and authenticate incoming client connections.",
+    "whyOthersAreWrong": {
+      "B": "Amazon DynamoDB is a NoSQL key-value and document database that does not support relational SQL queries, joins, or foreign keys required by the existing PostgreSQL application.",
+      "D": "ElastiCache for Memcached is an in-memory key-value cache; it cannot function as an ACID-compliant transactional write buffer for relational databases."
+    },
+    "learningObjective": "Improve relational database resilience and reduce failover recovery times using Amazon RDS Proxy connection pooling with AWS Secrets Manager.",
+    "topic": "Amazon RDS Proxy",
+    "tags": [
+      "rds-proxy",
+      "aurora",
+      "postgresql",
+      "ecs",
+      "secrets-manager",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2331",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A global software provider operates an active-active web application across two AWS Regions: us-east-1 and eu-west-1. Traffic is distributed between the Regions using Amazon Route 53 Application Recovery Controller (ARC) routing controls connected to DNS health checks. To maintain resilience, operational runbooks allow engineers to manually flip routing controls to shift all global traffic away from an impaired Region. However, during a recent incident drill, an operator accidentally flipped both regional routing controls to 'OFF' simultaneously, which would have triggered a total global outage in production. Which mechanism should the solutions architect implement to prevent both routing controls from being disabled at the same time?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure an ARC safety rule with an assertion rule specifying that the count of active routing controls in the control panel must be at least 1.",
+      "B": "Attach an IAM permission boundary to all operator roles that denies route53:UpdateRoutingControlStates if the payload contains more than one control.",
+      "C": "Deploy an AWS Lambda function triggered by Amazon CloudWatch Alarms to automatically re-enable a routing control whenever an operator disables it.",
+      "D": "Create an AWS Service Catalog product that forces all routing control state changes to undergo a 2-hour manual approval workflow."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon Route 53 Application Recovery Controller (ARC) provides routing controls (failover switches) paired with 'safety rules'. An assertion rule is a type of safety rule that evaluates the proposed states of routing controls before allowing an update. By configuring an assertion rule requiring that at least one routing control remains in the 'ON' state (e.g., minimum count = 1), ARC enforces a strict programmatic guardrail that blocks any manual or automated API call attempting to disable all routing controls simultaneously, preventing accidental self-inflicted total outages.",
+    "whyOthersAreWrong": {
+      "B": "IAM permission boundaries evaluate API actions and resource ARNs, but cannot inspect or evaluate dynamic multi-resource state logic (such as whether another routing control is currently enabled or disabled).",
+      "C": "A reactive Lambda function triggers after the outage has already taken effect and introduces race conditions with legitimate failover operations.",
+      "D": "A 2-hour manual approval workflow prevents operators from executing rapid emergency failovers during genuine regional disasters, defeating the purpose of ARC."
+    },
+    "learningObjective": "Enforce failover safety mechanisms using Amazon Route 53 Application Recovery Controller (ARC) safety assertion rules to prevent complete traffic blackouts.",
+    "topic": "Route 53 Application Recovery Controller (ARC)",
+    "tags": [
+      "route53",
+      "arc",
+      "safety-rules",
+      "disaster-recovery",
+      "high-availability"
+    ]
+  },
+  {
+    "id": "saa-2332",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A business intelligence team manages an Amazon Redshift cluster hosting a 40 TB enterprise data warehouse. As the company has expanded, query workloads have evolved from simple daily aggregations to complex ad-hoc queries, multi-table joins, and streaming micro-batch inserts. Query response times have degraded noticeably. The database administrators spend several days each month manually reviewing STL_EXPLAIN logs, analyzing skew, and running ALTER TABLE statements to update distribution keys (DISTKEY) and sort keys (SORTKEY) on hundreds of tables. Which solution BEST optimizes cluster query performance while eliminating the ongoing manual maintenance burden?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Migrate the data warehouse to an Amazon RDS PostgreSQL Multi-AZ DB cluster with Provisioned IOPS SSD (io2 Block Express) volumes.",
+      "B": "Deploy an Amazon ElastiCache for Redis cluster in front of Amazon Redshift and configure the BI reporting tools to query the cache.",
+      "C": "Alter the existing Redshift tables to use Automatic Table Optimization (ATO) by setting DISTSTYLE AUTO and SORTKEY AUTO.",
+      "D": "Export all Redshift tables to Amazon S3 as CSV files and use Amazon Athena to execute all reporting queries serverless."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "Amazon Redshift Automatic Table Optimization (ATO) continuously observes customer query workloads and applies machine learning algorithms to automatically select and implement the optimal distribution style (DISTSTYLE AUTO) and sort keys (SORTKEY AUTO). As query patterns shift over time, Redshift automatically reorganizes data layout in the background without requiring administrator intervention or manual vacuuming/reindexing, providing consistent high performance with minimal operational overhead.",
+    "whyOthersAreWrong": {
+      "A": "Amazon RDS PostgreSQL is an OLTP database that cannot scale to handle multi-terabyte analytical queries with the performance or columnar compression of Amazon Redshift.",
+      "B": "ElastiCache cannot parse complex SQL analytical queries, aggregate 40 TB datasets, or replace the analytical processing power of a data warehouse.",
+      "D": "Exporting 40 TB to CSV on S3 and querying via Athena lacks Redshift's performance optimizations (such as compiled query execution and cluster concurrency scaling) and introduces high data sync latency."
+    },
+    "learningObjective": "Optimize Amazon Redshift query performance and eliminate manual DBA tuning using Automatic Table Optimization (ATO).",
+    "topic": "Amazon Redshift",
+    "tags": [
+      "redshift",
+      "ato",
+      "sortkey",
+      "diststyle",
+      "performance"
+    ]
+  },
+  {
+    "id": "saa-2333",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A media publishing house regularly ingests multi-gigabyte video files from hundreds of independent content creators worldwide. The creators currently upload files using legacy SFTP and FTPS clients and authenticate using custom usernames and SSH keys or passwords managed by an external corporate user directory. Once uploaded, the video files must immediately be stored in an Amazon S3 bucket so an event-driven AWS Step Functions transcoding pipeline can process them. The company wants to eliminate the maintenance of self-managed Linux SFTP server instances while supporting both SFTP and FTPS without forcing creators to change their existing client software or credentials. Which TWO components should the solutions architect combine to build this ingestion solution?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Deploy an AWS Transfer Family server configured with SFTP and FTPS protocols backed by Amazon S3 storage.",
+      "B": "Configure an Amazon API Gateway REST API with binary media types enabled to receive file uploads over HTTPS.",
+      "C": "Deploy an Amazon EC2 Auto Scaling group running an open-source SFTP server connected to Amazon Elastic Block Store (EBS) volumes.",
+      "D": "Configure AWS Transfer Family with a custom identity provider using an AWS Lambda function integrated with the corporate user directory.",
+      "E": "Set up an AWS Storage Gateway File Gateway in each content creator's local office configured with SMB shares."
+    },
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "A: AWS Transfer Family is a fully managed AWS service that enables file transfers directly into and out of Amazon S3 or Amazon EFS using SFTP, FTPS, and FTP protocols without managing servers. Uploaded files appear instantly as native S3 objects, allowing downstream event-driven workflows (such as S3 Event Notifications triggering Step Functions) to start immediately. D: AWS Transfer Family supports custom identity providers by integrating with AWS Lambda or AWS Secrets Manager. When a user connects via SFTP/FTPS, Transfer Family invokes the Lambda function to authenticate credentials against external user directories, query public keys, and assign IAM roles and S3 home directories dynamically.",
+    "whyOthersAreWrong": {
+      "B": "API Gateway has a maximum payload size limit of 10 MB, making it completely incapable of receiving multi-gigabyte video file uploads.",
+      "C": "Self-managing EC2 instances with EBS volumes incurs ongoing OS patching, scaling overhead, and storage management, and EBS cannot be natively queried as S3 objects by event-driven serverless pipelines.",
+      "E": "Deploying hardware or virtual Storage Gateway appliances in hundreds of external creators' homes/offices is operationally infeasible and cost-prohibitive."
+    },
+    "learningObjective": "Ingest large binary files into Amazon S3 using AWS Transfer Family with custom identity provider authentication for SFTP and FTPS.",
+    "topic": "AWS Transfer Family",
+    "tags": [
+      "transfer-family",
+      "sftp",
+      "ftps",
+      "s3",
+      "lambda"
+    ]
+  },
+  {
+    "id": "saa-2334",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A developer is building a high-volume internal webhook processor using AWS Lambda. The webhook must be invoked directly over HTTPS by microservices running in other AWS accounts within the same organization. The callers sign their HTTP requests using standard AWS Signature Version 4 (SigV4) with IAM credentials. The payload size is small, and the function execution finishes in less than 50 milliseconds. The previous design routed traffic through an Amazon API Gateway REST API, but the high request volume generated substantial API Gateway per-million-request charges and added 25 milliseconds of proxy latency. The developer does not require API keys, request transformations, or rate-limiting usage plans. Which solution provides the LOWEST latency and MOST cost-effective architecture?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an Application Load Balancer with an internet-facing listener, forward traffic to a Lambda target group, and verify IAM SigV4 headers using an ALB authentication rule.",
+      "B": "Configure an Amazon CloudFront distribution with the Lambda function ARN as the origin, and use a Lambda@Edge viewer-request trigger to authenticate callers.",
+      "C": "Deploy an Amazon API Gateway HTTP API configured with an AWS IAM authorizer and a private VPC link to the Lambda function.",
+      "D": "Create an AWS Lambda Function URL configured with the AWS_IAM authorization type, and update the calling services to invoke the Function URL directly using SigV4 signing."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "AWS Lambda Function URLs provide dedicated HTTPS endpoints directly for Lambda functions. When advanced API Gateway features (such as request validation, usage plans, or WebSocket support) are not required, Function URLs offer the lowest possible invocation latency and eliminate API Gateway proxy costs entirely (Function URLs are included in standard Lambda request pricing with no extra per-request gateway fee). Setting the authorization type to AWS_IAM ensures that only callers with valid IAM credentials and appropriate lambda:InvokeFunctionUrl permissions who sign requests with SigV4 can invoke the function.",
+    "whyOthersAreWrong": {
+      "A": "Application Load Balancers do not support native AWS SigV4 request authentication verification, and running an ALB incurs hourly base charges and capacity unit fees.",
+      "B": "CloudFront distributions cannot target Lambda function ARNs directly as standard origins without an intermediary API or Function URL, and Lambda@Edge adds extra invocation overhead.",
+      "C": "API Gateway HTTP APIs still incur per-million-request gateway processing fees and latency overhead compared to direct Lambda Function URLs."
+    },
+    "learningObjective": "Minimize latency and invocation costs for microservice webhooks using AWS Lambda Function URLs with AWS_IAM authorization.",
+    "topic": "AWS Lambda Function URLs",
+    "tags": [
+      "lambda",
+      "function-urls",
+      "iam",
+      "sigv4",
+      "performance"
+    ]
+  },
+  {
+    "id": "saa-2335",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A global online media streaming service delivers live video streams and web content through Amazon CloudFront. The site reliability engineering (SRE) team needs real-time observability into viewer traffic, edge cache hit ratios, and HTTP 5xx error spikes with end-to-end latency of less than 30 seconds. Standard CloudFront access logs delivered to Amazon S3 take up to an hour to arrive, which is too slow for automated anomaly detection. The SRE team wants to stream full viewer request logs with configurable fields to an analytics pipeline that ingests data into Amazon Managed Service for Apache Flink. Which THREE steps should the solutions architect implement to configure real-time log delivery?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Configure standard CloudFront access logging to Amazon S3, and create an S3 Event Notification that triggers an AWS Lambda function on object creation.",
+      "B": "Create an Amazon Kinesis Data Stream to act as the destination data stream for the log records.",
+      "C": "Create a real-time log configuration in CloudFront that defines the sampling rate, specific log fields, and targets the Kinesis Data Stream.",
+      "D": "Associate the real-time log configuration with the specific cache behaviors of the CloudFront distribution.",
+      "E": "Create an Amazon SNS topic and configure the CloudFront distribution to publish viewer error events directly to the topic."
+    },
+    "correctAnswers": [
+      "B",
+      "C",
+      "D"
+    ],
+    "explanation": "Amazon CloudFront real-time logs provide configurable, low-latency log streams delivered within seconds of viewer requests. To implement this: (1) B: Create an Amazon Kinesis Data Stream, which serves as the scalable ingestion buffer for real-time log records. (2) C: Create a real-time log configuration in CloudFront, specifying the fields to include, the sampling rate (up to 100%), and the IAM role and ARN of the Kinesis Data Stream. (3) D: Attach the real-time log configuration to the relevant cache behaviors within the CloudFront distribution. Kinesis Data Streams then feeds the data directly into Amazon Managed Service for Apache Flink for real-time anomaly detection.",
+    "whyOthersAreWrong": {
+      "A": "Standard S3 access logs have a delivery delay of up to an hour and cannot meet the sub-30-second latency requirement.",
+      "E": "CloudFront cannot publish individual viewer request logs directly to Amazon SNS topics."
+    },
+    "learningObjective": "Stream edge access logs in real time to Amazon Kinesis Data Streams using CloudFront real-time log configurations.",
+    "topic": "Amazon CloudFront Real-Time Logs",
+    "tags": [
+      "cloudfront",
+      "kinesis",
+      "real-time-logs",
+      "observability",
+      "streaming"
+    ]
+  },
+  {
+    "id": "saa-2336",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial risk calculation platform stores 200 TB of historical transaction logs in Amazon S3 in compressed CSV and Apache Parquet formats. Daily batch analytics jobs running on an Amazon EC2 compute cluster scan these files. However, 95% of the jobs only need to extract a tiny fraction of data (e.g., transactions where currency = 'EUR' and amount > 50000), representing less than 2% of the total file contents. Currently, the EC2 instances download entire multi-gigabyte files over the network before applying filtering logic in memory, causing heavy network saturation, high I/O wait times, and inflated EC2 network data transfer costs. Which approach achieves the HIGHEST performance improvement and network optimization?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an Amazon EFS file system, replicate the S3 files using AWS DataSync, and mount EFS to all EC2 instances using NFS v4.",
+      "B": "Use Amazon S3 Select to execute SQL expressions directly on S3 objects server-side, returning only the filtered records across the network to the EC2 instances.",
+      "C": "Create an Amazon DynamoDB table, import all 200 TB of historical logs using AWS Glue, and configure Global Secondary Indexes for query filtering.",
+      "D": "Attach an AWS Storage Gateway Volume Gateway to the EC2 instances to cache the S3 files on local EBS volumes."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Amazon S3 Select allows applications to run SQL queries server-side directly against objects stored in Amazon S3 in CSV, JSON, or Apache Parquet formats (including compressed files). Instead of downloading entire multi-gigabyte objects over the network to the compute instances, S3 Select filters the data directly on S3 storage nodes and streams only the requested subset of rows and columns across the network. This drastically cuts network transfer volume (by up to 98% in this scenario), eliminates EC2 memory and I/O bottlenecks, and significantly accelerates query runtimes.",
+    "whyOthersAreWrong": {
+      "A": "Replicating 200 TB of data to Amazon EFS does not filter data server-side and significantly increases storage costs compared to S3.",
+      "C": "Loading 200 TB of historical log data into DynamoDB incurs massive write provisioning costs, expensive continuous storage fees, and is not designed for ad-hoc analytical batch scans.",
+      "D": "Storage Gateway caches entire blocks locally on EBS volumes; it does not perform server-side row and column filtering and requires massive local EBS storage."
+    },
+    "learningObjective": "Accelerate query performance and minimize network bandwidth by using Amazon S3 Select to filter structured objects server-side.",
+    "topic": "Amazon S3 Select",
+    "tags": [
+      "s3",
+      "s3-select",
+      "ec2",
+      "performance",
+      "data-filtering"
+    ]
+  },
+  {
+    "id": "saa-2337",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs 50 Amazon EC2 instances running relational database engines with attached Amazon EBS volumes. Currently, each instance uses a 3 TB General Purpose SSD (gp2) volume. The database workloads require a sustained performance of 9,000 IOPS and 300 MB/s throughput during business hours. However, the database currently stores only 500 GB of actual data per volume. The engineering team provisioned 3 TB volumes solely because gp2 baseline IOPS scales at 3 IOPS per GB, meaning a 3 TB volume was necessary to achieve 9,000 IOPS. As a result, the company pays for 2.5 TB of unused storage capacity per instance. Which solution MOST cost-effectively meets the performance and capacity requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Convert the EBS volumes to General Purpose SSD (gp3), reduce the allocated storage to 500 GB, and independently provision 9,000 IOPS and 300 MB/s throughput on each volume.",
+      "B": "Migrate the database volumes to Provisioned IOPS SSD (io2 Block Express) with 500 GB capacity and 9,000 IOPS.",
+      "C": "Migrate the data to Throughput Optimized HDD (st1) volumes with 6 TB capacity to satisfy both the IOPS and throughput baselines.",
+      "D": "Replace the EBS volumes with Amazon Elastic File System (Amazon EFS) file systems configured with Provisioned Throughput of 300 MB/s."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "With General Purpose SSD (gp2) volumes, IOPS and throughput are tightly coupled to storage capacity (3 IOPS/GB, capped at 16,000 IOPS). General Purpose SSD (gp3) volumes decouple storage capacity from performance: gp3 provides a baseline of 3,000 IOPS and 125 MB/s throughput for free at any volume size, and allows customers to provision additional IOPS and throughput independently without paying for unneeded disk capacity. Migrating to 500 GB gp3 with 9,000 IOPS and 300 MB/s throughput eliminates 2.5 TB of wasted storage spend per instance while costing roughly 20% less per GB than gp2.",
+    "whyOthersAreWrong": {
+      "B": "While io2 Block Express can decouple IOPS from capacity, it is designed for extreme sub-millisecond, mission-critical workloads (up to 256,000 IOPS) and costs substantially more per GB and per provisioned IOPS than gp3.",
+      "C": "Throughput Optimized HDD (st1) volumes are magnetic drives designed for large, sequential throughput (such as MapReduce or log processing); they cannot provide 9,000 random IOPS for relational databases.",
+      "D": "Amazon EFS is an NFS network file system that costs significantly more per GB than EBS and is not recommended for latency-sensitive primary relational database storage."
+    },
+    "learningObjective": "Cost-optimize EBS storage by provisioning gp3 volumes with independent IOPS and throughput allocations instead of over-provisioning gp2 capacity.",
+    "topic": "Amazon EBS Volume Types",
+    "tags": [
+      "ebs",
+      "gp3",
+      "gp2",
+      "cost-optimization",
+      "performance"
+    ]
+  },
+  {
+    "id": "saa-2338",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A software development firm maintains over 80 Amazon RDS for MySQL and PostgreSQL database instances across development, testing, and staging environments. Developers and QA engineers work strictly from Monday to Friday between 8:00 AM and 7:00 PM local time. The finance team notes that these non-production databases run continuously over weekends and weeknights, generating over 120 hours of unnecessary compute charges per instance every week. The engineering lead wants an automated, serverless solution that automatically stops all non-production DB instances on weekday evenings and starts them back up on weekday mornings. Which TWO actions should the solutions architect combine to implement this solution?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure an Amazon EventBridge Scheduler rule with an execution schedule for 7:00 PM Monday through Friday that triggers an AWS Lambda function to delete the RDS instances after creating a final snapshot.",
+      "B": "Create an Amazon EC2 Auto Scaling group with a scheduled scaling policy that adjusts the minimum and maximum capacity of the RDS instances to 0 every evening.",
+      "C": "Create an Amazon EventBridge Scheduler schedule that runs at 7:00 PM Monday through Friday and targets an AWS Lambda function or AWS Systems Manager Automation runbook that calls the StopDBInstance API for instances tagged Environment=NonProd.",
+      "D": "Configure AWS Backup to take automated hourly snapshots of all non-production databases and enable the cross-account Glacier archive tier.",
+      "E": "Create an Amazon EventBridge Scheduler schedule that runs at 8:00 AM Monday through Friday and targets an AWS Lambda function or AWS Systems Manager Automation runbook that calls the StartDBInstance API for instances tagged Environment=NonProd."
+    },
+    "correctAnswers": [
+      "C",
+      "E"
+    ],
+    "explanation": "Amazon RDS allows DB instances (single-AZ or Multi-AZ) to be stopped for up to 7 consecutive days when not in use, during which you only pay for provisioned storage and backup retention rather than instance compute hours. To automate this cost optimization: (1) C: An Amazon EventBridge Scheduler schedule running at 7:00 PM on weekdays triggers a Lambda function or Systems Manager Automation runbook that identifies non-production instances via tags (Environment=NonProd) and executes rds:StopDBInstance. (2) E: A second EventBridge Scheduler schedule running at 8:00 AM on weekdays triggers the inverse execution calling rds:StartDBInstance. This saves approximately 70% of compute costs for non-production databases without managing infrastructure.",
+    "whyOthersAreWrong": {
+      "A": "Deleting and restoring 80 database instances daily from snapshots takes significant time, changes database endpoint DNS hostnames (breaking application configurations), and introduces severe operational risk.",
+      "B": "EC2 Auto Scaling groups manage EC2 instances, not Amazon RDS DB instances.",
+      "D": "Taking hourly snapshots and archiving to Glacier increases backup storage costs and does not stop running DB instances from incurring compute charges."
+    },
+    "learningObjective": "Reduce non-production relational database compute costs using Amazon EventBridge Scheduler to automatically stop and start tagged Amazon RDS instances.",
+    "topic": "Amazon RDS Cost Optimization",
+    "tags": [
+      "rds",
+      "eventbridge-scheduler",
+      "lambda",
+      "cost-optimization",
+      "automation"
+    ]
+  },
+  {
+    "id": "saa-2339",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A conglomerate with 150 AWS accounts under an AWS Organization wants to build a centralized financial analytics platform. The Chief Financial Officer requires daily cost visibility broken down by individual cost-center tags, resource IDs, AWS service APIs, and reserved capacity utilization. The finance team needs to run complex SQL queries against granular, hourly billing records spanning the past 3 years. They also want interactive executive dashboards that refresh automatically every morning. The solution must be completely serverless with no databases or virtual machines to manage. Which TWO services should the solutions architect combine to achieve this?",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Configure AWS Cost and Usage Reports (CUR) in the management account to export hourly, resource-level billing data in Apache Parquet format to a centralized Amazon S3 bucket.",
+      "B": "Configure AWS Budgets to generate hourly CSV usage reports and stream them into an Amazon DynamoDB table.",
+      "C": "Deploy an Amazon EC2 instance running open-source PostgreSQL to ingest daily AWS Cost Explorer CSV exports.",
+      "D": "Use AWS CloudTrail Lake to ingest cost allocation tags and write custom SQL analytical queries.",
+      "E": "Use Amazon Athena to query the Parquet billing data stored in Amazon S3, and connect Amazon QuickSight to visualize cost trends and build executive dashboards."
+    },
+    "correctAnswers": [
+      "A",
+      "E"
+    ],
+    "explanation": "A: AWS Cost and Usage Reports (CUR) is the most comprehensive tool for granular billing data in AWS. It delivers detailed, hourly line items including resource IDs, cost allocation tags, rates, and usage types across all accounts in an organization. Delivering CUR in Apache Parquet format with Athena integration automatically catalogs the dataset in AWS Glue and partitions it for fast, columnar SQL querying. E: Amazon Athena provides a serverless, interactive query service to run standard SQL queries directly against the CUR Parquet files in S3. Amazon QuickSight connects natively to Athena to build scheduled, interactive dashboards, heatmaps, and financial trend visualizations without managing any server or database infrastructure.",
+    "whyOthersAreWrong": {
+      "B": "AWS Budgets is designed for setting budget limits and alerting on threshold breaches, not for exporting granular, line-item billing data for SQL analytics.",
+      "C": "Deploying an EC2 instance running PostgreSQL requires ongoing server management, patching, disk provisioning, and manual CSV parsing, violating the serverless requirement.",
+      "D": "AWS CloudTrail records API management events and audit trails; it does not track financial billing metrics or cost allocation line items."
+    },
+    "learningObjective": "Build a serverless cost governance analytics platform using AWS Cost and Usage Reports (CUR), Amazon Athena, and Amazon QuickSight.",
+    "topic": "AWS Cost Governance",
+    "tags": [
+      "cur",
+      "athena",
+      "quicksight",
+      "cost-optimization",
+      "serverless"
+    ]
+  },
+  {
+    "id": "saa-2340",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A technology enterprise has committed to significant cloud modernization, running thousands of compute instances across Amazon EC2, AWS Fargate, and AWS Lambda. Three months ago, the financial operations (FinOps) team purchased a 3-year Compute Savings Plan with a commitment of $100 per hour. The FinOps manager now needs to evaluate: (1) what percentage of the $100/hour commitment was actually utilized over the last 90 days to avoid wasted spend, (2) what percentage of the company's total eligible compute usage was covered by the Savings Plan versus billed at On-Demand rates, and (3) whether additional Savings Plans should be purchased to cover remaining On-Demand compute. Which AWS tool natively provides dedicated visual reports to analyze both of these metrics?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "AWS Compute Optimizer, by reviewing the EC2 and Lambda right-sizing recommendation reports.",
+      "B": "AWS Trusted Advisor, by viewing the Service Limits and Cost Optimization checks.",
+      "C": "AWS Cost Explorer, by utilizing the dedicated Savings Plans Utilization and Savings Plans Coverage reports.",
+      "D": "AWS Billing Conductor, by creating custom billing groups and tiering pro-forma pricing rules."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "AWS Cost Explorer includes two dedicated, built-in reports specifically designed for analyzing Savings Plans: (1) The Savings Plans Utilization report shows the percentage of your committed Savings Plan spend that you actually used over time, identifying whether you are under-utilizing your commitment (wasting money). (2) The Savings Plans Coverage report shows the percentage of your total eligible compute spend that was covered by Savings Plans versus what was billed at higher On-Demand rates, helping FinOps teams identify opportunities to purchase additional Savings Plans. Cost Explorer also provides personalized Savings Plans recommendations based on historical usage.",
+    "whyOthersAreWrong": {
+      "A": "AWS Compute Optimizer analyzes CPU, memory, and disk metrics to recommend right-sizing or migrating EC2 instance types and Lambda memory configurations; it does not provide Savings Plans utilization or coverage reports.",
+      "B": "AWS Trusted Advisor provides high-level checklist recommendations (such as idle resources or low utilization instances), but does not offer granular time-series utilization and coverage dashboards for Savings Plans.",
+      "D": "AWS Billing Conductor is used to customize pro-forma billing rates for showback and chargeback between business units or end customers; it does not provide native Savings Plan utilization analysis."
+    },
+    "learningObjective": "Analyze Savings Plans commitment efficiency and discount penetration using AWS Cost Explorer Utilization and Coverage reports.",
+    "topic": "AWS Cost Management",
+    "tags": [
+      "savings-plans",
+      "cost-explorer",
+      "finops",
+      "cost-optimization"
+    ]
+  }
+]

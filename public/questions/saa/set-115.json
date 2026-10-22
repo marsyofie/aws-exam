@@ -1,0 +1,637 @@
+[
+    {
+        "id": "saa-2281",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A global financial services company uses Amazon Macie across 40 AWS accounts managed under AWS Organizations to detect sensitive data and personally identifiable information (PII) stored in Amazon S3 buckets. The central compliance office mandates that all sensitive data discovery results across the entire organization must be continuously exported to a central S3 bucket in a dedicated security account for long-term archiving and cross-account analysis. The exported discovery files must be encrypted at rest using a customer managed KMS key owned by the security account. Additionally, high-severity findings must trigger immediate notifications to the security operations center via an existing Amazon SNS topic. Which solution BEST meets these requirements with the LEAST operational overhead?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "In the Macie administrator account, configure sensitive data discovery results to export to the central S3 bucket, using a customer managed KMS key with a key policy granting the Macie service principal permissions to generate data keys. Create an Amazon EventBridge rule matching Macie Finding events to publish to the SNS topic.",
+            "B": "Deploy an AWS Lambda function in each member account triggered by S3 PutObject events to invoke Macie APIs, encrypt the discovery output using the security account's KMS key, and publish alerts to the SNS topic.",
+            "C": "Configure an Amazon S3 Cross-Region Replication (CRR) rule in each member account to replicate Macie findings directly to the central S3 bucket, and configure S3 Event Notifications to send alerts to the SNS topic.",
+            "D": "Enable AWS Security Hub across all accounts, configure a custom action to export Macie findings to the central S3 bucket using default Amazon S3 managed keys (SSE-S3), and configure CloudWatch Alarms to publish to the SNS topic."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "Amazon Macie allows a designated delegated administrator account in AWS Organizations to configure sensitive data discovery results export to a centralized S3 bucket located in any account. To use a customer managed KMS key owned by the central security account, the KMS key policy must grant macie.amazonaws.com permissions to call kms:GenerateDataKey, and the destination bucket policy must grant s3:PutObject to Macie. Macie findings are automatically published to Amazon EventBridge in near-real-time, where an EventBridge rule can filter on high severity and route alerts directly to the existing SNS topic with zero custom code or operational maintenance.",
+        "whyOthersAreWrong": {
+            "B": "Invoking Macie APIs via Lambda functions triggered by S3 PutObject events introduces unnecessary execution latency, complex custom maintenance, and bypasses Macie's native automated discovery export mechanism.",
+            "C": "Macie discovery results and findings are not stored as standard S3 objects in member accounts that can be synchronized using S3 CRR; findings are managed service events.",
+            "D": "The compliance requirement explicitly demands encryption using a customer managed KMS key, which SSE-S3 violates; additionally, CloudWatch Alarms cannot directly filter individual Macie finding payloads."
+        },
+        "learningObjective": "Configure Amazon Macie centralized discovery results export to an encrypted S3 bucket and automate alerting with Amazon EventBridge.",
+        "topic": "Amazon Macie & S3 Data Security",
+        "tags": [
+            "macie",
+            "kms",
+            "s3",
+            "eventbridge",
+            "organizations"
+        ]
+    },
+    {
+        "id": "saa-2282",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A digital health platform is building a consumer mobile application where patients sign in using only their registered mobile phone number without entering a password. When a patient initiates a login request, the system must generate a cryptographically secure 6-digit one-time passcode (OTP), deliver the OTP to the mobile device via SMS, and verify the user's submitted passcode. The company wants to use Amazon Cognito User Pools for user identity and token management without storing passwords or managing custom user session state in an external database. Which architecture BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure an Amazon Cognito Identity Pool with unauthenticated guest access, and invoke an Amazon API Gateway endpoint backed by AWS Lambda to generate, store in Amazon DynamoDB, and validate the SMS OTP codes.",
+            "B": "Configure an Amazon Cognito User Pool with a custom authentication flow using Define Auth Challenge, Create Auth Challenge, and Verify Auth Challenge Response Lambda triggers, sending the OTP via Amazon SNS.",
+            "C": "Configure an Amazon Cognito User Pool federated with an external SAML 2.0 identity provider that delegates SMS OTP delivery, using AWS Lambda Pre-Authentication triggers to authenticate the user.",
+            "D": "Deploy an Amazon API Gateway HTTP API integrated with AWS Secrets Manager to generate rotating OTP secrets, using Cognito User Pool Client Secrets to validate the user response."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Amazon Cognito User Pools natively support passwordless authentication through custom authentication flows implemented with AWS Lambda triggers. The flow utilizes three coordinated triggers: Define Auth Challenge determines the sequence of challenges and issues the final JWT tokens; Create Auth Challenge generates the 6-digit OTP challenge and delivers it via SMS using Amazon SNS; and Verify Auth Challenge Response evaluates the candidate OTP submitted by the user. This approach leverages fully managed Cognito token issuance without storing user passwords or managing custom session databases.",
+        "whyOthersAreWrong": {
+            "A": "Using Cognito Identity Pools with unauthenticated guest access bypasses Cognito User Pool directory management and requires building and maintaining custom session tables in DynamoDB.",
+            "C": "SAML 2.0 federation requires an external enterprise identity provider, which is not applicable to a direct consumer mobile application and adds third-party dependencies.",
+            "D": "AWS Secrets Manager is designed for rotating database credentials and API keys, not for generating or validating high-volume, ephemeral user mobile OTP codes."
+        },
+        "learningObjective": "Implement passwordless SMS OTP authentication in Amazon Cognito User Pools using custom authentication Lambda triggers.",
+        "topic": "Amazon Cognito Custom Authentication",
+        "tags": [
+            "cognito",
+            "lambda",
+            "sns",
+            "security",
+            "authentication"
+        ]
+    },
+    {
+        "id": "saa-2283",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An enterprise development organization wants to empower engineering teams to create and manage their own IAM execution roles for serverless AWS Lambda microservices. The security team must ensure that developers cannot escalate their own administrative privileges or attach overly permissive policies (such as AdministratorAccess) to the roles they create. Furthermore, AWS services such as Amazon ECS and Amazon OpenSearch Service must be able to automatically manage resources within the accounts using predefined AWS-managed roles. Which solution BEST meets the security team's requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Apply an AWS Organizations Service Control Policy (SCP) to the developer accounts that denies iam:CreateRole unless the principal has an attached administrator policy.",
+            "B": "Use AWS Systems Manager Session Manager to restrict developers to a predefined CLI environment that checks role policies using custom Python validation scripts before submission.",
+            "C": "Require developers to attach an IAM permissions boundary to any IAM role they create, using an IAM policy condition that denies role creation without the boundary, while relying on AWS service-linked roles for AWS-managed services.",
+            "D": "Configure AWS Control Tower guardrails to automatically delete any IAM role created by developers that contains policies with wildcard permissions within 15 minutes of creation."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "An IAM permissions boundary is an IAM governance mechanism that sets the maximum permissions that an identity-based policy can grant to an IAM role or user. By granting developers permissions to create roles only when they attach a specific permissions boundary (enforced using the iam:PermissionsBoundary condition in the developer's IAM policy), developers can freely provision microservice roles without being able to elevate their privileges beyond the boundary. Predefined AWS service-linked roles are predefined by AWS services with linked permissions and cannot be modified or escalated by developers, cleanly separating delegated developer roles from service roles.",
+        "whyOthersAreWrong": {
+            "A": "An SCP that denies iam:CreateRole unless the user is an administrator prevents developers from creating roles, defeating the goal of delegating role creation.",
+            "B": "Restricting developers to custom CLI scripts in Session Manager adds high administrative overhead, fails to enforce guardrails across the AWS Management Console or SDKs, and lacks control-plane enforcement.",
+            "D": "Deleting roles reactively after 15 minutes creates a dangerous window of vulnerability where unauthorized actions could be executed before the role is purged."
+        },
+        "learningObjective": "Use IAM permissions boundaries to safely delegate IAM role creation to developers without privilege escalation.",
+        "topic": "AWS IAM Permissions Boundaries",
+        "tags": [
+            "iam",
+            "permissions-boundaries",
+            "least-privilege",
+            "security"
+        ]
+    },
+    {
+        "id": "saa-2284",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A healthcare provider stores patient medical scans in an Amazon S3 bucket encrypted with an AWS KMS customer managed key (CMK). A strict regulatory compliance audit mandates that all existing encrypted data files stored at rest must be re-encrypted immediately under a brand-new cryptographic key, rather than just waiting for new data to be written with the new key. Moving forward, the company must also ensure that the key alias used by the imaging applications continues to point to the active key without requiring application code changes. Which solution satisfies these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable automatic annual key rotation on the existing KMS CMK, and run an Amazon S3 Batch Operations job to touch the metadata of all existing objects.",
+            "B": "Update the KMS key policy of the existing CMK to enforce AWS KMS envelope encryption, and submit a support ticket to AWS to rotate the backing key material on demand.",
+            "C": "Create an AWS CloudHSM cluster, import the existing KMS key material into an HSM instance, and configure automatic zero-downtime key rollover.",
+            "D": "Create a new KMS CMK, update the existing KMS key alias to point to the new KMS CMK, and run an Amazon S3 Batch Operations job using S3 Copy to re-encrypt all existing objects with the new KMS key."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Automatic key rotation in AWS KMS generates new backing key material for future encryption operations, but it preserves older key material so that existing ciphertext remains readable without re-encryption. When compliance mandates that existing stored ciphertext must be re-encrypted under a new cryptographic key immediately, you must create a new customer managed key, point the existing application alias to the new key ID, and execute a re-encryption workflow. Running an Amazon S3 Batch Operations job with a Copy operation encrypts existing objects with the new KMS key, ensuring all data at rest is re-encrypted without requiring application code changes.",
+        "whyOthersAreWrong": {
+            "A": "Automatic key rotation does not re-encrypt existing stored data; updating metadata touches object metadata without re-encrypting the underlying data payload.",
+            "B": "KMS key policies govern access permissions, not cryptographic re-encryption; AWS support cannot force on-demand re-encryption of stored ciphertext.",
+            "C": "Deploying AWS CloudHSM introduces substantial operational complexity and high cost, and does not automatically re-encrypt existing S3 object payloads."
+        },
+        "learningObjective": "Differentiate between AWS KMS automatic key rotation and manual re-encryption workflows with KMS aliases.",
+        "topic": "AWS KMS Key Lifecycle & Re-encryption",
+        "tags": [
+            "kms",
+            "s3",
+            "encryption",
+            "compliance",
+            "s3-batch-operations"
+        ]
+    },
+    {
+        "id": "saa-2285",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A multinational enterprise has 20 VPCs connected via an AWS Transit Gateway in the us-east-1 Region. The security team requires all outbound internet traffic from all VPCs to be routed through a centralized inspection VPC containing AWS Network Firewall endpoints deployed across multiple Availability Zones. During initial testing with stateful inspection rules, outbound TCP connections frequently hang and time out because traffic leaving through an Availability Zone in the inspection VPC returns through a different Availability Zone, causing asymmetric routing drops. Which TWO architectural steps are required to resolve this issue and maintain high availability? (Choose TWO.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Enable Appliance Mode on the Transit Gateway VPC attachment connected to the centralized inspection VPC.",
+            "B": "Enable Transit Gateway Equal-Cost Multi-Path (ECMP) routing on the default route table in all workload VPCs.",
+            "C": "Configure route tables in the centralized inspection VPC so that traffic to the internet traverses AWS Network Firewall endpoints in the same Availability Zone before reaching the NAT gateways.",
+            "D": "Deploy an AWS Global Accelerator in front of the AWS Network Firewall endpoints to terminate TCP sessions at the edge.",
+            "E": "Replace AWS Network Firewall with an Application Load Balancer configured with cross-zone load balancing enabled."
+        },
+        "correctAnswers": [
+            "A",
+            "C"
+        ],
+        "explanation": "By default, AWS Transit Gateway selects an Availability Zone in a VPC attachment using a hash of the flow's five-tuple, which can lead to asymmetric routing where outbound traffic traverses one AZ but inbound response traffic returns through another AZ. Stateful firewalls like AWS Network Firewall drop asymmetric packets because they cannot track connection state. Enabling Appliance Mode on the Transit Gateway VPC attachment for the inspection VPC guarantees that bidirectional traffic for any given flow remains pinned to the same AZ in the inspection VPC for the life of the connection (Option A). Furthermore, routing inside the inspection VPC must ensure that traffic passing through a firewall endpoint in a given AZ exits and returns through the NAT Gateway and internet gateway in that same AZ, maintaining AZ alignment (Option C).",
+        "whyOthersAreWrong": {
+            "B": "TGW ECMP balances traffic across multiple VPN or Direct Connect paths; it does not resolve intra-VPC asymmetric routing for stateful firewall attachments.",
+            "D": "AWS Global Accelerator is an ingress service for routing external user traffic to internal endpoints; it does not route or inspect egress internet traffic from VPCs.",
+            "E": "Application Load Balancers operate on inbound Layer 7 traffic and cannot act as a transparent egress firewall for arbitrary outbound internet traffic."
+        },
+        "learningObjective": "Resolve asymmetric routing through stateful firewalls using AWS Transit Gateway Appliance Mode and AZ-aligned routing.",
+        "topic": "AWS Network Firewall & Transit Gateway Appliance Mode",
+        "tags": [
+            "transit-gateway",
+            "network-firewall",
+            "appliance-mode",
+            "networking",
+            "security"
+        ]
+    },
+    {
+        "id": "saa-2286",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial enterprise uses AWS Organizations with 50 member accounts. Corporate governance requires that all Amazon EBS volumes, Amazon RDS databases, and Amazon DynamoDB tables be backed up automatically according to a standardized daily schedule with a 365-day retention period. Backups must be copied to a secondary Region to protect against regional disasters, and recovery points in the secondary Region must be immutable so that no user—including the account root user or an AWS Organizations administrator—can delete or alter them before the 365 days expire. Which TWO solutions should the solutions architect combine to satisfy these requirements with the LEAST operational overhead? (Choose TWO.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Create an AWS Lambda function triggered daily by Amazon EventBridge in the management account that invokes AWS Backup APIs across all member accounts via cross-account IAM roles.",
+            "B": "Create and attach an AWS Organizations backup policy to the organization root to define standardized backup schedules, retention periods, and cross-Region copy rules.",
+            "C": "Deploy an Amazon S3 Glacier Vault in the secondary Region and configure a Vault Lock policy in Governance Mode.",
+            "D": "Deploy an AWS Backup vault in the secondary Region and apply an AWS Backup Vault Lock policy configured in Compliance Mode with a minimum retention period of 365 days.",
+            "E": "Configure AWS Config conformance packs in each member account with automatic remediation using AWS Systems Manager Automation runbooks to snapshot resources daily."
+        },
+        "correctAnswers": [
+            "B",
+            "D"
+        ],
+        "explanation": "AWS Organizations backup policies allow administrators to centrally define, enforce, and automate backup plans across all member accounts without deploying per-account resources or custom scripts (Option B). To guarantee that backups cannot be deleted or shortened under any circumstances—even by root or organization administrators—AWS Backup Vault Lock must be configured in Compliance Mode. Once the vault lock grace period expires, compliance mode locks the vault permanently, ensuring strict compliance with regulatory WORM requirements (Option D).",
+        "whyOthersAreWrong": {
+            "A": "Custom Lambda functions with cross-account IAM roles introduce unnecessary maintenance, monitoring overhead, and scaling limits compared to native Organizations backup policies.",
+            "C": "S3 Glacier Vault Lock applies only to S3 Glacier archives, whereas the requirement encompasses EBS volumes, RDS databases, and DynamoDB tables managed by AWS Backup. Furthermore, Governance Mode can be overridden by authorized users.",
+            "E": "AWS Config conformance packs can audit compliance, but writing custom SSM automation to snapshot databases, EBS, and DynamoDB daily while handling cross-Region copies and immutability creates massive operational overhead."
+        },
+        "learningObjective": "Enforce organization-wide backup policies and immutable retention using AWS Backup Vault Lock in Compliance Mode.",
+        "topic": "AWS Organizations Backup Policies & Vault Lock",
+        "tags": [
+            "aws-backup",
+            "vault-lock",
+            "organizations",
+            "compliance",
+            "governance"
+        ]
+    },
+    {
+        "id": "saa-2287",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A company's security operations center (SOC) detects that several EC2 instances in an application VPC have attempted to resolve external domain names associated with known ransomware Command-and-Control (C2) servers. The instances communicate with on-premises data centers via AWS Direct Connect and also resolve internal microservice domain names hosted in Route 53 private hosted zones. The solutions architect must implement a solution that blocks outbound DNS queries to known malicious domains, allows internal name resolution to function normally, and requires NO software agents on the instances. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Create a Route 53 Resolver DNS Firewall rule group with AWS-managed threat intelligence domain lists set to BLOCK, and associate the rule group with the application VPC.",
+            "B": "Configure an outbound Network ACL on the application subnets that denies destination port 53 traffic to the public IP addresses of the C2 servers.",
+            "C": "Deploy an open-source BIND DNS proxy server on an EC2 instance in each subnet and update the DHCP option sets of the VPC to route all DNS traffic through the proxy.",
+            "D": "Associate an AWS WAF Web ACL containing reputation lists with the Route 53 Resolver inbound and outbound endpoints."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "Route 53 Resolver DNS Firewall provides agentless, managed DNS filtering for outbound DNS queries originated by VPC resources querying Route 53 Resolver (AmazonProvidedDNS). By associating a DNS Firewall rule group using AWS-managed threat intelligence domain lists (such as Malware Domains or Botnet C2 Domains) with the VPC, outbound resolution to malicious domains is automatically blocked or redirected to a sinkhole, while internal queries to private hosted zones and hybrid DNS through Resolver endpoints continue without interruption.",
+        "whyOthersAreWrong": {
+            "B": "Network ACLs filter traffic based on IP addresses and CIDR blocks, not domain names; because C2 servers frequently change IP addresses (fast-flux DNS), NACLs cannot effectively block domain-based threats.",
+            "C": "Deploying self-managed BIND proxy instances adds operational overhead, maintenance burdens, and creates a potential single point of failure in the DNS path.",
+            "D": "AWS WAF protects Application Load Balancers, API Gateways, CloudFront, and AppSync from HTTP/HTTPS application-layer attacks; it cannot attach to Route 53 Resolver endpoints to filter DNS queries."
+        },
+        "learningObjective": "Block outbound C2 domain resolution using Amazon Route 53 Resolver DNS Firewall with AWS-managed domain lists.",
+        "topic": "Amazon Route 53 Resolver DNS Firewall",
+        "tags": [
+            "route53",
+            "dns-firewall",
+            "vpc",
+            "security",
+            "incident-response"
+        ]
+    },
+    {
+        "id": "saa-2288",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An e-commerce order processing pipeline uses an Amazon SQS standard queue and an AWS Lambda function to process incoming customer orders. Occasionally, an order contains malformed XML data that causes the Lambda function to encounter an unhandled exception and crash. The worker function takes an average of 45 seconds to process valid orders. Currently, malformed orders remain in the queue, repeatedly trigger Lambda invocations, exhaust function concurrency, and delay valid orders. Which solution BEST resolves this issue with the LEAST operational overhead?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Increase the Lambda function timeout to 15 minutes and configure an Amazon EventBridge rule to delete failed orders after 5 minutes.",
+            "B": "Configure a Dead-Letter Queue (DLQ) on the SQS queue with a maxReceiveCount of 3, and set the source queue's visibility timeout to at least 270 seconds.",
+            "C": "Convert the SQS standard queue to a FIFO queue and enable deduplication so that failed orders are rejected automatically.",
+            "D": "Create an Amazon SNS topic between the order producers and SQS, and add an SNS message filter policy to validate XML syntax before queue delivery."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "When a message consistently causes processing failure (a poison pill message), setting up a Dead-Letter Queue (DLQ) with a maxReceiveCount (such as 3) ensures that after failing 3 times, SQS moves the offending message to the DLQ automatically without blocking the processing pipeline. Best practice requires setting the SQS visibility timeout to at least 6 times the consumer's average processing duration (6 * 45s = 270s) to give the worker sufficient time to process messages before SQS makes them visible to other consumers.",
+        "whyOthersAreWrong": {
+            "A": "Increasing the Lambda timeout to 15 minutes exacerbates concurrency exhaustion by allowing failing invocations to run even longer before crashing, and EventBridge cannot inspect or delete specific SQS messages.",
+            "C": "FIFO queues preserve order and eliminate duplicates, but a poison pill at the head of a FIFO message group would block all subsequent messages in that group indefinitely.",
+            "D": "SNS message filtering inspects message attributes (key-value metadata), not XML message bodies, and cannot validate arbitrary XML syntax."
+        },
+        "learningObjective": "Implement resilient SQS error handling and poison-pill mitigation using Dead-Letter Queues and visibility timeout tuning.",
+        "topic": "Amazon SQS Poison Pill & DLQ Handling",
+        "tags": [
+            "sqs",
+            "lambda",
+            "dlq",
+            "resilience",
+            "error-handling"
+        ]
+    },
+    {
+        "id": "saa-2289",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A software company runs a critical microservice on Amazon ECS with AWS Fargate behind an Application Load Balancer. During a recent deployment, a bad configuration update caused new container tasks to fail their health checks and crash immediately upon launch. ECS continued attempting to launch replacement tasks repeatedly for several hours, leaving the deployment in a stalled state and consuming resources until engineers manually intervened. The solutions architect must configure ECS rolling deployments to automatically detect launch failures and revert to the previous working task definition without manual intervention. Which solution meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Configure an Amazon CloudWatch Synthetics canary to test the ALB endpoint, and use an AWS Lambda function triggered by alarm state change to call UpdateService with the old task definition.",
+            "B": "Create an AWS Step Functions state machine that polls the ECS service status and terminates the ECS cluster if the deployment takes longer than 15 minutes.",
+            "C": "Enable the ECS deployment circuit breaker on the service with the automatic rollback option enabled.",
+            "D": "Set the minimum healthy percent to 0% and the maximum percent to 100% in the ECS service deployment configuration."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "Amazon ECS provides a native deployment circuit breaker feature for rolling deployments. When enabled with the rollback option (enable=true, rollback=true), the circuit breaker monitors task launch failures and health check failures. If tasks fail to enter the RUNNING state or fail container health checks beyond a computed failure threshold, the deployment is marked as failed, task launches halt, and ECS automatically rolls back the service to the last working, stable task definition revision.",
+        "whyOthersAreWrong": {
+            "A": "Custom CloudWatch Synthetics canaries and Lambda rollback scripts require ongoing maintenance, testing, and error handling compared to the built-in ECS deployment circuit breaker.",
+            "B": "Terminating the entire ECS cluster causes catastrophic downtime for all services and does not perform an orderly service-level rollback.",
+            "D": "Setting minimum healthy percent to 0% causes complete service downtime during deployments because all running healthy tasks are terminated before new ones are verified."
+        },
+        "learningObjective": "Configure the Amazon ECS deployment circuit breaker with automatic rollback to protect rolling updates.",
+        "topic": "Amazon ECS Deployment Circuit Breaker",
+        "tags": [
+            "ecs",
+            "fargate",
+            "circuit-breaker",
+            "resilience",
+            "deployments"
+        ]
+    },
+    {
+        "id": "saa-2290",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A global online retail company uses an Amazon Aurora PostgreSQL Global Database with the primary DB cluster in us-east-1 and a secondary read-only DB cluster in us-west-2. The secondary cluster has typical replication lag of less than 1 second. The company wants to establish operational runbooks for two scenarios: 1) routine disaster recovery testing during maintenance windows with ZERO data loss, and 2) immediate recovery in the event of an unexpected, catastrophic outage in us-east-1 where business continuity takes precedence over minor data loss. Which TWO actions correctly describe the appropriate AWS-recommended procedures? (Choose TWO.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "For the unexpected outage, perform a managed planned failover (switchover) using the AWS CLI to swap primary and secondary roles while maintaining global replication.",
+            "B": "For routine maintenance testing, detach the secondary DB cluster from the Global Database, promote it to a standalone cluster, and recreate the global database from scratch.",
+            "C": "For routine maintenance testing, perform a managed planned failover (switchover) which synchronizes pending changes, swaps the primary and secondary roles, and preserves the global database topology without data loss.",
+            "D": "For the unexpected outage, configure AWS Route 53 to fail over database writes by updating the Aurora cluster endpoint DNS record directly.",
+            "E": "For the unexpected outage, detach the secondary DB cluster from the Aurora Global Database and promote it to a standalone regional cluster to resume write operations."
+        },
+        "correctAnswers": [
+            "C",
+            "E"
+        ],
+        "explanation": "Aurora Global Database provides two distinct failover mechanisms. For routine maintenance or planned DR testing, a managed planned failover (switchover) synchronizes storage changes between the primary and secondary clusters, shuts down traffic on the primary, promotes the secondary to primary, and demotes the old primary to secondary. This guarantees ZERO data loss (RPO = 0) and preserves the global cluster topology without needing to rebuild (Option C). During an unplanned, catastrophic regional outage where the primary region is unreachable, switchover cannot complete synchronization. Instead, the administrator must perform an unplanned failover by detaching the secondary cluster from the Global Database and promoting it to a standalone read/write cluster (Option E).",
+        "whyOthersAreWrong": {
+            "A": "Managed planned failover requires an operational primary cluster to synchronize pending writes; during an unexpected catastrophic outage of us-east-1, planned switchover will fail or hang.",
+            "B": "Detaching and promoting the secondary during routine testing destroys the global cluster topology, requiring hours of manual work and snapshot transfers to rebuild the global database.",
+            "D": "Aurora cluster endpoints are managed by AWS and cannot have their DNS records modified directly in Route 53; failover must be executed at the Aurora service layer."
+        },
+        "learningObjective": "Distinguish between planned failover (switchover) and unplanned detach procedures in Amazon Aurora Global Database.",
+        "topic": "Amazon Aurora Global Database Disaster Recovery",
+        "tags": [
+            "aurora",
+            "aurora-global-database",
+            "disaster-recovery",
+            "resilience",
+            "multi-region"
+        ]
+    },
+    {
+        "id": "saa-2291",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A mortgage financing company is designing a serverless loan underwriting workflow using AWS Step Functions. Loan applications under $100,000 are processed automatically by AWS Lambda functions. Applications exceeding $100,000 require manual review and sign-off by a senior loan officer. The underwriting review may take anywhere from 1 hour to 5 business days. Once the loan officer approves or rejects the application in an internal web portal, the workflow must resume immediately and proceed to disbursement or rejection notification. If the review is not completed within 5 days, the workflow must escalate to management. Which THREE architectural components are required to implement this resilient workflow? (Choose THREE.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Use the Step Functions task token callback pattern (.waitForTaskToken) in the manual approval task state and pass the task token to the approval notification.",
+            "B": "Use an AWS Lambda function in a continuous while loop that sleeps for 60 seconds and polls an Amazon RDS database for loan officer approval.",
+            "C": "Configure TimeoutSeconds on the task state set to 432,000 seconds (5 days) with a Catch block to route timed-out executions to an escalation state.",
+            "D": "Implement an Amazon SQS standard queue with a message visibility timeout set to 5 days to hold the loan application.",
+            "E": "Configure the internal loan portal backend to call SendTaskSuccess or SendTaskFailure with the task token when the loan officer completes the review."
+        },
+        "correctAnswers": [
+            "A",
+            "C",
+            "E"
+        ],
+        "explanation": "The Step Functions task token callback pattern (.waitForTaskToken) pauses the state machine execution indefinitely or until a specified timeout occurs, issuing a unique task token that can be sent to external systems or approval queues (Option A). To handle the 5-day SLA, TimeoutSeconds can be configured on the task state (up to the maximum 1-year execution limit for Standard Workflows) with a Catch block catching States.Timeout to divert the workflow to an escalation notification state (Option C). When the human officer makes a decision in the portal, the portal backend calls the Step Functions API SendTaskSuccess or SendTaskFailure providing the stored task token, which immediately unpauses the execution and delivers the output payload (Option E).",
+        "whyOthersAreWrong": {
+            "B": "Having a Lambda function run in a loop polling a database violates serverless design principles, incurs unnecessary execution costs, and fails because Lambda has a maximum invocation timeout of 15 minutes.",
+            "D": "SQS message visibility timeout has a maximum limit of 12 hours (43,200 seconds), making it impossible to hold messages for 5 days."
+        },
+        "learningObjective": "Implement human-in-the-loop workflows in AWS Step Functions using the task token callback pattern and timeouts.",
+        "topic": "AWS Step Functions Callback Pattern",
+        "tags": [
+            "step-functions",
+            "serverless",
+            "task-token",
+            "resilience",
+            "orchestration"
+        ]
+    },
+    {
+        "id": "saa-2292",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media streaming website stores millions of static user session tokens and rendered HTML string fragments. The workload is extremely read-heavy, has simple key-value lookups without requiring complex data structures (such as lists or sorted sets), and does not require data persistence or multi-region replication. The application needs a multi-threaded caching engine that can scale vertically across multi-core compute instances to handle hundreds of thousands of concurrent read requests with sub-millisecond latency. Which caching solution BEST satisfies these performance and architectural requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Amazon DynamoDB with Global Tables and on-demand capacity mode.",
+            "B": "Amazon MemoryDB for Redis with multi-AZ transactional logging.",
+            "C": "Amazon ElastiCache for Redis (cluster mode enabled) with read replicas.",
+            "D": "Amazon ElastiCache for Memcached with multi-threaded node types."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "Amazon ElastiCache for Memcached features a multi-threaded architecture capable of utilizing all available CPU cores on large EC2 instance types. It is specifically optimized for simple key-value string caching (such as session tokens and HTML fragments) where complex data structures, pub/sub, geospatial indexes, and disk persistence are not needed. In contrast, Redis core execution is largely single-threaded per shard, making Memcached the best fit for pure multi-threaded key-value throughput on multi-core compute.",
+        "whyOthersAreWrong": {
+            "A": "DynamoDB is a persistent NoSQL database; while fast, it delivers single-digit millisecond latency rather than sub-millisecond in-memory cache latency and incurs read request unit costs for every query.",
+            "B": "MemoryDB for Redis is designed for ultra-durable transactional workloads using a distributed transaction log; it adds unnecessary persistence overhead for ephemeral string cache.",
+            "C": "ElastiCache for Redis supports complex data structures and replication, but its engine is fundamentally single-threaded per node for command processing, making it less efficient than Memcached for simple multi-threaded key-value caching across multiple CPU cores."
+        },
+        "learningObjective": "Select the appropriate Amazon ElastiCache engine (Memcached vs Redis) based on concurrency model and data structure requirements.",
+        "topic": "Amazon ElastiCache Engine Tradeoffs",
+        "tags": [
+            "elasticache",
+            "memcached",
+            "redis",
+            "performance",
+            "caching"
+        ]
+    },
+    {
+        "id": "saa-2293",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A scientific computing application running on a fleet of Amazon EC2 c6i.16xlarge instances processes multi-gigabyte satellite imagery files stored as single uncompressed TIFF objects (ranging from 10 GB to 50 GB each) in an Amazon S3 bucket. Currently, worker instances download entire files sequentially, resulting in long download times and idle compute cores. The application code can be modified to read sections of each file concurrently. Which design strategy will achieve the HIGHEST aggregate throughput when retrieving these large files from S3?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Modify the application to use S3 Byte-Range Fetches (HTTP Range header) to download multiple byte ranges of each object concurrently across multiple worker threads.",
+            "B": "Configure an Amazon S3 Transfer Acceleration endpoint on the bucket and direct EC2 instance downloads to the transfer acceleration domain.",
+            "C": "Enable Amazon S3 Versioning and S3 Object Lock on the bucket to allow parallel access to historical versions of the objects.",
+            "D": "Deploy an Amazon CloudFront distribution in front of the S3 bucket with caching disabled and origin request timeouts set to maximum."
+        },
+        "correctAnswers": [
+            "A"
+        ],
+        "explanation": "Using S3 Byte-Range Fetches (via the HTTP Range: bytes=start-end header) allows an application to break large multi-gigabyte objects into smaller discrete byte chunks and download them concurrently over parallel TCP connections. This saturates the high network bandwidth available on modern EC2 instances (such as the 37.5 Gbps bandwidth of c6i.16xlarge) and dramatically cuts object download times.",
+        "whyOthersAreWrong": {
+            "B": "S3 Transfer Acceleration optimizes public internet routing from geographically distant clients to AWS edge locations; it is not designed or beneficial for data transfers between EC2 instances and S3 within the same AWS Region.",
+            "C": "S3 Versioning and Object Lock provide data protection and immutability; they do not split objects or accelerate read throughput.",
+            "D": "CloudFront adds caching and edge routing for external internet users; deploying it between EC2 and S3 within the same Region adds unnecessary latency, complexity, and data transfer costs."
+        },
+        "learningObjective": "Maximize Amazon S3 read performance for large objects using concurrent Byte-Range Fetches.",
+        "topic": "Amazon S3 Byte-Range Fetches",
+        "tags": [
+            "s3",
+            "ec2",
+            "byte-range-fetch",
+            "performance",
+            "storage"
+        ]
+    },
+    {
+        "id": "saa-2294",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An enterprise analytics team maintains an Amazon QuickSight executive dashboard that queries a multi-terabyte Amazon S3 data lake using Amazon Athena. Hundreds of business executives refresh the dashboard throughout the morning, executing identical SQL queries against historical data partitioned by year and month that changes only once per night. The repetitive queries cause high Athena data scanning costs and occasional query throttling. The solutions architect must optimize query performance and reduce execution costs with the LEAST development effort. Which solution BEST meets these requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Export the S3 data lake to an Amazon RDS for PostgreSQL database and create materialized views refreshed every hour.",
+            "B": "Enable Athena Query Result Reuse on the analytics workgroup with a maximum result age configured, and configure per-query data scan limits.",
+            "C": "Create an AWS Glue ETL job that runs every 5 minutes to convert all historical partitioned data into uncompressed CSV files.",
+            "D": "Deploy an Amazon ElastiCache Redis cluster and write custom Python code in the dashboard to cache raw Parquet files in memory."
+        },
+        "correctAnswers": [
+            "B"
+        ],
+        "explanation": "Amazon Athena Query Result Reuse allows Athena to cache query results for identical queries executed within a specified time window (up to 7 days). When business users or dashboard tools execute the same query on unchanged underlying data, Athena serves the results directly from the cache in seconds without re-scanning the data lake, eliminating data scan charges and speeding up dashboard load times with zero code changes.",
+        "whyOthersAreWrong": {
+            "A": "Exporting a multi-terabyte data lake to RDS PostgreSQL requires provisioning expensive relational infrastructure, managing storage scaling, and ongoing database maintenance.",
+            "C": "Uncompressed CSV files increase data scanning volume and query latency compared to optimized columnar formats like Parquet, making queries slower and more expensive.",
+            "D": "Manually caching raw Parquet files in ElastiCache Redis requires substantial custom application development, memory sizing, and cache invalidation logic, creating high operational overhead."
+        },
+        "learningObjective": "Accelerate repetitive data lake queries and control scanning costs using Amazon Athena Query Result Reuse.",
+        "topic": "Amazon Athena Query Result Reuse",
+        "tags": [
+            "athena",
+            "s3",
+            "caching",
+            "performance",
+            "cost-optimization"
+        ]
+    },
+    {
+        "id": "saa-2295",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A research institution runs high-performance distributed fluid dynamics simulations on Amazon EC2 instances. The simulation processes generate massive intermediate scratch datasets (several terabytes) that are read and overwritten millions of times during computational iterations. Once a simulation run completes, the final aggregated summary is written to an Amazon S3 bucket, and the intermediate scratch data is discarded. The compute nodes require the highest possible random I/O performance and lowest latency, while minimizing storage costs. Which TWO architectural choices should the solutions architect recommend? (Choose TWO.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Select EC2 instance types equipped with local NVMe-based SSD instance store volumes (such as the i3en or c6id family) for scratch storage.",
+            "B": "Provision Amazon EBS io2 Block Express volumes with 256,000 Provisioned IOPS attached to each compute instance.",
+            "C": "Create an Amazon S3 Standard bucket and mount it to each EC2 instance as a file system using AWS Storage Gateway File Gateway.",
+            "D": "Configure the simulation scripts to format and use the instance store volumes for temporary scratch directories during job startup.",
+            "E": "Configure RAID 1 mirroring across multiple EBS gp3 volumes to ensure high write durability for intermediate calculations."
+        },
+        "correctAnswers": [
+            "A",
+            "D"
+        ],
+        "explanation": "EC2 Instance Store volumes are physically attached NVMe SSDs located directly on the underlying host server. They provide millions of random IOPS, single-digit microsecond latencies, and maximum read/write throughput without network overhead, all included in the instance hourly price with zero additional EBS storage fees (Option A). Because the data is temporary scratch space that is discarded once the final summary is saved to S3, the ephemeral nature of instance store (data lost on instance stop or termination) is fully acceptable; scripts can simply format and mount the NVMe drives upon instance launch (Option D).",
+        "whyOthersAreWrong": {
+            "B": "EBS io2 Block Express volumes provide enterprise-grade durability and high IOPS over the network, but provisioning terabytes of io2 storage with hundreds of thousands of IOPS incurs massive, unnecessary storage charges for throwaway scratch data.",
+            "C": "AWS Storage Gateway File Gateway is designed for hybrid on-premises file integration and introduces network latency; it cannot handle millions of random scratch I/O operations.",
+            "E": "RAID 1 mirrors data across volumes to provide redundancy against drive failure, but network-attached gp3 volumes have far lower IOPS and higher latency than local NVMe instance store, while adding EBS costs."
+        },
+        "learningObjective": "Leverage EC2 Instance Store volumes for high-throughput, low-latency ephemeral scratch workloads.",
+        "topic": "EC2 Instance Store vs EBS Performance",
+        "tags": [
+            "ec2",
+            "instance-store",
+            "ebs",
+            "hpc",
+            "performance"
+        ]
+    },
+    {
+        "id": "saa-2296",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A gaming company ingests telemetry events from millions of mobile devices worldwide using Amazon Kinesis Data Streams. Traffic patterns are highly unpredictable: during major global tournaments or new game releases, ingestion traffic spikes from 10 MB/s to over 500 MB/s within minutes. During regular hours, throughput drops to 15 MB/s. The engineering team does not want to manage shard allocation scripts or handle write throttling errors during unexpected flash events, but wants to retain events for up to 7 days for downstream replay. Which TWO configurations BEST satisfy these requirements? (Choose TWO.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Configure the Kinesis Data Stream in Provisioned mode with 10 shards and configure an AWS Lambda function to split shards based on CPU utilization.",
+            "B": "Configure the Kinesis Data Stream in On-Demand capacity mode.",
+            "C": "Deploy an Amazon SQS standard queue in front of Kinesis to buffer incoming events.",
+            "D": "Set the Kinesis Data Stream shard count to 500 fixed shards permanently.",
+            "E": "Update the stream data retention period from the default 24 hours to 168 hours (7 days)."
+        },
+        "correctAnswers": [
+            "B",
+            "E"
+        ],
+        "explanation": "Kinesis Data Streams in On-Demand mode automatically monitors ingestion traffic and dynamically manages shard capacity without requiring manual provisioning or custom scaling scripts. It scales up to handle double the previous peak write throughput instantly, making it ideal for unpredictable traffic spikes (from 10 MB/s to 500 MB/s) without throttling (Option B). Kinesis supports extending data retention from the default 24 hours up to 8760 hours (365 days); configuring retention to 168 hours meets the 7-day replay requirement (Option E).",
+        "whyOthersAreWrong": {
+            "A": "Provisioned mode with custom Lambda shard-splitting takes minutes to split individual shards sequentially and cannot react quickly enough to 50x traffic spikes, resulting in ProvisionedThroughputExceededException errors.",
+            "C": "Buffering SQS in front of Kinesis adds unnecessary latency, architectural complexity, and cost; Kinesis can ingest data directly from producers.",
+            "D": "Provisioning 500 fixed shards permanently results in massive over-provisioning and idle shard costs during normal hours when only 15 MB/s is consumed."
+        },
+        "learningObjective": "Configure Amazon Kinesis Data Streams in On-Demand capacity mode with extended retention for bursty streaming workloads.",
+        "topic": "Amazon Kinesis Data Streams Capacity Modes",
+        "tags": [
+            "kinesis",
+            "streaming",
+            "on-demand",
+            "scalability",
+            "performance"
+        ]
+    },
+    {
+        "id": "saa-2297",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A media company runs hundreds of Amazon EC2 instances across several Auto Scaling groups hosting web microservices. The finance director reviews the AWS bill and notices high compute spending. The lead architect wants to use AWS Compute Optimizer to generate right-sizing recommendations. However, the systems engineering team expresses concern that previous recommendations based solely on default EC2 metrics recommended downsizing instances that had low CPU usage, which resulted in out-of-memory (OOM) errors because the application consumes high RAM. Which solution enables Compute Optimizer to make accurate right-sizing recommendations without risking OOM crashes?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Enable EC2 detailed monitoring (1-minute intervals) in the Auto Scaling group launch templates.",
+            "B": "Deploy AWS Systems Manager Patch Manager to update instance OS kernels to the latest version.",
+            "C": "Install and configure the unified Amazon CloudWatch agent on all EC2 instances to collect and publish memory utilization metrics (mem_used_percent) to CloudWatch.",
+            "D": "Upgrade all EC2 instances to memory-optimized r6i instance types and configure AWS Trusted Advisor to alert on CPU thresholds."
+        },
+        "correctAnswers": [
+            "C"
+        ],
+        "explanation": "By default, Amazon EC2 hypervisors report hardware metrics such as CPU utilization, network traffic, and disk I/O to CloudWatch. The hypervisor cannot see internal operating system memory consumption. AWS Compute Optimizer can only factor in memory utilization when the unified Amazon CloudWatch agent is installed inside the OS to publish the mem_used_percent metric. Without memory metrics, Compute Optimizer assumes memory is not constrained, which can lead to downsizing recommendations that trigger OOM crashes.",
+        "whyOthersAreWrong": {
+            "A": "EC2 detailed monitoring increases metric frequency from 5-minute intervals to 1-minute intervals for hypervisor-level metrics, but it does NOT capture OS-level memory metrics.",
+            "B": "Systems Manager Patch Manager updates operating system packages and security patches; it does not collect or export memory telemetry.",
+            "D": "Blindly upgrading all instances to r6i memory-optimized instances increases costs rather than optimizing spend, directly contradicting the financial optimization objective."
+        },
+        "learningObjective": "Enable memory metric collection with the Amazon CloudWatch agent to allow accurate AWS Compute Optimizer right-sizing.",
+        "topic": "AWS Compute Optimizer & CloudWatch Agent",
+        "tags": [
+            "compute-optimizer",
+            "cloudwatch-agent",
+            "ec2",
+            "cost-optimization",
+            "monitoring"
+        ]
+    },
+    {
+        "id": "saa-2298",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "An online gaming platform uses an Amazon DynamoDB table with 50 attributes per item, storing user profiles, game history, and inventory. The table handles 20,000 write capacity units (WCU) per second. The application frequently needs to query players by their GuildID (partition key) and retrieve only their PlayerName and TotalScore. Currently, the table has a Global Secondary Index (GSI) with the projection type set to ALL. The cloud cost management team reports that GSI storage and write capacity costs represent over 60% of the database bill. Which architectural modification will REDUCE costs the most while continuing to satisfy the query requirements?",
+        "answerType": "single",
+        "answerInstruction": "Choose the correct answer.",
+        "options": {
+            "A": "Delete the GSI and configure DynamoDB Streams with an AWS Lambda function to scan the table every minute.",
+            "B": "Change the DynamoDB table billing mode from Provisioned capacity to On-Demand capacity.",
+            "C": "Enable DynamoDB Accelerator (DAX) and set the cache TTL to 24 hours.",
+            "D": "Recreate the Global Secondary Index with the projection type set to INCLUDE specifying only PlayerName and TotalScore."
+        },
+        "correctAnswers": [
+            "D"
+        ],
+        "explanation": "In Amazon DynamoDB, when a Global Secondary Index is configured with projection type ALL, every single write or update to any of the 50 attributes on the base table triggers an index write, consuming WCU on the GSI and replicating all attribute data into the GSI storage. By changing the projection type to INCLUDE and projecting only the attributes needed by the query (PlayerName and TotalScore), the GSI storage footprint is slashed dramatically, and writes to non-projected attributes on the base table do not consume extra GSI write capacity units, providing massive cost savings.",
+        "whyOthersAreWrong": {
+            "A": "Scanning the entire table every minute using Lambda consumes immense read capacity, introduces high latency, and fails to provide real-time query responses.",
+            "B": "Switching a high-throughput, steady-state table (20,000 WCU/s) to On-Demand capacity significantly increases per-request costs compared to properly provisioned capacity with Auto Scaling or reserved capacity.",
+            "C": "DAX caches read requests in memory; it does not reduce base table or GSI write capacity costs or storage costs, and adds DAX cluster hourly charges."
+        },
+        "learningObjective": "Optimize Amazon DynamoDB Global Secondary Index costs by selecting the INCLUDE projection type.",
+        "topic": "Amazon DynamoDB GSI Projection Optimization",
+        "tags": [
+            "dynamodb",
+            "gsi",
+            "cost-optimization",
+            "nosql",
+            "database"
+        ]
+    },
+    {
+        "id": "saa-2299",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A financial SaaS company runs millions of daily backend calculations using AWS Lambda. All functions are currently configured with the default memory allocation of 128 MB. Many functions take between 8 to 12 seconds to run. The lead developer observes that increasing memory also allocates proportional CPU power, which could speed up processing, but management is concerned that higher memory settings will increase invocation costs. The company wants to empirically determine the exact configuration that achieves the lowest cost per invocation or optimal balance between execution speed and cost. Which TWO actions should the team take? (Choose TWO.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose TWO answers.",
+        "options": {
+            "A": "Use the AWS Lambda Power Tuning open-source state machine tool to benchmark functions across different memory allocations from 128 MB to 3,008 MB.",
+            "B": "Migrate all AWS Lambda functions to Amazon EC2 t4g.nano instances using Spot Instances.",
+            "C": "Configure an Amazon CloudWatch billing alarm to throttle Lambda function concurrency whenever monthly execution cost exceeds $500.",
+            "D": "Increase function timeout to 15 minutes and decrease memory allocation to 64 MB.",
+            "E": "Analyze the visual execution graph produced by Lambda Power Tuning to select the optimal memory configuration on the Pareto frontier."
+        },
+        "correctAnswers": [
+            "A",
+            "E"
+        ],
+        "explanation": "AWS Lambda allocates CPU and network bandwidth proportionally to the configured memory. For CPU-bound tasks, increasing memory can decrease execution duration so significantly that total billed duration (GB-seconds) drops, resulting in a CHEAPER overall invocation. The open-source AWS Lambda Power Tuning tool (powered by AWS Step Functions) runs functions against user-defined payloads across multiple memory settings, calculates execution speed versus cost, and generates a visual Pareto frontier chart to identify the mathematically cheapest or fastest memory allocation (Options A and E).",
+        "whyOthersAreWrong": {
+            "B": "Migrating event-driven serverless workloads to individual t4g.nano EC2 Spot instances reintroduces server management, patching, and availability risks, and Spot interruptions break calculations.",
+            "C": "Throttling concurrency causes customer requests to fail with HTTP 429 errors and does not optimize execution efficiency or cost.",
+            "D": "128 MB is the minimum memory allocation for standard Lambda functions; reducing below 128 MB is not supported, and starving CPU increases duration, raising costs."
+        },
+        "learningObjective": "Optimize AWS Lambda price-performance and invocation costs using the AWS Lambda Power Tuning tool.",
+        "topic": "AWS Lambda Cost & Performance Optimization",
+        "tags": [
+            "lambda",
+            "power-tuning",
+            "serverless",
+            "cost-optimization",
+            "performance"
+        ]
+    },
+    {
+        "id": "saa-2300",
+        "exam": "AWS Certified Solutions Architect - Associate",
+        "question": "A digital news publisher based in the United Kingdom serves high-resolution news photography and articles via an Amazon CloudFront distribution backed by an Amazon S3 origin. Analytics data shows that 98% of readers are located in the United Kingdom, Western Europe, and North America. Only 2% of readers access the site from South America, Australia, or Asia. The finance team wants to reduce CloudFront data transfer out (DTO) charges significantly without impacting image load latency for the primary audience. Which THREE actions should the solutions architect implement? (Choose THREE.)",
+        "answerType": "multiple",
+        "answerInstruction": "Choose THREE answers.",
+        "options": {
+            "A": "Configure CloudFront Price Class to use Price Class All to ensure edge caching in every country.",
+            "B": "Configure the CloudFront distribution to use Price Class 100 to restrict edge locations to North America and Europe.",
+            "C": "Enable Origin Shield in the Europe region closest to the S3 bucket to minimize redundant origin fetch requests.",
+            "D": "Configure appropriate Cache-Control max-age HTTP headers on origin images to maximize browser and CloudFront edge cache hit ratios.",
+            "E": "Create separate S3 buckets in Australia, South America, and Asia, and use S3 Cross-Region Replication (CRR) for all images."
+        },
+        "correctAnswers": [
+            "B",
+            "C",
+            "D"
+        ],
+        "explanation": "CloudFront pricing varies significantly by geographic region; data transfer out from edge locations in South America and Australia is much more expensive than North America and Europe. Setting the distribution to Price Class 100 serves requests from edge locations in the United States, Canada, and Europe (where 98% of users reside) at the lowest tier price, while the remaining 2% are routed to the nearest Price Class 100 edge with slightly higher network latency (Option B). Enabling Origin Shield adds a centralized caching layer that consolidates cache misses from multiple edge locations, shielding the S3 origin and slashing origin fetch bandwidth costs (Option C). Finally, optimizing Cache-Control: max-age ensures objects remain cached at the edge and in user browsers longer, maximizing cache hit ratios and reducing origin data transfer (Option D).",
+        "whyOthersAreWrong": {
+            "A": "Price Class All routes requests to edge locations across all continents, which includes the most expensive edge locations in South America, Australia, and Asia, increasing overall costs.",
+            "E": "Replicating all images across multiple global S3 buckets introduces high S3 CRR data transfer and storage costs for an audience that represents only 2% of readers."
+        },
+        "learningObjective": "Reduce Amazon CloudFront distribution costs using Price Class 100, Origin Shield, and optimal caching headers.",
+        "topic": "Amazon CloudFront Price Classes & Caching",
+        "tags": [
+            "cloudfront",
+            "price-classes",
+            "s3",
+            "origin-shield",
+            "cost-optimization"
+        ]
+    }
+]

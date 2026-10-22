@@ -1,0 +1,649 @@
+[
+  {
+    "id": "saa-2061",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise with 10,000 employees is migrating its workforce access to AWS. The company uses Okta as its central corporate identity provider (IdP). The security director mandates that users must authenticate using their existing Okta credentials with multi-factor authentication (MFA) and access multiple AWS accounts without managing separate IAM users or credentials in each account. In addition, when an employee is de-provisioned or changes roles in Okta, their access permissions across all AWS accounts must be updated automatically. Which solution BEST meets these requirements with the LEAST administrative effort?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure IAM SAML 2.0 identity providers in every AWS account, create corresponding cross-account IAM roles, and configure Okta to assume roles using AWS STS AssumeRoleWithSAML.",
+      "B": "Enable AWS IAM Identity Center, configure a SAML 2.0 connection with Okta as the external identity provider, enable automatic user and group provisioning via SCIM, and assign permission sets to groups across AWS Organization accounts.",
+      "C": "Deploy an AWS Directory Service for Microsoft Active Directory (AWS Managed Microsoft AD) in a shared VPC and establish a two-way forest trust with Okta Universal Directory.",
+      "D": "Create an Amazon Cognito User Pool federated with Okta, and write an AWS Lambda function triggered by Amazon EventBridge to update IAM policies in each account."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "AWS IAM Identity Center (successor to AWS Single Sign-On) provides centralized management of workforce access to AWS accounts and cloud applications. By connecting Okta as an external SAML 2.0 identity provider and enabling automatic provisioning using the System for Cross-domain Identity Management (SCIM) protocol, user identities, group memberships, and status changes in Okta automatically sync to AWS. Administrators assign centralized permission sets to Okta groups across AWS Organization accounts, ensuring that role changes or employee terminations in Okta take effect across all AWS accounts without manual IAM maintenance.",
+    "whyOthersAreWrong": {
+      "A": "Configuring individual SAML 2.0 IdPs and cross-account IAM roles in hundreds of accounts requires immense manual overhead and does not support automatic user de-provisioning or SCIM synchronization.",
+      "C": "AWS Managed Microsoft AD is an Active Directory directory service, not a direct SAML/SCIM identity broker for SaaS IdPs like Okta, and introduces ongoing domain controller infrastructure management.",
+      "D": "Amazon Cognito User Pools is designed for customer-facing web and mobile applications, not for workforce access management across AWS Organization accounts."
+    },
+    "learningObjective": "Centrally manage workforce single sign-on and automatic SCIM provisioning using AWS IAM Identity Center.",
+    "topic": "AWS IAM Identity Center",
+    "tags": [
+      "iam-identity-center",
+      "scim",
+      "okta",
+      "saml",
+      "workforce-access",
+      "organizations"
+    ]
+  },
+  {
+    "id": "saa-2062",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial institution must maintain an immutable, tamper-proof audit trail of all API activity across 80 AWS accounts in an AWS Organization to comply with SEC Rule 17a-4 regulations. The audit logs must be centralized in a dedicated security audit account, encrypted using a customer managed key, and protected against deletion or modification by any user—including the AWS Organizations management account root user—for a mandatory retention period of 7 years. Which solution satisfies these compliance requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Configure local CloudTrail trails in each account logging to local S3 buckets, and enable S3 Glacier Vault Lock on each bucket with a 7-year retention policy.",
+      "B": "Create an AWS CloudTrail trail in the management account, store the logs in an Amazon S3 bucket in the management account, and enable MFA Delete on the S3 bucket.",
+      "C": "Create an AWS CloudTrail organization trail in the management account that logs all member accounts to a centralized Amazon S3 bucket located in the security audit account, enable S3 Object Lock in Compliance mode with a 7-year retention period, and encrypt using an AWS KMS CMK with a restrictive key policy.",
+      "D": "Deploy an AWS Config rule across all accounts that exports configuration snapshots to an Amazon DynamoDB table configured with Point-In-Time Recovery (PITR) and AWS KMS customer managed key encryption."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "An AWS CloudTrail organization trail automatically captures API activity across all accounts in an AWS Organization and delivers the logs to a single, centralized Amazon S3 bucket in a designated security audit account. To meet strict regulatory standards like SEC Rule 17a-4 (WORM - Write Once, Read Many), the S3 bucket must have S3 Object Lock enabled in Compliance mode with a 7-year retention period. In Compliance mode, protected objects cannot be overwritten or deleted by ANY user, including the root user or AWS account owner, throughout the retention duration.",
+    "whyOthersAreWrong": {
+      "A": "Configuring local trails across 80 accounts is decentralized and hard to audit, and does not centralize logs into a dedicated audit account as required by enterprise security standards.",
+      "B": "MFA Delete requires the root user's MFA to delete objects, but root can still disable MFA Delete or modify lifecycle policies; it does not satisfy SEC Rule 17a-4 non-erasable and non-rewritable requirements like S3 Object Lock Compliance mode does.",
+      "D": "AWS Config tracks resource configuration changes, not full API call activity (which requires CloudTrail), and DynamoDB is not the standard immutable storage mechanism for compliance audit logs."
+    },
+    "learningObjective": "Enforce non-rewritable, non-erasable multi-account audit logging with AWS CloudTrail organization trails and S3 Object Lock Compliance mode.",
+    "topic": "AWS CloudTrail",
+    "tags": [
+      "cloudtrail",
+      "organization-trail",
+      "s3-object-lock",
+      "compliance-mode",
+      "kms",
+      "governance"
+    ]
+  },
+  {
+    "id": "saa-2063",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A healthcare company runs an application on Amazon EC2 instances in a private subnet that connects to an Amazon RDS for MySQL database. Corporate compliance mandates that database credentials must be automatically rotated every 30 days without human intervention and without exposing credentials in plaintext or application code. The EC2 instances have no outbound internet access. How should the solutions architect configure credential management to meet these requirements securely?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Store credentials in AWS Systems Manager Parameter Store as SecureString parameters, and create a scheduled Amazon EventBridge rule that runs an EC2 user data script to change the database password.",
+      "B": "Store database credentials in an encrypted S3 bucket, and configure an Amazon CloudWatch scheduled rule to invoke an AWS Systems Manager Automation document that updates the database password.",
+      "C": "Store credentials in AWS Secrets Manager, enable automatic rotation every 30 days, and attach a NAT Gateway to the private subnet so Secrets Manager can communicate with RDS.",
+      "D": "Store credentials in AWS Secrets Manager, enable automatic rotation with a 30-day schedule using the AWS-provided rotation Lambda function, and configure VPC Interface Endpoints for Secrets Manager, KMS, and RDS in the VPC."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "AWS Secrets Manager natively integrates with Amazon RDS to provide automatic credential rotation using pre-configured AWS Lambda functions. To operate in a fully private VPC without outbound internet access, the solutions architect should deploy VPC Interface Endpoints (AWS PrivateLink) for AWS Secrets Manager, AWS KMS (for decrypting the secret), and configure the rotation Lambda function within the VPC with security group access to the RDS database. This enables end-to-end private, automated credential rotation every 30 days without internet exposure.",
+    "whyOthersAreWrong": {
+      "A": "Systems Manager Parameter Store does not provide built-in automatic rotation with pre-built Lambda templates for Amazon RDS; building custom EC2 user data scripts for rotation adds significant operational burden and risk of credential exposure.",
+      "B": "Storing credentials in S3 requires custom rotation logic and does not provide an integrated API for dynamic secret retrieval and rotation lifecycle management.",
+      "C": "Deploying a NAT Gateway violates the constraint of maintaining a completely private VPC without internet connectivity, and NAT Gateways incur additional ongoing hourly and data processing costs."
+    },
+    "learningObjective": "Implement automated database credential rotation in a private VPC using AWS Secrets Manager and VPC Interface Endpoints.",
+    "topic": "AWS Secrets Manager",
+    "tags": [
+      "secrets-manager",
+      "rds",
+      "automatic-rotation",
+      "vpc-endpoints",
+      "privatelink",
+      "security"
+    ]
+  },
+  {
+    "id": "saa-2064",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A fitness technology company is developing a native mobile application. Users must be able to register and sign in using either email/password or their Apple/Google social identities. Once authenticated, users must be authorized to upload workout video files directly to an Amazon S3 bucket folder dedicated exclusively to their user ID (for example, s3://fitness-app-uploads/{cognito-identity-id}/*) without passing through an intermediate backend server. Which architecture BEST satisfies these authentication and authorization requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Use an Amazon Cognito User Pool for user registration and social federation, integrate it with an Amazon Cognito Identity Pool to exchange the user pool token for temporary AWS IAM credentials, and apply an IAM policy on the authenticated role scoping S3 access using the ${cognito-identity.amazonaws.com:sub} policy variable.",
+      "B": "Use Amazon Cognito User Pools alone, configure an S3 bucket policy that grants direct read/write access to Cognito User Pool JWT tokens, and upload videos using the S3 REST API with the Bearer token header.",
+      "C": "Deploy an AWS IAM Identity Center instance federated with Google and Apple, and generate long-term IAM access keys for each mobile user upon registration.",
+      "D": "Use an Amazon Cognito Identity Pool alone with unauthenticated guest access enabled, and restrict S3 access based on client IP addresses in the S3 bucket policy."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon Cognito User Pools handles user directory management, authentication, self-registration, and social federation (Google, Apple). Amazon Cognito Identity Pools (Federated Identities) then exchanges the validated User Pool JWT token for temporary, scoped AWS IAM credentials. By attaching an IAM role to the authenticated identity pool with a policy using policy variables like `${cognito-identity.amazonaws.com:sub}`, users can directly upload files to their individual prefix in Amazon S3 securely via SigV4 without needing a custom backend upload proxy.",
+    "whyOthersAreWrong": {
+      "B": "Amazon S3 bucket policies do not natively authenticate or evaluate Cognito User Pool JWT tokens; S3 requires AWS IAM signatures (SigV4) generated from temporary IAM credentials provided by Cognito Identity Pools.",
+      "C": "AWS IAM Identity Center is designed for corporate workforce single sign-on across AWS accounts, not for consumer-facing mobile applications with millions of external end users, and issuing long-term access keys to mobile devices is a critical security vulnerability.",
+      "D": "Allowing unauthenticated guest access does not authenticate users via social IdPs or email, and IP-based restrictions cannot isolate user data per user ID because mobile users change IP addresses constantly."
+    },
+    "learningObjective": "Authorize fine-grained direct Amazon S3 user access using Amazon Cognito User Pools and Identity Pools with policy variables.",
+    "topic": "Amazon Cognito",
+    "tags": [
+      "cognito-user-pools",
+      "cognito-identity-pools",
+      "s3",
+      "fine-grained-access",
+      "iam-policy-variables"
+    ]
+  },
+  {
+    "id": "saa-2065",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise needs a centralized, automated backup strategy across 50 AWS accounts in an AWS Organization to protect against ransomware attacks and regional disasters. The backup solution must automatically copy daily backups of Amazon EBS volumes, Amazon RDS databases, and Amazon EFS file systems from the primary production Region (us-east-1) to an isolated security account in a secondary Region (us-west-2). Backups in the destination vault must be encrypted with a dedicated key and locked so that even account administrators cannot delete them before their expiration date. Which solution meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Write a daily Python script running on AWS Lambda that takes EBS, RDS, and EFS snapshots in us-east-1, copies the snapshots to us-west-2, and modifies snapshot permissions to share them with the security account.",
+      "B": "Configure Amazon S3 Cross-Region Replication with S3 Object Lock for all application data, and use AWS DataSync to mirror database volumes daily.",
+      "C": "Configure centralized AWS Backup policies in the AWS Organizations management account that define backup schedules, specify cross-account and cross-Region copy to a destination backup vault in the security account in us-west-2, and apply AWS Backup Vault Lock in Compliance mode on the destination vault.",
+      "D": "Use AWS Elastic Disaster Recovery (AWS DRS) to continuously replicate block storage to the secondary account, and configure CloudWatch Alarms to trigger snapshots upon termination events."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "AWS Backup provides centralized, policy-based backup automation across AWS Organizations. Using AWS Organizations management account backup policies, administrators can enforce daily backup schedules across all 50 accounts and automatically copy recovery points across Regions (from us-east-1 to us-west-2) and across accounts into a designated secondary security account. Applying AWS Backup Vault Lock in Compliance mode on the destination vault ensures that backups cannot be deleted or altered by any user or administrator until the retention period expires, providing robust protection against ransomware and insider threats.",
+    "whyOthersAreWrong": {
+      "A": "Custom Lambda scripts for cross-account and cross-Region snapshots across 50 accounts impose huge operational maintenance, do not natively support AWS Backup Vault Lock, and fail to provide unified compliance auditing.",
+      "B": "Amazon S3 Cross-Region Replication only applies to S3 object storage; it cannot natively snapshot or replicate active live Amazon EBS block volumes or Amazon RDS database instances.",
+      "D": "AWS DRS is a disaster recovery replication tool designed for server failover, not an automated point-in-time backup governance and compliance vault locking solution across multiple services."
+    },
+    "learningObjective": "Implement cross-account, cross-Region centralized backup governance and immutable protection using AWS Backup and Vault Lock.",
+    "topic": "AWS Backup",
+    "tags": [
+      "aws-backup",
+      "vault-lock",
+      "cross-account-backup",
+      "cross-region",
+      "organizations",
+      "ransomware-protection"
+    ]
+  },
+  {
+    "id": "saa-2066",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A multinational corporation hosts an internal image repository on Amazon S3 for employees distributed across North America and Europe. Currently, all images are stored in a single S3 bucket in us-east-1. European users report sluggish upload and download performance, and executive leadership requires an active-active storage architecture that transparently routes user traffic to the closest healthy S3 bucket and automatically fails over if a regional bucket becomes unavailable. Which architecture BEST meets these requirements with the LEAST operational overhead?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Create an S3 bucket in eu-west-1, configure Route 53 latency-based routing pointing to the public endpoints of both buckets, and use AWS DataSync to synchronize objects bidirectionally.",
+      "B": "Deploy an Amazon CloudFront distribution with an origin group containing both S3 buckets, and configure CloudFront Functions to route PUT requests to the nearest origin.",
+      "C": "Create an S3 bucket in eu-west-1, configure bidirectional S3 Cross-Region Replication, and deploy an AWS Global Accelerator pointing to Application Load Balancers in front of S3 in each Region.",
+      "D": "Create an S3 bucket in eu-west-1, enable bidirectional S3 Cross-Region Replication between the two buckets, and configure an Amazon S3 Multi-Region Access Point (MRAP) with Route 53 failover controls."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "Amazon S3 Multi-Region Access Points (MRAP) provide a single global DNS endpoint that routes client requests (both reads and writes) across multiple S3 buckets in different AWS Regions over the AWS global network. Combined with bidirectional S3 Cross-Region Replication (CRR), MRAP automatically routes client requests to the lowest-latency S3 bucket and dynamically routes traffic around regional network impairments or bucket outages, delivering high performance and active-active resilience with minimal operational overhead.",
+    "whyOthersAreWrong": {
+      "A": "Route 53 latency routing cannot point directly to S3 public REST endpoints because S3 endpoints require matching Host headers and bucket names; AWS DataSync is not designed for continuous real-time bidirectional active-active sync.",
+      "B": "Amazon CloudFront is optimized for read-heavy caching; CloudFront origin groups only support GET, HEAD, and OPTIONS requests for failover, not active-active bidirectional PUT/POST writes.",
+      "C": "Deploying ALBs in front of S3 in each Region adds unnecessary complexity, costs, and management overhead compared to native S3 Multi-Region Access Points."
+    },
+    "learningObjective": "Deploy active-active multi-Region S3 storage with automatic routing and failover using S3 Multi-Region Access Points.",
+    "topic": "Amazon S3",
+    "tags": [
+      "s3",
+      "s3-multi-region-access-points",
+      "mrap",
+      "cross-region-replication",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2067",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A logistics tracking platform processes shipment status updates using an event-driven architecture powered by Amazon EventBridge. EventBridge routes events to multiple downstream consumer services, including an inventory microservice running on AWS Lambda and an analytics pipeline. Due to a downstream database bug introduced during an inventory service deployment, the Lambda function silently dropped and failed to process events for 6 hours before a hotfix was deployed. The platform must be able to reprocess the exact original events emitted during that 6-hour outage window without requiring event producers to retransmit data. Which solution should the architect implement?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable Amazon EventBridge archive on the event bus with an appropriate retention period, and initiate an EventBridge event replay specifying the event bus, the inventory rule, and the 6-hour time window.",
+      "B": "Configure an Amazon SQS Dead-Letter Queue (DLQ) on the EventBridge rule, write a custom script to download messages from the DLQ, and call the EventBridge PutEvents API.",
+      "C": "Enable AWS CloudTrail data events on the EventBridge event bus, query the dropped events using Amazon Athena, and export the results to S3.",
+      "D": "Configure Amazon Kinesis Data Firehose on the event bus to stream events to an Amazon S3 bucket, and trigger a Step Functions workflow to re-invoke the Lambda function."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon EventBridge provides native Event Archive and Replay capabilities. By creating an event archive on an event bus with a retention period, EventBridge automatically stores all events sent to that bus. If a downstream consumer fails or a bug is introduced, an administrator or automated system can initiate an event replay specifying the archive, the target rules, and the exact time window (e.g., the 6-hour outage period). EventBridge then reprocesses and redelivers the exact historical events to the selected rules without affecting other targets or requiring producers to resend data.",
+    "whyOthersAreWrong": {
+      "B": "EventBridge DLQs capture events that EventBridge fails to deliver to the target; if the target (Lambda) was invoked successfully by EventBridge but failed internally due to application logic, the event is not sent to the rule's DLQ unless properly configured with failure handling, and custom replay scripts add unnecessary operational burden.",
+      "C": "CloudTrail data events record API calls made to EventBridge, not the full business event payloads, and Athena cannot replay events back into the event-driven workflow natively.",
+      "D": "Streaming all events to S3 via Firehose and building custom Step Functions replay logic introduces redundant pipelines and complex custom replay code when EventBridge has native archive and replay built-in."
+    },
+    "learningObjective": "Recover from consumer service outages and replay event streams using Amazon EventBridge Archive and Replay.",
+    "topic": "Amazon EventBridge",
+    "tags": [
+      "eventbridge",
+      "archive-and-replay",
+      "event-driven",
+      "lambda",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2068",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An international media streaming application uses Amazon ElastiCache for Redis in us-east-1 as a session store and fast content metadata cache. To support business expansion in Europe, application servers are being deployed in eu-west-1. European users must experience sub-millisecond read access to cached metadata, while write operations (such as session updates) can be directed to the primary cluster in us-east-1 with cross-Region replication completed in under 1 second. Which architecture provides this capability with the LEAST operational complexity?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Deploy an independent ElastiCache for Redis cluster in eu-west-1 and configure an AWS Lambda function triggered by DynamoDB Streams to replicate cache keys across Regions.",
+      "B": "Create an Amazon ElastiCache Global Datastore by designating the existing us-east-1 Redis cluster as the primary and adding a secondary read-only cluster in eu-west-1.",
+      "C": "Deploy an Amazon CloudFront distribution in front of the us-east-1 ElastiCache cluster with an origin request policy enabling TCP caching.",
+      "D": "Configure AWS Database Migration Service (AWS DMS) to capture in-memory Redis changes in us-east-1 and replicate them to the eu-west-1 Redis cluster."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Amazon ElastiCache Global Datastore provides fully managed, fast, reliable, and secure cross-Region replication for Redis. With Global Datastore, you can designate an existing cluster in us-east-1 as the primary (read/write) cluster and create a secondary read-only cluster in eu-west-1. Writes to the primary cluster are replicated across Regions typically in under 1 second, allowing European application servers to read data locally with sub-millisecond latencies while eliminating the complexity of building custom replication logic.",
+    "whyOthersAreWrong": {
+      "A": "Custom Lambda replication triggered by DynamoDB Streams requires dual-writing to DynamoDB, introduces high development and operational overhead, and cannot achieve sub-second cross-Region cache consistency.",
+      "C": "Amazon CloudFront caches HTTP/HTTPS web traffic; it does not support caching or proxying direct Redis in-memory key-value protocol connections.",
+      "D": "AWS DMS does not support Amazon ElastiCache for Redis as a continuous replication target or source."
+    },
+    "learningObjective": "Scale in-memory caching globally with sub-second replication using Amazon ElastiCache Global Datastore.",
+    "topic": "Amazon ElastiCache",
+    "tags": [
+      "elasticache",
+      "redis",
+      "global-datastore",
+      "cross-region",
+      "caching",
+      "low-latency"
+    ]
+  },
+  {
+    "id": "saa-2069",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A financial brokerage provides a real-time options pricing API built using Amazon API Gateway and AWS Lambda with a custom Java 21 runtime. During sudden market opening volatility at 9:30 AM, incoming request traffic surges from 50 requests/second to 15,000 requests/second within 10 seconds. Customers report severe latency spikes of 4 to 8 seconds and API timeouts during this initial burst due to Java Virtual Machine (JVM) initialization and class loading. Once running, functions respond in 15 milliseconds. Which solution will ELIMINATE the latency spikes during traffic bursts with MINIMAL code modification?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Increase the Lambda function memory allocation to 10,240 MB and configure an API Gateway caching TTL of 300 seconds.",
+      "B": "Re-architect the Java application into an Amazon ECS on AWS Fargate service and configure a target tracking scaling policy based on CPU utilization.",
+      "C": "Deploy an Amazon ElastiCache for Memcached cluster in front of the Lambda function to cache API Gateway execution contexts.",
+      "D": "Configure AWS Lambda Provisioned Concurrency on the function alias and schedule Application Auto Scaling to scale up provisioned concurrency prior to the 9:30 AM market open."
+    },
+    "correctAnswers": [
+      "D"
+    ],
+    "explanation": "In Java-based serverless applications, cold starts during rapid traffic spikes cause significant latency due to JVM bootstrapping and class loading. AWS Lambda Provisioned Concurrency prepares execution environments in advance, keeping initialized instances warm and ready to respond immediately with double-digit millisecond response times. By pairing Provisioned Concurrency with Application Auto Scaling scheduled policies, the brokerage can automatically pre-warm thousands of execution environments right before 9:30 AM, completely eliminating cold starts during market opening spikes.",
+    "whyOthersAreWrong": {
+      "A": "Increasing memory reduces initialization time slightly but does not eliminate cold starts during an immediate 300x spike, and API Gateway caching for 300 seconds is unacceptable for real-time options pricing where data changes every millisecond.",
+      "B": "Re-architecting to ECS Fargate requires complete containerization, CI/CD pipeline redesign, and ALB setup, and Fargate task provisioning takes minutes to scale out to handle a 10-second surge.",
+      "C": "ElastiCache cannot cache Lambda execution environments or JVM runtime contexts; Lambda initialization is managed strictly by the AWS Lambda control plane."
+    },
+    "learningObjective": "Eliminate serverless cold starts during predictable traffic spikes using AWS Lambda Provisioned Concurrency and Application Auto Scaling.",
+    "topic": "AWS Lambda",
+    "tags": [
+      "lambda",
+      "provisioned-concurrency",
+      "cold-start",
+      "application-auto-scaling",
+      "api-gateway",
+      "high-performance"
+    ]
+  },
+  {
+    "id": "saa-2070",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A mobile gaming studio operates a multiplayer game with unpredictably spiky database workloads. During live game events, database transactions surge unpredictably from 200 writes/second to over 15,000 writes/second in seconds, while during off-peak hours, traffic drops to near zero. The current provisioned Amazon RDS PostgreSQL instance struggles with CPU exhaustion during sudden spikes, and resizing the instance requires disruptive downtime. The team needs a database solution that scales compute and memory capacity up and down instantly in fine increments without dropping active database connections. Which solution BEST meets these requirements?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Migrate the database to Amazon Aurora Serverless v2 PostgreSQL, configuring an appropriate minimum and maximum Aurora Capacity Unit (ACU) range.",
+      "B": "Deploy an Amazon RDS PostgreSQL Multi-AZ DB instance and configure AWS Auto Scaling to dynamically modify the DB instance class based on CPU utilization.",
+      "C": "Migrate the database to Amazon DynamoDB and use On-Demand capacity mode with Global Secondary Indexes.",
+      "D": "Deploy an Amazon Aurora Serverless v1 cluster with auto-pause enabled and a timeout of 5 minutes."
+    },
+    "correctAnswers": [
+      "A"
+    ],
+    "explanation": "Amazon Aurora Serverless v2 instantly scales compute and memory capacity in fine-grained increments (down to 0.5 Aurora Capacity Units or ACUs) in fractions of a second without disrupting client connections or transactions. Unlike provisioned instances (which require reboot/failover to resize) or Serverless v1 (which pauses or struggles to find scaling points), Aurora Serverless v2 handles sudden, violent spikes in write throughput smoothly while scaling back down during quiet periods to optimize performance and cost.",
+    "whyOthersAreWrong": {
+      "B": "Modifying an Amazon RDS instance class requires a restart or failover, causing 60-120 seconds of downtime or connection disruption, making it incapable of scaling instantly to handle sudden second-level traffic spikes.",
+      "C": "Migrating a complex relational SQL database schema with joins and transactions to DynamoDB requires complete application rewriting and data remodel, which is unnecessary and complex.",
+      "D": "Aurora Serverless v1 scales by finding a scaling point and creates disruptions, and auto-pause introduces massive cold-start delays (tens of seconds) when new queries arrive, making it unsuitable for live multiplayer gaming."
+    },
+    "learningObjective": "Handle extreme, spiky relational database workloads with instantaneous scaling using Amazon Aurora Serverless v2.",
+    "topic": "Amazon Aurora",
+    "tags": [
+      "aurora",
+      "aurora-serverless-v2",
+      "postgresql",
+      "elasticity",
+      "spiky-workloads"
+    ]
+  },
+  {
+    "id": "saa-2071",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise hosts thousands of enterprise workloads on Amazon EC2 instances utilizing General Purpose SSD (gp2) EBS root and data volumes totaling 250 TB of provisioned storage. The system administrators frequently over-provision storage volume sizes solely to achieve the higher baseline IOPS and throughput required by database and log analytics workloads, as gp2 ties IOPS directly to volume capacity (3 IOPS/GB). The company wants to reduce EBS storage spend by at least 20% while independently provisioning higher baseline throughput and IOPS without increasing volume size or experiencing application downtime. Which solution achieves this?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Convert all EBS volumes from gp2 to io2 Block Express volumes and configure 3,000 Provisioned IOPS per volume.",
+      "B": "Modify the EBS volumes from gp2 to General Purpose SSD (gp3) using Elastic Volumes, maintaining current storage capacity while configuring dedicated IOPS and throughput independent of storage size.",
+      "C": "Migrate all data to Amazon Elastic File System (Amazon EFS) configured in One Zone storage with Provisioned Throughput.",
+      "D": "Create an AWS Backup job to create AMI images of all EC2 instances, terminate the instances, and recreate them using Throughput Optimized HDD (st1) volumes."
+    },
+    "correctAnswers": [
+      "B"
+    ],
+    "explanation": "Amazon EBS General Purpose SSD (gp3) volumes offer a 20% lower price per GB compared to gp2 volumes. Furthermore, gp3 decouples storage performance from storage capacity: every gp3 volume provides a baseline performance of 3,000 IOPS and 125 MB/s throughput at no extra charge, regardless of volume size, and allows administrators to provision additional IOPS and throughput independently without paying for unneeded storage capacity. Using EBS Elastic Volumes, this migration can be performed on live, running volumes with zero downtime.",
+    "whyOthersAreWrong": {
+      "A": "EBS io2 Block Express volumes are significantly more expensive per GB than gp2 and incur high provisioned IOPS fees, increasing monthly costs rather than reducing spend.",
+      "C": "Migrating block storage root volumes to Amazon EFS is unsupported (EC2 instances cannot boot from EFS), and EFS is a file storage service that requires application reconfiguration.",
+      "D": "EBS st1 volumes are magnetic HDDs that cannot be used as EC2 boot volumes, deliver poor random I/O performance, and recreating instances from AMIs causes major application downtime."
+    },
+    "learningObjective": "Optimize EBS storage costs and decouple IOPS and throughput from volume size by migrating from gp2 to gp3.",
+    "topic": "Amazon EBS",
+    "tags": [
+      "ebs",
+      "gp2-to-gp3",
+      "elastic-volumes",
+      "cost-optimization",
+      "provisioned-iops"
+    ]
+  },
+  {
+    "id": "saa-2072",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A company runs 300 Amazon EC2 instances and dozens of AWS Fargate tasks across multiple development and production accounts in an AWS Organization. A cost optimization review reveals that many EC2 instances are over-provisioned (running at 5-10% CPU and memory utilization) and running older instance families (such as m4 and c4). The company wants an automated tool to identify right-sizing opportunities, evaluate Graviton-based instance transitions, and then commit to a pricing model that provides the highest flexibility across EC2, Fargate, and Lambda workloads. Which combination of actions should the solutions architect recommend?",
+    "answerType": "single",
+    "answerInstruction": "Choose the correct answer.",
+    "options": {
+      "A": "Enable AWS Trusted Advisor in each member account to generate right-sizing reports, and purchase 3-year EC2 Instance Savings Plans locked to the current instance families.",
+      "B": "Configure Amazon CloudWatch anomaly detection on all instances, write a Lambda script to resize EC2 instances nightly, and purchase Regional Reserved Instances.",
+      "C": "Enable AWS Compute Optimizer in the AWS Organizations management account for all member accounts to analyze historical CloudWatch metrics and recommend rightsized/Graviton instance types, implement the recommendations, and purchase Compute Savings Plans.",
+      "D": "Use AWS Cost Anomaly Detection to identify high-spending accounts, terminate underutilized instances, and purchase Standard Reserved Instances."
+    },
+    "correctAnswers": [
+      "C"
+    ],
+    "explanation": "AWS Compute Optimizer leverages machine learning to analyze historical utilization metrics from Amazon CloudWatch, generating actionable recommendations to downsize over-provisioned resources, eliminate waste, and migrate to modern, high-efficiency processor architectures like AWS Graviton. After right-sizing resources based on Compute Optimizer recommendations, purchasing Compute Savings Plans provides the highest flexibility: they apply automatically to EC2 instance usage regardless of instance family, size, AZ, Region, OS, or tenancy, while also covering AWS Fargate and AWS Lambda usage, maximizing cost savings.",
+    "whyOthersAreWrong": {
+      "A": "EC2 Instance Savings Plans provide savings on a specific instance family in a specific Region; they do not apply across instance families, do not apply to AWS Fargate or AWS Lambda, and restrict migration to newer families or Graviton processors.",
+      "B": "CloudWatch anomaly detection identifies statistical outliers in metrics; it does not evaluate hardware sizing, memory usage, or processor architecture migrations, and custom resize scripts risk production outages.",
+      "D": "Cost Anomaly Detection notifies teams of sudden cost spikes; it does not generate right-sizing recommendations or evaluate CPU/memory utilization, and Standard RIs are inflexible and do not cover Fargate."
+    },
+    "learningObjective": "Right-size compute infrastructure using AWS Compute Optimizer and maximize flexible commitment discounts with Compute Savings Plans.",
+    "topic": "AWS Cost Optimization",
+    "tags": [
+      "compute-optimizer",
+      "savings-plans",
+      "right-sizing",
+      "graviton",
+      "cost-optimization"
+    ]
+  },
+  {
+    "id": "saa-2073",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise security policy mandates that administrators must no longer use SSH key pairs or open inbound port 22 to access Amazon EC2 instances located in private subnets. All administrative access must be authenticated via corporate IAM credentials, enforce multi-factor authentication (MFA), log all session keystrokes and commands to an encrypted, centralized audit location, and operate without deploying internet-facing bastion hosts. Which TWO configurations must the solutions architect implement? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Deploy an AWS Client VPN endpoint in a public subnet and require administrators to connect via OpenVPN before initiating SSH sessions on port 22.",
+      "B": "Install and configure the AWS Systems Manager Agent (SSM Agent) on all EC2 instances, and attach an IAM role with the AmazonSSMManagedInstanceCore policy to each instance profile.",
+      "C": "Configure AWS Systems Manager Session Manager to record and stream session logs to an encrypted Amazon S3 bucket and Amazon CloudWatch Logs group.",
+      "D": "Create an EC2 Instance Connect endpoint in the public subnet and configure a security group allowing inbound port 22 from administrator IP addresses.",
+      "E": "Deploy an Application Load Balancer configured with a TLS listener on port 443 that forwards administrative traffic to EC2 port 22."
+    },
+    "correctAnswers": [
+      "B",
+      "C"
+    ],
+    "explanation": "AWS Systems Manager Session Manager provides secure, one-click node management without needing to open inbound ports, maintain bastion hosts, or manage SSH keys: (1) Installing the SSM Agent and attaching an IAM role with the `AmazonSSMManagedInstanceCore` managed policy enables instances to communicate outbound with Systems Manager over HTTPS (or via VPC Interface Endpoints). (2) Administrators authenticate via IAM (with MFA), and Session Manager can be configured to stream full session keystrokes and command execution logs to an encrypted Amazon S3 bucket and CloudWatch Logs log group for comprehensive auditing.",
+    "whyOthersAreWrong": {
+      "A": "Client VPN with SSH on port 22 still requires managing SSH keys and opens port 22 on instance security groups, failing the security mandate to eliminate SSH keys and inbound port 22.",
+      "D": "Opening inbound port 22 in security groups violates the explicit mandate to close port 22 and eliminate SSH keys.",
+      "E": "An Application Load Balancer is an HTTP/HTTPS load balancer; it cannot terminate TLS and forward raw SSH terminal traffic to port 22, nor does it provide keystroke logging."
+    },
+    "learningObjective": "Secure EC2 administrative access without inbound ports or SSH keys using AWS Systems Manager Session Manager.",
+    "topic": "AWS Systems Manager",
+    "tags": [
+      "systems-manager",
+      "session-manager",
+      "ec2-security",
+      "audit-logging",
+      "least-privilege"
+    ]
+  },
+  {
+    "id": "saa-2074",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A high-frequency financial trading API processes millions of TCP requests per second. The application runs on Amazon EC2 instances within an Auto Scaling group behind a Network Load Balancer (NLB). The system must maintain ultra-low latency, provide fault tolerance across multiple Availability Zones, automatically replace unhealthy instances, and ensure client connections are distributed evenly across all healthy target instances regardless of which Availability Zone receives the initial traffic. Which TWO configurations should the solutions architect implement? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Enable cross-zone load balancing on the Network Load Balancer target group.",
+      "B": "Configure the Auto Scaling group to use an EC2 status check grace period of 0 seconds.",
+      "C": "Deploy an Application Load Balancer in front of the Network Load Balancer to perform Layer 7 path routing.",
+      "D": "Configure the Auto Scaling group to use NLB target group health checks in addition to standard EC2 instance status checks.",
+      "E": "Set the NLB target group deregistration delay to 0 seconds to immediately terminate connections upon instance termination."
+    },
+    "correctAnswers": [
+      "A",
+      "D"
+    ],
+    "explanation": "For high-throughput, low-latency TCP workloads using an NLB and EC2 Auto Scaling: (1) Enabling cross-zone load balancing on the NLB ensures that client traffic is distributed evenly across all healthy registered targets across all active Availability Zones, preventing uneven load distribution when client traffic arrives unevenly at regional NLB IP addresses. (2) Configuring the Auto Scaling group to respect ELB/NLB health checks ensures that if an application process stops responding to TCP health checks, the Auto Scaling group identifies the target as unhealthy and automatically launches a replacement instance, maintaining cluster resilience.",
+    "whyOthersAreWrong": {
+      "B": "Setting the health check grace period to 0 seconds causes newly launched instances to be terminated immediately as unhealthy before their application service has finished booting.",
+      "C": "Placing an ALB in front of an NLB adds Layer 7 processing overhead and latency, which degrades ultra-low latency TCP performance.",
+      "E": "Setting deregistration delay to 0 seconds abruptly terminates in-flight TCP connections rather than draining them gracefully, resulting in dropped client transactions."
+    },
+    "learningObjective": "Achieve high availability and even traffic distribution using Network Load Balancer cross-zone load balancing and Auto Scaling health checks.",
+    "topic": "Elastic Load Balancing",
+    "tags": [
+      "nlb",
+      "cross-zone-load-balancing",
+      "auto-scaling",
+      "health-checks",
+      "tcp",
+      "resilience"
+    ]
+  },
+  {
+    "id": "saa-2075",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A digital media company is designing a high-volume serverless backend API that handles over 80 million requests per day. The API acts as a front door to AWS Lambda functions and does not require API keys, request transformation, or XML-to-JSON conversion. The architecture must minimize API latency, handle high request concurrency, support native OpenID Connect (OIDC) JWT authorization, and minimize API Gateway service costs. Which TWO architectural choices should the solutions architect make? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Deploy an API Gateway REST API with Edge-Optimized endpoints and custom Lambda authorizers.",
+      "B": "Deploy an Amazon API Gateway HTTP API instead of a REST API.",
+      "C": "Enable CloudWatch detailed execution logging on all API Gateway resources with payload tracing enabled.",
+      "D": "Configure an Application Load Balancer to act as an authentication proxy by calling an Amazon Cognito user pool on every request.",
+      "E": "Configure native JWT authorizers directly within API Gateway to validate client identity tokens against the corporate OIDC identity provider."
+    },
+    "correctAnswers": [
+      "B",
+      "E"
+    ],
+    "explanation": "Amazon API Gateway HTTP APIs are designed specifically for high-performance, low-latency, and cost-effective serverless architectures: (1) HTTP APIs provide up to a 60% reduction in latency and up to a 71% cost reduction compared to traditional REST APIs ($1.00 per million requests vs $3.50 per million). (2) HTTP APIs feature built-in, native JWT authorizers that validate tokens issued by OpenID Connect (OIDC) or OAuth 2.0 identity providers directly at the API Gateway layer without invoking a separate Lambda authorizer function, eliminating compute costs and execution latency.",
+    "whyOthersAreWrong": {
+      "A": "API Gateway REST APIs incur higher latency, cost up to 70% more than HTTP APIs ($3.50/million vs $1.00/million), and custom Lambda authorizers add cold-start overhead and additional execution latency.",
+      "C": "Enabling detailed execution logging and payload tracing adds significant CloudWatch ingestion and storage costs, and increases internal processing overhead without improving API performance.",
+      "D": "Introducing an ALB as a proxy adds redundant infrastructure costs and operational complexity when API Gateway HTTP APIs natively support JWT authorization."
+    },
+    "learningObjective": "Optimize serverless API latency and cost using Amazon API Gateway HTTP APIs and native JWT authorizers.",
+    "topic": "Amazon API Gateway",
+    "tags": [
+      "api-gateway",
+      "http-api",
+      "jwt-authorizer",
+      "oidc",
+      "cost-optimization",
+      "low-latency"
+    ]
+  },
+  {
+    "id": "saa-2076",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A data engineering team queries a 50 TB data lake in Amazon S3 using Amazon Athena. Queries currently scan entire multi-terabyte raw JSON datasets, resulting in queries taking over 10 minutes to complete and incurring high Athena query costs ($5.00 per TB scanned). The data consists of web clickstream logs containing timestamp, customer_id, event_type, and payload. Which TWO optimization techniques will DRAMATICALLY accelerate Athena query performance and reduce query costs? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Increase the Athena workgroup DPU allocation limit to maximum capacity.",
+      "B": "Convert the raw JSON data into gzip-compressed CSV files using an AWS Lambda function.",
+      "C": "Convert the dataset from JSON to a columnar format such as Apache Parquet or Apache ORC.",
+      "D": "Partition the data in Amazon S3 by date (year/month/day) and bucket high-cardinality keys like customer_id.",
+      "E": "Create an Amazon S3 lifecycle rule to transition data older than 7 days to S3 Glacier Deep Archive."
+    },
+    "correctAnswers": [
+      "C",
+      "D"
+    ],
+    "explanation": "Amazon Athena performance and pricing depend directly on the amount of data scanned: (1) Converting raw JSON into columnar storage formats like Apache Parquet or ORC allows Athena to read only the specific columns referenced in the SQL SELECT query, drastically reducing I/O, while native compression algorithms (Snappy) reduce storage footprint and scan time. (2) Partitioning S3 data by date (year/month/day) enables partition pruning, allowing Athena to skip scanning irrelevant directories when queries contain date filters, while bucketing distributes data evenly for efficient parallel joining.",
+    "whyOthersAreWrong": {
+      "A": "Amazon Athena is a serverless query engine that does not use user-configurable DPU allocation limits; Athena automatically scales query compute resources based on query complexity.",
+      "B": "Gzip-compressed CSV is still a row-oriented format; Athena must still read and decompress entire rows to extract specific columns, and gzip is non-splittable, which degrades parallel scan performance.",
+      "E": "Transitioning active data to S3 Glacier Deep Archive makes it inaccessible for direct Athena SQL queries without hours of manual restore delays."
+    },
+    "learningObjective": "Accelerate Athena query performance and reduce scan costs through columnar formats and partitioning.",
+    "topic": "Amazon Athena",
+    "tags": [
+      "athena",
+      "s3",
+      "apache-parquet",
+      "partitioning",
+      "bucketing",
+      "cost-optimization"
+    ]
+  },
+  {
+    "id": "saa-2077",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A compliance auditing system stores historical financial transaction audit logs in an Amazon DynamoDB table. The workload generates 50 million writes during the first 3 days of each month, but experiences virtually zero write traffic for the remainder of the month. Furthermore, the stored audit logs (totaling 40 TB) are queried infrequently (rarely accessed after 30 days, primarily for annual compliance reviews). The current table uses Provisioned Capacity with Standard table class, resulting in high monthly bills for unused capacity and storage. Which TWO actions will optimize costs for this table? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Switch the DynamoDB table billing mode to On-Demand capacity mode.",
+      "B": "Configure Amazon DynamoDB Global Tables to replicate the audit logs to another Region with lower storage pricing.",
+      "C": "Enable DynamoDB Point-In-Time Recovery (PITR) and decrease read capacity units to 1 RCU.",
+      "D": "Export the DynamoDB table to Amazon Redshift and delete the DynamoDB table.",
+      "E": "Update the DynamoDB table class from DynamoDB Standard to DynamoDB Standard-Infrequent Access (DynamoDB Standard-IA)."
+    },
+    "correctAnswers": [
+      "A",
+      "E"
+    ],
+    "explanation": "DynamoDB costs can be optimized across two key dimensions: (1) For spiky, unpredictable workloads with long periods of inactivity, switching from Provisioned Capacity to On-Demand capacity mode eliminates paying for idle provisioned capacity, charging only for the requests actually executed. (2) For tables storing massive amounts of data (40 TB) where storage represents the dominant cost and data is accessed infrequently, changing the table class to DynamoDB Standard-IA (Infrequent Access) reduces storage costs by 60% compared to DynamoDB Standard.",
+    "whyOthersAreWrong": {
+      "B": "Replicating data with Global Tables doubles storage and write costs across both Regions, increasing expenses rather than reducing them.",
+      "C": "PITR provides continuous backups for disaster recovery; it does not reduce underlying storage or capacity consumption charges.",
+      "D": "Amazon Redshift is a data warehouse that requires continuous cluster provisioning costs and operational administration, which is inefficient for rarely accessed audit records compared to serverless DynamoDB."
+    },
+    "learningObjective": "Optimize Amazon DynamoDB costs for spiky, storage-heavy tables using On-Demand capacity mode and DynamoDB Standard-IA.",
+    "topic": "Amazon DynamoDB",
+    "tags": [
+      "dynamodb",
+      "on-demand-capacity",
+      "dynamodb-standard-ia",
+      "cost-optimization",
+      "storage-classes"
+    ]
+  },
+  {
+    "id": "saa-2078",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "A fintech startup has two VPCs in the same AWS Region (Production VPC and Analytics VPC) that exchange approximately 80 TB of financial data per month. Both VPCs are attached to an AWS Transit Gateway. The infrastructure team notices high monthly bills for Transit Gateway attachment hours and data processing fees ($0.02 per GB). The company does not plan to add more than 3 VPCs in the near future and has no overlapping CIDR blocks. Which TWO recommendations will reduce monthly data transfer and networking costs? (Choose TWO.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose TWO answers.",
+    "options": {
+      "A": "Establish an AWS Direct Connect link between the Production VPC and Analytics VPC.",
+      "B": "Deploy a NAT Gateway in the Production VPC and route analytics traffic through the public internet.",
+      "C": "Create a direct VPC peering connection between the Production VPC and Analytics VPC.",
+      "D": "Configure an AWS Site-to-Site VPN over the public internet between the two VPCs.",
+      "E": "Update the VPC route tables to route inter-VPC traffic directly across the VPC peering connection, and remove the Transit Gateway attachments for these VPCs."
+    },
+    "correctAnswers": [
+      "C",
+      "E"
+    ],
+    "explanation": "AWS Transit Gateway charges $0.05 per hour per attachment plus a data processing charge of $0.02 per GB transferred through the gateway. For 80 TB of data, Transit Gateway data processing fees alone equal $1,600/month. For a small number of VPCs (e.g., 2 or 3) with no overlapping CIDR blocks: (1) Creating a direct VPC peering connection eliminates the Transit Gateway data processing fees entirely. (2) Updating the VPC route tables to route inter-VPC traffic over the peering connection and removing the Transit Gateway attachments eliminates both attachment fees and data processing charges, as same-Region VPC peering incurs only standard inter-AZ data transfer fees if crossing AZs.",
+    "whyOthersAreWrong": {
+      "A": "AWS Direct Connect is designed for connecting on-premises data centers to AWS; it cannot connect two cloud VPCs within AWS, and carries expensive monthly port and circuit fees.",
+      "B": "Routing traffic through NAT Gateways and the public internet introduces NAT data processing charges ($0.045/GB) and Internet Data Transfer Out fees, which would be far more expensive than Transit Gateway.",
+      "D": "AWS Site-to-Site VPN incurs hourly connection charges, limits throughput to 1.25 Gbps per tunnel, and incurs internet egress data transfer fees."
+    },
+    "learningObjective": "Evaluate cost tradeoffs between AWS Transit Gateway and VPC Peering for inter-VPC network architectures.",
+    "topic": "Amazon VPC",
+    "tags": [
+      "vpc-peering",
+      "transit-gateway",
+      "cost-optimization",
+      "data-transfer",
+      "routing"
+    ]
+  },
+  {
+    "id": "saa-2079",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise is establishing a multi-account compliance and sensitive data security architecture across all accounts in an AWS Organization. The solution must achieve three objectives: (1) continuously discover, classify, and protect sensitive Personally Identifiable Information (PII) stored in Amazon S3 buckets, (2) aggregate and prioritize security findings across all accounts against the AWS Foundational Security Best Practices standard, and (3) continuously audit resource configurations and automatically remediate non-compliant security groups that have open inbound SSH rules (port 22). Which THREE services and configurations should the solutions architect implement? (Choose THREE.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Enable Amazon Macie in the delegated administrator account for the organization, configure discovery jobs to scan S3 buckets for PII, and generate automated findings.",
+      "B": "Deploy Amazon Inspector agents on all S3 buckets to inspect object contents for CVE vulnerabilities.",
+      "C": "Enable AWS Security Hub in the delegated administrator account, integrate all member accounts, and enable the AWS Foundational Security Best Practices standard.",
+      "D": "Deploy AWS Config organization rules with the restricted-ssh managed rule, and attach an automatic remediation action using AWS Systems Manager Automation.",
+      "E": "Configure AWS Shield Advanced to scan S3 bucket contents and automatically update security groups using AWS Firewall Manager."
+    },
+    "correctAnswers": [
+      "A",
+      "C",
+      "D"
+    ],
+    "explanation": "This comprehensive security architecture combines three dedicated AWS services: (1) Amazon Macie uses machine learning and pattern matching to discover, classify, and protect sensitive data (such as PII and financial records) in Amazon S3 at enterprise scale. (2) AWS Security Hub provides a single-pane-of-glass posture management tool that aggregates, organizes, and prioritizes security findings from across AWS accounts against established compliance frameworks like the AWS Foundational Security Best Practices standard. (3) AWS Config continuously monitors and records AWS resource configurations, evaluating them against rules (such as restricted-ssh), and triggers automated remediation through AWS Systems Manager Automation runbooks when violations occur.",
+    "whyOthersAreWrong": {
+      "B": "Amazon Inspector evaluates EC2 instances, ECR container images, and Lambda functions for software vulnerabilities (CVEs); it does not scan S3 buckets for sensitive PII data.",
+      "E": "AWS Shield Advanced protects against Layer 3 and Layer 4 Distributed Denial of Service (DDoS) attacks; it does not scan S3 bucket contents for PII or remediate security group SSH rules."
+    },
+    "learningObjective": "Implement automated security posture management, compliance remediation, and sensitive data discovery using Security Hub, Macie, and AWS Config.",
+    "topic": "AWS Security Hub",
+    "tags": [
+      "security-hub",
+      "macie",
+      "aws-config",
+      "systems-manager-automation",
+      "pii-discovery",
+      "compliance"
+    ]
+  },
+  {
+    "id": "saa-2080",
+    "exam": "AWS Certified Solutions Architect - Associate",
+    "question": "An enterprise is migrating workloads to an AWS VPC connected to an on-premises data center via an AWS Direct Connect dedicated link. The hybrid environment requires seamless, bidirectional private DNS resolution: on-premises servers must resolve private AWS resource domain names hosted in Route 53 Private Hosted Zones (*.aws.example.com), and EC2 instances within the VPC must resolve internal corporate domain names hosted on on-premises Active Directory DNS servers (*.corp.example.com). Which THREE configurations are required to establish this bidirectional hybrid DNS architecture? (Choose THREE.)",
+    "answerType": "multiple",
+    "answerInstruction": "Choose THREE answers.",
+    "options": {
+      "A": "Deploy an Amazon Route 53 Public Hosted Zone and create NS records delegating authority to on-premises DNS servers.",
+      "B": "Create a Route 53 Resolver Inbound Endpoint in the VPC across multiple Availability Zones, and configure on-premises DNS forwarders to forward queries for *.aws.example.com to the inbound endpoint IP addresses.",
+      "C": "Configure an AWS Site-to-Site VPN as a backup link and enable Route 53 DNSSEC on the VPC route tables.",
+      "D": "Create a Route 53 Resolver Outbound Endpoint in the VPC across multiple Availability Zones.",
+      "E": "Create a Route 53 Resolver forwarding rule for corp.example.com that targets the on-premises DNS server IP addresses, and associate the rule with the VPC."
+    },
+    "correctAnswers": [
+      "B",
+      "D",
+      "E"
+    ],
+    "explanation": "Establishing bidirectional hybrid DNS resolution between an AWS VPC and on-premises DNS servers requires Amazon Route 53 Resolver endpoints: (1) Route 53 Resolver Inbound Endpoints provide dedicated Elastic Network Interfaces (ENIs) with private IP addresses in the VPC; on-premises DNS servers are configured with conditional forwarders directing `*.aws.example.com` queries to these inbound IP addresses. (2) Route 53 Resolver Outbound Endpoints allow Route 53 Resolver to securely send queries from the VPC to the on-premises network. (3) A Route 53 Resolver Forwarding Rule for `corp.example.com` associates with the VPC and specifies the on-premises DNS server IPs as targets, allowing EC2 instances to resolve corporate domain names seamlessly.",
+    "whyOthersAreWrong": {
+      "A": "Route 53 Public Hosted Zones expose DNS records publicly to the internet, which violates private network security requirements for internal infrastructure.",
+      "C": "Route 53 DNSSEC signs DNS responses to prevent DNS spoofing; it does not configure hybrid DNS routing or forwarding between VPCs and on-premises Active Directory."
+    },
+    "learningObjective": "Configure bidirectional hybrid DNS resolution using Route 53 Resolver Inbound and Outbound Endpoints.",
+    "topic": "Amazon Route 53",
+    "tags": [
+      "route53-resolver",
+      "hybrid-dns",
+      "direct-connect",
+      "inbound-endpoint",
+      "outbound-endpoint",
+      "forwarding-rules"
+    ]
+  }
+]
